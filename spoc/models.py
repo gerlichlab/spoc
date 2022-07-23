@@ -26,5 +26,6 @@ labelled_fragment_schema = pa.DataFrameSchema({
     "mapping_quality": pa.Column(int),
     "align_score": pa.Column(int),
     "align_base_qscore": pa.Column(int),
-    "is_labelled": pa.Column()
+    "is_labelled": pa.Column(bool),
+    "sister_identity": pa.Column(str, checks=[pa.Check(lambda x: x.isin(["SisterA", "SisterB"]))])
 })
