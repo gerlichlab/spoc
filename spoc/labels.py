@@ -21,9 +21,6 @@ class LabelAnnotator():
         read_codes = df.read_name.str.cat([df.chrom, df.start.astype("str"), df.end.astype("str")], sep="_")
         return read_codes.apply(self._is_read_labelled)
 
-    def _is_fragment_frame(self, df: pd.DataFrame) -> bool:
-        """Checks whether provided dataframe has minimal requirements as a fragment dataframe"""
-
     def annotate_fragments(self, fragments: pd.DataFrame, drop_uninformative=True) -> pd.DataFrame:
         """Takes fragment dataframe and returns a copy of it with its labelling state in a separate
         column with name `is_labelled`. If drop_uninformative is true, drops fragments that
