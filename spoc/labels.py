@@ -47,4 +47,4 @@ class FragmentAnnotator:
 
 
 class ContactAnnotator:
-    """Responsible for annotating contacts TODO: implement"""
+    """Responsible for annotating contacts TODO: implement for pair handling in porec pipeline"""
