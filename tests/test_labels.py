@@ -35,13 +35,13 @@ def good_df():
             "end": [4, 5, 6],
             "strand": [True] * 3,
             "read_name": ["dummy"] * 3,
-            "read_start": [1,2,3],
-            "read_end": [4,5,6],
+            "read_start": [1, 2, 3],
+            "read_end": [4, 5, 6],
             "read_length": [1] * 3,
             "mapping_quality": [1, 2, 3],
             "align_score": [1, 2, 3],
             "align_base_qscore": [1, 2, 3],
-            "pass_filter": [True] * 3
+            "pass_filter": [True] * 3,
         }
     )
 

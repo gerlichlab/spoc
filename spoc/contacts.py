@@ -37,10 +37,7 @@ class ContactExpander:
 
             read_length = rows[0].read_length
             for alignments in combinations(rows, self._number_fragments):
-                contact = {
-                    "read_name": read_name,
-                    "read_length": read_length
-                }
+                contact = {"read_name": read_name, "read_length": read_length}
                 # add reads
                 for index, align in enumerate(alignments, start=1):
                     contact.update(self._add_suffix(align, index))
