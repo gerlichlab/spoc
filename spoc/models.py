@@ -11,9 +11,13 @@ fragment_schema = pa.DataFrameSchema(
         "end": pa.Column(int, checks=pa.Check.gt(0)),
         "strand": pa.Column(bool),
         "read_name": pa.Column(str),
+        "read_start": pa.Column(int, checks=pa.Check.gt(0)),
+        "read_end": pa.Column(int, checks=pa.Check.gt(0)),
+        "read_length": pa.Column(int, checks=pa.Check.gt(0)),
         "mapping_quality": pa.Column(int),
         "align_score": pa.Column(int),
         "align_base_qscore": pa.Column(int),
+        "pass_filter": pa.Column(bool)
     }
 )
 
@@ -24,10 +28,14 @@ annotated_fragment_schema = pa.DataFrameSchema(
         "end": pa.Column(int, checks=pa.Check.gt(0)),
         "strand": pa.Column(bool),
         "read_name": pa.Column(str),
+        "read_start": pa.Column(int, checks=pa.Check.gt(0)),
+        "read_end": pa.Column(int, checks=pa.Check.gt(0)),
+        "read_length": pa.Column(int, checks=pa.Check.gt(0)),
         "mapping_quality": pa.Column(int),
         "align_score": pa.Column(int),
         "align_base_qscore": pa.Column(int),
         "is_labelled": pa.Column(bool),
+        "pass_filter": pa.Column(bool),
         "sister_identity": pa.Column(
             str, checks=[pa.Check(lambda x: x.isin(["SisterA", "SisterB"]))]
         ),
@@ -42,12 +50,12 @@ class HigherOrderContactSchema:
 
     # field groups
 
-    _common_fields = {
+    common_fields = {
         "read_name": pa.Column(str),
         "read_length": pa.Column(int, checks=pa.Check.gt(0)),
     }
 
-    _contact_fields = {
+    contact_fields = {
         "chrom": pa.Column(str, checks=[pa.Check.str_startswith("chr")]),
         "start": pa.Column(int, checks=pa.Check.gt(0)),
         "end": pa.Column(int, checks=pa.Check.gt(0)),
@@ -64,9 +72,9 @@ class HigherOrderContactSchema:
         self._number_fragments = number_fragments
         self._schema = pa.DataFrameSchema(
             dict(
-                self._common_fields,
+                self.common_fields,
                 **self._expand_fields(
-                    self._contact_fields, range(1, number_fragments + 1)
+                    self.contact_fields, range(1, number_fragments + 1)
                 ),
             )
         )
