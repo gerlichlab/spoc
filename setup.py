@@ -12,6 +12,13 @@ with open("HISTORY.rst") as history_file:
 
 requirements = [
     "Click>=7.0",
+    "pandas==1.2.4",
+    "numpy==1.19.0",
+    "pandera==0.11.0",
+    "pydantic==1.9.1",
+    "pyarrow==8.0.0",
+    "hypothesis==6.52.4",
+    "dask==2022.7.1",
 ]
 
 test_requirements = [

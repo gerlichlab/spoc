@@ -73,17 +73,29 @@ class HigherOrderContactSchema:
         self._schema = pa.DataFrameSchema(
             dict(
                 self.common_fields,
-                **self._expand_fields(
-                    self.contact_fields, range(1, number_fragments + 1)
-                ),
+                **self._expand_contact_fields(range(1, number_fragments + 1)),
             )
         )
 
-    def _expand_fields(self, fields: dict, expansions: Iterable = [1, 2, 3]) -> dict:
+    def _get_contact_fields(self):
+        return {
+            "chrom": pa.Column(str, checks=[pa.Check.str_startswith("chr")]),
+            "start": pa.Column(int, checks=pa.Check.gt(0)),
+            "end": pa.Column(int, checks=pa.Check.gt(0)),
+            "mapping_quality": pa.Column(int),
+            "align_score": pa.Column(int),
+            "align_base_qscore": pa.Column(int),
+            "is_labelled": pa.Column(bool),
+            "sister_identity": pa.Column(
+                str, checks=[pa.Check(lambda x: x.isin(["SisterA", "SisterB"]))]
+            ),
+        }
+
+    def _expand_contact_fields(self, expansions: Iterable = [1, 2, 3]) -> dict:
         """adds suffixes to fields"""
         output = {}
         for i in expansions:
-            for key, value in fields.items():
+            for key, value in self._get_contact_fields().items():
                 output[key + f"_{i}"] = value
         return output
 

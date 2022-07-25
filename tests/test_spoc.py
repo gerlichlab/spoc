@@ -6,7 +6,6 @@ import pytest
 
 from click.testing import CliRunner
 
-from spoc import spoc
 from spoc import cli
 
 
