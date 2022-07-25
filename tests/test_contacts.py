@@ -14,6 +14,11 @@ def triplet_expander():
 
 
 @pytest.fixture
+def triplet_manipulator():
+    """manipulator for triplest"""
+    return contacts.ContactManipulator(number_fragments=3)
+
+@pytest.fixture
 def bad_df():
     return pd.DataFrame({"be": ["bop"]})
 
@@ -88,3 +93,15 @@ def test_expander_returns_correct_contacts(triplet_expander, good_df):
         result["sister_identity_3"].values,
         np.array(["SisterA", "SisterB", "SisterB", "SisterB"]),
     )
+
+
+def test_merge_rejects_wrong_data(triplet_manipulator, bad_df):
+    with pytest.raises(pa.errors.SchemaError):
+        triplet_manipulator.merge_contacts([bad_df])
+
+
+def test_merge_works_for_good_data(triplet_expander, triplet_manipulator, good_df):
+    contacts = triplet_expander.expand(good_df)
+    result = triplet_manipulator.merge_contacts([contacts, contacts])
+    assert result.shape[0] == 8
+    assert result.shape[1] == contacts.shape[1]

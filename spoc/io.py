@@ -1,6 +1,5 @@
 """Persisting functionality of spoc that manages writing to and reading from the filesystem."""
 
-from datetime import date
 import pickle
 from typing import Dict, Union
 import pandas as pd

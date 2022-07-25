@@ -1,6 +1,7 @@
 """Managing multi-way contacts."""
 
 from itertools import combinations
+from typing import List
 import pandas as pd
 import numpy as np
 from .models import annotated_fragment_schema, HigherOrderContactSchema
@@ -43,3 +44,18 @@ class ContactExpander:
                     contact.update(self._add_suffix(align, index))
                 result.append(contact)
         return pd.DataFrame(result)
+
+
+class ContactManipulator:
+    """Responsible for performing operations on 
+    contact data such as merging, splitting and subsetting."""
+
+    def __init__(self, number_fragments: int) -> None:
+        self._number_fragments = number_fragments
+        self._schema = HigherOrderContactSchema(number_fragments=number_fragments)
+
+    def merge_contacts(self, merge_list: List[pd.DataFrame]) -> pd.DataFrame:
+        # validate schema
+        for df in merge_list:
+            self._schema.validate(df)
+        return pd.concat(merge_list)
