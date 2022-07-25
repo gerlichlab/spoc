@@ -3,6 +3,7 @@ import pytest
 import pandas as pd
 import pandera as pa
 import numpy as np
+import dask.dataframe as dd
 
 from spoc import contacts, models
 
@@ -17,6 +18,13 @@ def triplet_expander():
 def triplet_manipulator():
     """manipulator for triplest"""
     return contacts.ContactManipulator(number_fragments=3)
+
+
+@pytest.fixture
+def triplet_manipulator_dask():
+    """manipulator for triplest"""
+    return contacts.ContactManipulator(number_fragments=3, use_dask=True)
+
 
 @pytest.fixture
 def bad_df():
@@ -95,13 +103,31 @@ def test_expander_returns_correct_contacts(triplet_expander, good_df):
     )
 
 
-def test_merge_rejects_wrong_data(triplet_manipulator, bad_df):
+def test_merge_rejects_wrong_pandas_df(triplet_manipulator, bad_df):
     with pytest.raises(pa.errors.SchemaError):
         triplet_manipulator.merge_contacts([bad_df])
 
 
-def test_merge_works_for_good_data(triplet_expander, triplet_manipulator, good_df):
+def test_merge_rejects_wrong_dask_df(triplet_manipulator_dask, bad_df):
+    with pytest.raises(pa.errors.SchemaError):
+        result = triplet_manipulator_dask.merge_contacts([bad_df])
+        result.compute()
+
+
+def test_merge_works_for_good_pandas_df(triplet_expander, triplet_manipulator, good_df):
     contacts = triplet_expander.expand(good_df)
     result = triplet_manipulator.merge_contacts([contacts, contacts])
+    assert result.shape[0] == 8
+    assert result.shape[1] == contacts.shape[1]
+
+
+def test_merge_works_for_good_dask_df(
+    triplet_expander, triplet_manipulator_dask, good_df
+):
+    contacts = triplet_expander.expand(good_df)
+    contacts_dask = dd.from_pandas(contacts, npartitions=1)
+    result = triplet_manipulator_dask.merge_contacts(
+        [contacts_dask, contacts_dask]
+    ).compute()
     assert result.shape[0] == 8
     assert result.shape[1] == contacts.shape[1]

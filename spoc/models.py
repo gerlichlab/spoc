@@ -89,4 +89,4 @@ class HigherOrderContactSchema:
 
     def validate(self, df: pd.DataFrame) -> None:
         """Validate multiway contact dataframe"""
-        self._schema.validate(df)
+        return self._schema.validate(df)

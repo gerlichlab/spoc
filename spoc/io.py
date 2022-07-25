@@ -3,6 +3,7 @@
 import pickle
 from typing import Dict, Union
 import pandas as pd
+import dask.dataframe as dd
 from .models import fragment_schema, HigherOrderContactSchema
 
 
@@ -27,7 +28,9 @@ class FileManager:
             fragment_schema.validate(data)
         return data
 
-    def write_multiway_contacts(self, path: str, data: pd.DataFrame):
+    def write_multiway_contacts(
+        self, path: str, data: Union[pd.DataFrame, dd.DataFrame]
+    ) -> Union[pd.DataFrame, dd.DataFrame]:
         data.to_parquet(path)
 
     def load_multiway_contacts(
