@@ -14,7 +14,7 @@ requirements = [
     "Click>=7.0",
     "pandas==1.2.4",
     "numpy==1.19.0",
-    "pandera==0.11.0",
+    "pandera>=0.9.0",
     "pydantic==1.9.1",
     "pyarrow==8.0.0",
     "hypothesis==6.52.4",
@@ -28,7 +28,7 @@ test_requirements = [
 setup(
     author="Michael Mitter",
     author_email="michael.mitter@imba.oeaw.ac.at",
-    python_requires=">=3.6",
+    python_requires=">=3.8",
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
         "Intended Audience :: Developers",
