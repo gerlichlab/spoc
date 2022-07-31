@@ -7,13 +7,13 @@ from typing import Iterable
 fragment_schema = pa.DataFrameSchema(
     {
         "chrom": pa.Column(str),
-        "start": pa.Column(int, checks=pa.Check.gt(0)),
-        "end": pa.Column(int, checks=pa.Check.gt(0)),
+        "start": pa.Column(int),
+        "end": pa.Column(int),
         "strand": pa.Column(bool),
         "read_name": pa.Column(str),
-        "read_start": pa.Column(int, checks=pa.Check.gt(0)),
-        "read_end": pa.Column(int, checks=pa.Check.gt(0)),
-        "read_length": pa.Column(int, checks=pa.Check.gt(0)),
+        "read_start": pa.Column(int),
+        "read_end": pa.Column(int),
+        "read_length": pa.Column(int),
         "mapping_quality": pa.Column(int),
         "align_score": pa.Column(int),
         "align_base_qscore": pa.Column(int),
@@ -25,13 +25,13 @@ fragment_schema = pa.DataFrameSchema(
 annotated_fragment_schema = pa.DataFrameSchema(
     {
         "chrom": pa.Column(str),
-        "start": pa.Column(int, checks=pa.Check.gt(0)),
-        "end": pa.Column(int, checks=pa.Check.gt(0)),
+        "start": pa.Column(int),
+        "end": pa.Column(int),
         "strand": pa.Column(bool),
         "read_name": pa.Column(str),
-        "read_start": pa.Column(int, checks=pa.Check.gt(0)),
-        "read_end": pa.Column(int, checks=pa.Check.gt(0)),
-        "read_length": pa.Column(int, checks=pa.Check.gt(0)),
+        "read_start": pa.Column(int),
+        "read_end": pa.Column(int),
+        "read_length": pa.Column(int),
         "mapping_quality": pa.Column(int),
         "align_score": pa.Column(int),
         "align_base_qscore": pa.Column(int),
@@ -54,13 +54,13 @@ class HigherOrderContactSchema:
 
     common_fields = {
         "read_name": pa.Column(str),
-        "read_length": pa.Column(int, checks=pa.Check.gt(0)),
+        "read_length": pa.Column(int),
     }
 
     contact_fields = {
         "chrom": pa.Column(str),
-        "start": pa.Column(int, checks=pa.Check.gt(0)),
-        "end": pa.Column(int, checks=pa.Check.gt(0)),
+        "start": pa.Column(int),
+        "end": pa.Column(int),
         "mapping_quality": pa.Column(int),
         "align_score": pa.Column(int),
         "align_base_qscore": pa.Column(int),
@@ -83,8 +83,8 @@ class HigherOrderContactSchema:
     def _get_contact_fields(self):
         return {
             "chrom": pa.Column(str),
-            "start": pa.Column(int, checks=pa.Check.gt(0)),
-            "end": pa.Column(int, checks=pa.Check.gt(0)),
+            "start": pa.Column(int),
+            "end": pa.Column(int),
             "mapping_quality": pa.Column(int),
             "align_score": pa.Column(int),
             "align_base_qscore": pa.Column(int),
