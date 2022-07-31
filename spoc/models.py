@@ -6,7 +6,7 @@ from typing import Iterable
 
 fragment_schema = pa.DataFrameSchema(
     {
-        "chrom": pa.Column(str, checks=[pa.Check.str_startswith("chr")]),
+        "chrom": pa.Column(str),
         "start": pa.Column(int, checks=pa.Check.gt(0)),
         "end": pa.Column(int, checks=pa.Check.gt(0)),
         "strand": pa.Column(bool),
@@ -24,7 +24,7 @@ fragment_schema = pa.DataFrameSchema(
 
 annotated_fragment_schema = pa.DataFrameSchema(
     {
-        "chrom": pa.Column(str, checks=[pa.Check.str_startswith("chr")]),
+        "chrom": pa.Column(str),
         "start": pa.Column(int, checks=pa.Check.gt(0)),
         "end": pa.Column(int, checks=pa.Check.gt(0)),
         "strand": pa.Column(bool),
@@ -58,7 +58,7 @@ class HigherOrderContactSchema:
     }
 
     contact_fields = {
-        "chrom": pa.Column(str, checks=[pa.Check.str_startswith("chr")]),
+        "chrom": pa.Column(str),
         "start": pa.Column(int, checks=pa.Check.gt(0)),
         "end": pa.Column(int, checks=pa.Check.gt(0)),
         "mapping_quality": pa.Column(int),
@@ -82,7 +82,7 @@ class HigherOrderContactSchema:
 
     def _get_contact_fields(self):
         return {
-            "chrom": pa.Column(str, checks=[pa.Check.str_startswith("chr")]),
+            "chrom": pa.Column(str),
             "start": pa.Column(int, checks=pa.Check.gt(0)),
             "end": pa.Column(int, checks=pa.Check.gt(0)),
             "mapping_quality": pa.Column(int),
