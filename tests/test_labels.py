@@ -30,7 +30,7 @@ def bad_df():
 def good_df():
     return pd.DataFrame(
         {
-            "chrom": ["chr1"] * 3,
+            "chrom": pd.Series(["chr1"] * 3, dtype="category"),
             "start": [1, 2, 3],
             "end": [4, 5, 6],
             "strand": [True] * 3,

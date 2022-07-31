@@ -18,7 +18,8 @@ fragment_schema = pa.DataFrameSchema(
         "align_score": pa.Column(int),
         "align_base_qscore": pa.Column(int),
         "pass_filter": pa.Column(bool),
-    }
+    },
+    coerce=True
 )
 
 annotated_fragment_schema = pa.DataFrameSchema(
@@ -39,7 +40,8 @@ annotated_fragment_schema = pa.DataFrameSchema(
         "sister_identity": pa.Column(
             str, checks=[pa.Check(lambda x: x.isin(["SisterA", "SisterB"]))]
         ),
-    }
+    },
+    coerce=True
 )
 
 # schemas for higher order contacts
@@ -74,7 +76,8 @@ class HigherOrderContactSchema:
             dict(
                 self.common_fields,
                 **self._expand_contact_fields(range(1, number_fragments + 1)),
-            )
+            ),
+            coerce=True
         )
 
     def _get_contact_fields(self):
