@@ -19,6 +19,11 @@ requirements = [
     "pyarrow==8.0.0",
     "hypothesis==6.52.4",
     "dask==2022.7.1",
+    "cooler==0.8.11",
+    "ipykernel",
+    "matplotlib>=3.5.3",
+    "seaborn>=0.11.2",
+    "pyranges>=0.0.117",
 ]
 
 test_requirements = [

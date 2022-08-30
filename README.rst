@@ -22,11 +22,21 @@ Utility package for processing sister-sensitive PoreC data
 * Free software: MIT license
 * Documentation: https://spoc.readthedocs.io.
 
-
 Features
 --------
 
 * TODO
+
+Demo notebooks
+--------
+
+* TODO
+
+CLI interface
+--------
+
+* TODO
+
 
 Credits
 -------

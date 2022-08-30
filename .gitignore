@@ -107,3 +107,6 @@ ENV/
 
 # temp stuff
 playground/*
+
+#ignare local parquet files
+*.parquet
