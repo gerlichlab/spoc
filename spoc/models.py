@@ -105,3 +105,17 @@ class HigherOrderContactSchema:
     def validate(self, df: pd.DataFrame) -> None:
         """Validate multiway contact dataframe"""
         return self._schema.validate(df)
+
+# schemas for higher order pixels
+
+triplet_pixel_schema = pa.DataFrameSchema(
+    {
+        "chrom": pa.Column(str),
+        "start_1": pa.Column(int),
+        "start_2": pa.Column(int),
+        "start_3": pa.Column(int),
+        "count": pa.Column(int),
+        "corrected_count": pa.Column(float, required=False)
+    },
+    coerce=True
+)
