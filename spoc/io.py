@@ -10,7 +10,9 @@ from .models import fragment_schema, annotated_fragment_schema, HigherOrderConta
 class FileManager:
     """Is responsible for loading and writing files"""
 
-    def __init__(self, verify_schemas_on_load: bool = True, use_dask: bool = False) -> None:
+    def __init__(
+        self, verify_schemas_on_load: bool = True, use_dask: bool = False
+    ) -> None:
         self._verify_schemas = verify_schemas_on_load
         if use_dask:
             self._reader_func = dd.read_parquet
@@ -38,7 +40,9 @@ class FileManager:
             return annotated_fragment_schema.validate(data)
         return data
 
-    def write_annotated_fragments(self, path: str, data: Union[pd.DataFrame, dd.DataFrame]) -> None:
+    def write_annotated_fragments(
+        self, path: str, data: Union[pd.DataFrame, dd.DataFrame]
+    ) -> None:
         data.to_parquet(path)
 
     def write_multiway_contacts(

@@ -6,7 +6,6 @@ from spoc.labels import FragmentAnnotator
 from spoc.io import FileManager
 
 
-
 @click.group()
 def main(args=None):
     """Console script for spoc."""
@@ -14,8 +13,8 @@ def main(args=None):
 
 
 @click.command()
-@click.argument('fragments_path')
-@click.argument('expanded_contacts_path')
+@click.argument("fragments_path")
+@click.argument("expanded_contacts_path")
 @click.option(
     "-n",
     "--n_fragments",
@@ -30,10 +29,11 @@ def expand(fragments_path, expanded_contacts_path, n_fragments):
     expanded = expander.expand(input_fragments)
     file_manager.write_multiway_contacts(expanded_contacts_path, expanded)
 
+
 @click.command()
-@click.argument('fragments_path')
-@click.argument('label_library_path')
-@click.argument('labelled_fragments_path')
+@click.argument("fragments_path")
+@click.argument("label_library_path")
+@click.argument("labelled_fragments_path")
 def annotate(fragments_path, label_library_path, labelled_fragments_path):
     """Script for annotating porec fragments"""
     file_manager = FileManager(verify_schemas_on_load=True)
@@ -43,13 +43,15 @@ def annotate(fragments_path, label_library_path, labelled_fragments_path):
     result = annotator.annotate_fragments(input_fragments)
     file_manager.write_annotated_fragments(labelled_fragments_path, result)
 
+
 @click.group()
 def merge():
     """Functionality to merge files"""
 
+
 @click.command()
-@click.argument('contact_paths', nargs=-1)
-@click.option('-o', "--output", help="output path")
+@click.argument("contact_paths", nargs=-1)
+@click.option("-o", "--output", help="output path")
 @click.option(
     "-n",
     "--n_fragments",
@@ -60,7 +62,9 @@ def contacts(contact_paths, n_fragments, output):
     """Functionality to merge annotated fragments"""
     file_manager = FileManager(verify_schemas_on_load=True, use_dask=True)
     manipulator = ContactManipulator(n_fragments, use_dask=True)
-    contacts= [file_manager.load_multiway_contacts(path, n_fragments) for path in contact_paths]
+    contacts = [
+        file_manager.load_multiway_contacts(path, n_fragments) for path in contact_paths
+    ]
     merged = manipulator.merge_contacts(contacts)
     file_manager.write_multiway_contacts(output, merged)
 

@@ -19,7 +19,7 @@ fragment_schema = pa.DataFrameSchema(
         "align_base_qscore": pa.Column(int),
         "pass_filter": pa.Column(bool),
     },
-    coerce=True
+    coerce=True,
 )
 
 annotated_fragment_schema = pa.DataFrameSchema(
@@ -41,7 +41,7 @@ annotated_fragment_schema = pa.DataFrameSchema(
             str, checks=[pa.Check(lambda x: x.isin(["SisterA", "SisterB"]))]
         ),
     },
-    coerce=True
+    coerce=True,
 )
 
 # schemas for higher order contacts
@@ -77,7 +77,7 @@ class HigherOrderContactSchema:
                 self.common_fields,
                 **self._expand_contact_fields(range(1, number_fragments + 1)),
             ),
-            coerce=True
+            coerce=True,
         )
 
     def _get_contact_fields(self):
@@ -106,6 +106,7 @@ class HigherOrderContactSchema:
         """Validate multiway contact dataframe"""
         return self._schema.validate(df)
 
+
 # schemas for higher order pixels
 
 triplet_pixel_schema = pa.DataFrameSchema(
@@ -115,7 +116,7 @@ triplet_pixel_schema = pa.DataFrameSchema(
         "start_2": pa.Column(int),
         "start_3": pa.Column(int),
         "count": pa.Column(int),
-        "corrected_count": pa.Column(float, required=False)
+        "corrected_count": pa.Column(float, required=False),
     },
-    coerce=True
+    coerce=True,
 )

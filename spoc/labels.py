@@ -24,7 +24,7 @@ class FragmentAnnotator:
             np.select(
                 [df.strand.astype(bool) != df.is_labelled.astype(bool)],
                 ["SisterA"],
-                default="SisterB"
+                default="SisterB",
             )
         )
 
@@ -43,11 +43,9 @@ class FragmentAnnotator:
         fragment_schema.validate(fragments)
         # assign fragments
         return (
-            fragments.assign(
-                                is_labelled=self._assign_label_state
-                            )
-                     .dropna(subset=["is_labelled"])\
-                     .assign(sister_identity=self._assign_sister)
+            fragments.assign(is_labelled=self._assign_label_state)
+            .dropna(subset=["is_labelled"])
+            .assign(sister_identity=self._assign_sister)
         )
 
 
