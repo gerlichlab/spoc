@@ -107,7 +107,7 @@ class HigherOrderContactSchema:
         return self._schema.validate(df)
 
 
-# schemas for higher order pixels TODO: add higher order pixels
+# schemas for higher order pixels TODO: add higher order pixels or generic order
 
 triplet_pixel_schema = pa.DataFrameSchema(
     {
