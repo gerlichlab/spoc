@@ -2,7 +2,8 @@
 
 import pandera as pa
 import pandas as pd
-from typing import Iterable
+import dask.dataframe as dd
+from typing import Iterable, Union
 
 fragment_schema = pa.DataFrameSchema(
     {
@@ -102,7 +103,16 @@ class HigherOrderContactSchema:
                 output[key + f"_{i}"] = value
         return output
 
-    def validate(self, df: pd.DataFrame) -> None:
+    def validate_header(self, df: Union[pd.DataFrame, dd.DataFrame]) -> None:
+        """Validates only header, needed to validate that dask taskgraph can be built before
+        evaluation"""
+        for column in df.columns:
+            if column not in self._schema.columns:
+                raise pa.errors.SchemaError(self._schema, df, "Header is invalid!")
+
+    def validate(
+        self, df: Union[pd.DataFrame, dd.DataFrame]
+    ) -> Union[pd.DataFrame, dd.DataFrame]:
         """Validate multiway contact dataframe"""
         return self._schema.validate(df)
 

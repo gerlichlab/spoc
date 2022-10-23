@@ -12,13 +12,21 @@ class GenomicBinner:
     identity"""
 
     def __init__(
-        self, bin_size: int, chrom_sizes: pd.Series, same_chromosome:bool = False, contact_order: int = 3, sort_sisters:bool = True
+        self,
+        bin_size: int,
+        chrom_sizes: pd.Series,
+        same_chromosome: bool = False,
+        contact_order: int = 3,
+        sort_sisters: bool = True,
     ) -> None:
         self._bins = self._create_bins(chrom_sizes, bin_size)
         self._same_chromosome = same_chromosome
         if contact_order != 3:
-            raise NotImplementedError("Only contacts of order 3 are currently supported!")
-        self._contact_order = 3
+            raise NotImplementedError(
+                "Only contacts of order 3 are currently supported!"
+            )
+        self._contact_order = contact_order
+        self._input_schema = HigherOrderContactSchema(contact_order)
         self._sort_sisters = sort_sisters
 
     def _create_bins(self, chrom_sizes: pd.Series, bin_size: int) -> pr.PyRanges:
@@ -33,23 +41,40 @@ class GenomicBinner:
 
     @staticmethod
     def _create_pyranges_bin_query(query_df: pd.DataFrame) -> pr.PyRanges:
-        query_df.columns = ['Chromosome', "Start", "contact_index"]
-        return pr.PyRanges(
-            query_df
-                .assign(End=lambda df: df.Start + 1)
-        )
+        query_df.columns = ["Chromosome", "Start", "contact_index"]
+        return pr.PyRanges(query_df.assign(End=lambda df: df.Start + 1))
 
-    def _intersect_with_genomic_bins(self, suffix_index:int, query_position: pr.PyRanges) -> pd.DataFrame:
-            suffix = f"_{suffix_index}"
-            return query_position.join(self._bins, how="right", suffix=suffix)\
-                                    .df[["contact_index", "Chromosome", f"Start{suffix}"]]\
-                                    .rename(columns={"Chromosome": f"chrom{suffix}", f"Start{suffix}":f"start{suffix}"})\
-                                    .query("contact_index != -1")
+    def _intersect_with_genomic_bins(
+        self, suffix_index: int, query_position: pr.PyRanges
+    ) -> pd.DataFrame:
+        suffix = f"_{suffix_index}"
+        return (
+            query_position.join(self._bins, how="right", suffix=suffix)
+            .df[["contact_index", "Chromosome", f"Start{suffix}"]]
+            .rename(
+                columns={
+                    "Chromosome": f"chrom{suffix}",
+                    f"Start{suffix}": f"start{suffix}",
+                }
+            )
+            .query("contact_index != -1")
+        )
 
     def _assign_bins(self, df: pd.DataFrame) -> pd.DataFrame:
         # capture empty dataframe
         if len(df) == 0:
-            return pd.DataFrame(columns=["contact_index", "chrom_1", "start_1", "chrom_2", "start_2", "chrom_3", "start_3"], dtype=int)
+            return pd.DataFrame(
+                columns=[
+                    "contact_index",
+                    "chrom_1",
+                    "start_1",
+                    "chrom_2",
+                    "start_2",
+                    "chrom_3",
+                    "start_3",
+                ],
+                dtype=int,
+            )
         # create contact_index
         df.loc[:, "contact_index"] = range(len(df))
         # create pyranges
@@ -58,23 +83,20 @@ class GenomicBinner:
             [
                 df[["chrom_1", "pos_1", "contact_index"]],
                 df[["chrom_2", "pos_2", "contact_index"]],
-                df[["chrom_3", "pos_3", "contact_index"]]
-            ]
+                df[["chrom_3", "pos_3", "contact_index"]],
+            ],
         )
         # assign bins
         assigned_bins = list(
-                    map(
-                    self._intersect_with_genomic_bins,
-                    range(1, 4),
-                    query_positions
-                )
+            map(self._intersect_with_genomic_bins, range(1, 4), query_positions)
         )
         # merge output
         merged_output = assigned_bins[0]
         for assigned_bin in assigned_bins[1:]:
-            merged_output = merged_output.merge(assigned_bin, on="contact_index", how="inner")
+            merged_output = merged_output.merge(
+                assigned_bin, on="contact_index", how="inner"
+            )
         return merged_output
-
 
     def _get_sister_order_selectors(self, contacts: dd.DataFrame):
         """Returns boolean arrays that indicate the order of sister contacts."""
@@ -89,9 +111,8 @@ class GenomicBinner:
         ) & (contacts.sister_identity_1 != contacts.sister_identity_2)
         return is_cis_cis_trans, is_cis_trans_cis, is_trans_cis_cis
 
-    def _reset_contact_columns(self, contacts: dd.DataFrame):
-        output = contacts.copy()
-        output.columns = [
+    def _reset_contact_columns(self, contacts: dd.DataFrame) -> dd.DataFrame:
+        contacts.columns = [
             "read_name",
             "chrom_1",
             "start_1",
@@ -103,7 +124,7 @@ class GenomicBinner:
             "start_3",
             "end_3",
         ]
-        return output
+        return contacts
 
     def _sort_sister_contacts(self, contacts: dd.DataFrame) -> dd.DataFrame:
         """Sorts sister contacts such that they are SisterA_SisterA_SisterB"""
@@ -172,7 +193,7 @@ class GenomicBinner:
             )
         )
 
-    def _assign_midpoints(self, contacts: dd.DataFrame):
+    def _assign_midpoints(self, contacts: dd.DataFrame) -> dd.DataFrame:
         """Collapses start-end to a middle position"""
         return (
             contacts.assign(pos_1=lambda df: (df.start_1 + df.end_1) // 2)
@@ -182,31 +203,58 @@ class GenomicBinner:
         )
 
     def bin_contacts(
-        self, contacts: dd.DataFrame, compute: bool = True
+        self, contacts: dd.DataFrame
     ) -> pd.DataFrame:
         """Bins genomic contacts"""
+        # validate input header
+        self._input_schema.validate_header(
+            contacts
+        )  # TODO: validate this in the contacts constructor
+        # check if sister sorting should be performed
         if self._sort_sisters:
-            contacts = self._sort_sister_contacts(contacts)
-        if self._same_chromosome:
-            contacts = contacts.query("chrom_1 == chrom_2 and chrom_2 == chrom_3")
-        contacts_w_midpoints = self._assign_midpoints(contacts)
+            contacts = self._sort_sister_contacts(
+                contacts
+            )  # TODO: move this into contacts class?
+        contacts_w_midpoints = self._assign_midpoints(
+            contacts
+        )  # TODO: move this into contacts class?
         # assign bins
         triplet_bins = contacts_w_midpoints.map_partitions(
             self._assign_bins,
             meta=pd.DataFrame(
-                columns=["contact_index", "chrom_1", "start_1", "chrom_2", "start_2", "chrom_3", "start_3"], dtype=int
+                columns=[
+                    "contact_index",
+                    "chrom_1",
+                    "start_1",
+                    "chrom_2",
+                    "start_2",
+                    "chrom_3",
+                    "start_3",
+                ],
+                dtype=int,
             ),
         )
-        # compute pixels
+        # compute pixels -> assumption is that pixels fit into memory after computing
+        # TODO: think about how to achieve sorting without computing. Maybe wait for https://github.com/dask/dask/issues/958
         pixels = (
-            triplet_bins.groupby(["chrom_1", "start_1", "chrom_2", "start_2", "chrom_3", "start_3"], observed=True)
+            triplet_bins.groupby(
+                ["chrom_1", "start_1", "chrom_2", "start_2", "chrom_3", "start_3"],
+                observed=True,
+            )
             .size()
             .reset_index()
             .rename(columns={0: "contact_count"})
-        )
-        if compute:
-            return pixels.compute()
-        return pixels
+        ).compute()
+        if self._same_chromosome:
+            pixels = (
+                pixels
+                .loc[(pixels.chrom_1.astype(str) == pixels.chrom_2.astype(str))
+                    & (pixels.chrom_2.astype(str) == pixels.chrom_3.astype(str))]
+                .drop(["chrom_2", "chrom_3"], axis=1)
+                .rename(columns={"chrom_1": "chrom"})
+            )
+            return pixels.sort_values(["chrom", "start_1", "start_2", "start_3"])
+        return pixels.sort_values(["chrom_1", "start_1", "chrom_2", "start_2", "chrom_3", "start_3"])
 
 
 class PixelManipulator:
