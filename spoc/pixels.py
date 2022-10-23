@@ -202,9 +202,7 @@ class GenomicBinner:
             .drop(["start_1", "end_1", "start_2", "end_2", "start_3", "end_3"], axis=1)
         )
 
-    def bin_contacts(
-        self, contacts: dd.DataFrame
-    ) -> pd.DataFrame:
+    def bin_contacts(self, contacts: dd.DataFrame) -> pd.DataFrame:
         """Bins genomic contacts"""
         # validate input header
         self._input_schema.validate_header(
@@ -247,14 +245,17 @@ class GenomicBinner:
         ).compute()
         if self._same_chromosome:
             pixels = (
-                pixels
-                .loc[(pixels.chrom_1.astype(str) == pixels.chrom_2.astype(str))
-                    & (pixels.chrom_2.astype(str) == pixels.chrom_3.astype(str))]
+                pixels.loc[
+                    (pixels.chrom_1.astype(str) == pixels.chrom_2.astype(str))
+                    & (pixels.chrom_2.astype(str) == pixels.chrom_3.astype(str))
+                ]
                 .drop(["chrom_2", "chrom_3"], axis=1)
                 .rename(columns={"chrom_1": "chrom"})
             )
             return pixels.sort_values(["chrom", "start_1", "start_2", "start_3"])
-        return pixels.sort_values(["chrom_1", "start_1", "chrom_2", "start_2", "chrom_3", "start_3"])
+        return pixels.sort_values(
+            ["chrom_1", "start_1", "chrom_2", "start_2", "chrom_3", "start_3"]
+        )
 
 
 class PixelManipulator:

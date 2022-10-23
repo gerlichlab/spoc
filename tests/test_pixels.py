@@ -25,12 +25,17 @@ def genomic_binner(chromosome_sizes):
         bin_size=100_000, chrom_sizes=chromosome_sizes, sort_sisters=False
     )
 
+
 @pytest.fixture
 def genomic_binner_sister_sensitive(chromosome_sizes):
     """genomic binner for pixels"""
     return pixels.GenomicBinner(
-        bin_size=100_000, chrom_sizes=chromosome_sizes, sort_sisters=True, same_chromosome=True
+        bin_size=100_000,
+        chrom_sizes=chromosome_sizes,
+        sort_sisters=True,
+        same_chromosome=True,
     )
+
 
 @pytest.fixture
 def bad_contacts():
@@ -86,6 +91,7 @@ def expected_pixels_wo_sister_sorting():
         }
     )
 
+
 @pytest.fixture
 def expected_pixels_w_sister_sorting():
     return pd.DataFrame(
@@ -109,6 +115,7 @@ def test_genomic_binner_bins_correctly_wo_sister_sorting(
 ):
     result = genomic_binner.bin_contacts(good_contacts)
     np.array_equal(result.values, expected_pixels_wo_sister_sorting.values)
+
 
 def test_genomic_binner_sorts_sisters_correctly(
     genomic_binner_sister_sensitive, good_contacts, expected_pixels_w_sister_sorting

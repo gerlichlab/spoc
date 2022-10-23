@@ -1,9 +1,11 @@
 """Console script for spoc."""
 import sys
 import click
+from traitlets import default
 from spoc.contacts import ContactExpander, ContactManipulator
 from spoc.labels import FragmentAnnotator
 from spoc.io import FileManager
+from spoc.pixels import GenomicBinner
 
 
 @click.group()
@@ -44,6 +46,40 @@ def annotate(fragments_path, label_library_path, labelled_fragments_path):
     file_manager.write_annotated_fragments(labelled_fragments_path, result)
 
 
+@click.command()
+@click.argument("contact_path")
+@click.argument("chromosome_sizes")
+@click.argument("pixel_path")
+@click.option("-n", "--number_fragments", default=3, type=int)
+@click.option("-b", "--bin_size", default=10_000, type=int)
+@click.option("-s", "--sort_sisters", default=True, type=bool)
+@click.option("-c", "--same_chromosome", default=True, type=bool)
+def bin_contacts(
+    contact_path,
+    chromosome_sizes,
+    pixel_path,
+    number_fragments,
+    bin_size,
+    sort_sisters,
+    same_chromosome,
+):
+    # load data from disk
+    file_manager = FileManager(verify_schemas_on_load=True, use_dask=True)
+    contacts = file_manager.load_multiway_contacts(contact_path)
+    chrom_sizes = file_manager.load_chromosome_sizes(chromosome_sizes)
+    # binning
+    binner = GenomicBinner(
+        bin_size=bin_size,
+        chrom_sizes=chrom_sizes,
+        same_chromosome=same_chromosome,
+        contact_order=number_fragments,
+        sort_sisters=sort_sisters,
+    )
+    pixels = binner.bin_contacts(contacts)
+    # persisting
+    file_manager.write_pixels(pixel_path, pixels)
+
+
 @click.group()
 def merge():
     """Functionality to merge files"""
@@ -73,6 +109,7 @@ merge.add_command(contacts)
 main.add_command(expand)
 main.add_command(annotate)
 main.add_command(merge)
+main.add_command(bin_contacts)
 
 if __name__ == "__main__":
     sys.exit(main())  # pragma: no cover
