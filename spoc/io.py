@@ -59,5 +59,7 @@ class FileManager:
                 raise ValueError(
                     "Number of fragments need to be specified is schema is validated!"
                 )
-            return HigherOrderContactSchema(number_fragments).validate(data)
+            schema = HigherOrderContactSchema(number_fragments)
+            schema.validate_header(data) # this is needed to catch problems that cause task graph construction failures
+            return schema.validate(data)
         return data
