@@ -252,10 +252,12 @@ class GenomicBinner:
                 .drop(["chrom_2", "chrom_3"], axis=1)
                 .rename(columns={"chrom_1": "chrom"})
             )
-            return pixels.sort_values(["chrom", "start_1", "start_2", "start_3"])
+            return pixels.sort_values(
+                ["chrom", "start_1", "start_2", "start_3"]
+            ).reset_index(drop=True)
         return pixels.sort_values(
             ["chrom_1", "start_1", "chrom_2", "start_2", "chrom_3", "start_3"]
-        )
+        ).reset_index(drop=True)
 
 
 class PixelManipulator:

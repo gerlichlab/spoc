@@ -57,7 +57,7 @@ class FileManager:
         if self._verify_schemas:
             if number_fragments is None:
                 raise ValueError(
-                    "Number of fragments need to be specified is schema is validated!"
+                    "Number of fragments needs to be specified if schema is validated!"
                 )
             schema = HigherOrderContactSchema(number_fragments)
             schema.validate_header(

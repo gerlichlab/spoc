@@ -52,8 +52,8 @@ def annotate(fragments_path, label_library_path, labelled_fragments_path):
 @click.argument("pixel_path")
 @click.option("-n", "--number_fragments", default=3, type=int)
 @click.option("-b", "--bin_size", default=10_000, type=int)
-@click.option("-s", "--sort_sisters", default=True, type=bool)
-@click.option("-c", "--same_chromosome", default=True, type=bool)
+@click.option("-s", "--sort_sisters", is_flag=True)
+@click.option("-c", "--same_chromosome", is_flag=True)
 def bin_contacts(
     contact_path,
     chromosome_sizes,
@@ -65,7 +65,7 @@ def bin_contacts(
 ):
     # load data from disk
     file_manager = FileManager(verify_schemas_on_load=True, use_dask=True)
-    contacts = file_manager.load_multiway_contacts(contact_path)
+    contacts = file_manager.load_multiway_contacts(contact_path, number_fragments)
     chrom_sizes = file_manager.load_chromosome_sizes(chromosome_sizes)
     # binning
     binner = GenomicBinner(

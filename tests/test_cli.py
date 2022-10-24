@@ -1,5 +1,6 @@
 """Tests for CLI of spoc"""
 
+from cmath import exp
 import pytest
 import pandas as pd
 from pandas.testing import assert_frame_equal
@@ -38,12 +39,54 @@ def good_triplet_files():
 
 
 @pytest.fixture
+def good_triplet_file_for_pixels():
+    # setup
+    os.mkdir("tmp")
+    yield "tests/test_files/good_contacts3.triplets.parquet"
+    # teardown
+    shutil.rmtree("tmp")
+
+
+@pytest.fixture
+def chromosome_sizes():
+    return "tests/test_files/hg19.chrom.sizes"
+
+
+@pytest.fixture
 def good_porec_file():
     # setup
     os.mkdir("tmp")
     yield "tests/test_files/good_porec.parquet"
     # teardown
     shutil.rmtree("tmp")
+
+
+@pytest.fixture
+def expected_pixels_w_sister_sorting():
+    return pd.DataFrame(
+        {
+            "chrom": ["chr1"] * 3,
+            "start_1": [500_000, 10_000_000, 10_000_000],
+            "start_2": [600_000, 6_000_000, 25_000_000],
+            "start_3": [100_000, 25_000_000, 6_000_000],
+            "contact_count": [1, 1, 1],
+        }
+    )
+
+
+@pytest.fixture
+def expected_pixels_wo_sister_sorting():
+    return pd.DataFrame(
+        {
+            "chrom_1": ["chr1"] * 3,
+            "start_1": [100_000, 5_000_000, 10_000_000],
+            "chrom_2": ["chr1"] * 3,
+            "start_2": [500_000, 7_000_000, 25_000_000],
+            "chrom_3": ["chr1", "chr4", "chr1"],
+            "start_3": [600_000, 2_000_000, 6_000_000],
+            "contact_count": [1, 1, 2],
+        }
+    )
 
 
 def test_expand_triplets_works(good_annotated_porec_file):
@@ -105,3 +148,32 @@ def test_merge_contacts_works(good_triplet_files):
     first_half = labelled_fragments.iloc[:4, :].reset_index(drop=True)
     second_half = labelled_fragments.iloc[4:, :].reset_index(drop=True)
     assert_frame_equal(first_half, second_half)
+
+
+def test_bin_contacts_w_sister_sorting(
+    good_triplet_file_for_pixels, chromosome_sizes, expected_pixels_w_sister_sorting
+):
+    """happy path for binning contacts with sister sorting"""
+    runner = CliRunner()
+    output_path = "tmp/test_output4.parquet"
+    result = runner.invoke(
+        cli.bin_contacts,
+        [good_triplet_file_for_pixels, chromosome_sizes, output_path, "-s", "-c"],
+    )
+    # check content of file
+    pixels = pd.read_parquet(output_path)
+    np.array_equal(pixels.values, expected_pixels_w_sister_sorting.values)
+
+
+def test_bin_contacts_wo_sister_sorting(
+    good_triplet_file_for_pixels, chromosome_sizes, expected_pixels_wo_sister_sorting
+):
+    """happy path for binning contacts without sister sorting"""
+    runner = CliRunner()
+    output_path = "tmp/test_output5.parquet"
+    result = runner.invoke(
+        cli.bin_contacts, [good_triplet_file_for_pixels, chromosome_sizes, output_path]
+    )
+    # check content of file
+    pixels = pd.read_parquet(output_path)
+    np.array_equal(pixels.values, expected_pixels_wo_sister_sorting.values)
