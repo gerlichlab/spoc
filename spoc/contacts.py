@@ -5,7 +5,7 @@ from typing import List, Union
 import pandas as pd
 import dask.dataframe as dd
 import numpy as np
-from .models import annotated_fragment_schema, HigherOrderContactSchema
+from .models import AnnotatedFragmentSchema, HigherOrderContactSchema
 
 
 class ContactExpander:
@@ -14,7 +14,8 @@ class ContactExpander:
     def __init__(self, number_fragments: int) -> None:
         self._number_fragments = number_fragments
 
-    def _add_suffix(self, row, suffix):
+    @staticmethod
+    def _add_suffix(row, suffix):
         """expands contact fields"""
         output = {}
         for key in HigherOrderContactSchema.contact_fields:
@@ -22,8 +23,9 @@ class ContactExpander:
         return output
 
     def expand(self, fragments: pd.DataFrame) -> pd.DataFrame:
+        """expand contacts n-ways"""
         # check input
-        annotated_fragment_schema.validate(fragments)
+        AnnotatedFragmentSchema.validate(fragments)
         # expand fragments
         result = []
         keep_segments = fragments.query("pass_filter == True")
@@ -58,22 +60,23 @@ class ContactManipulator:
 
     def _merge_contacts_pandas(self, merge_list: List[pd.DataFrame]) -> pd.DataFrame:
         # validate schema
-        for df in merge_list:
-            self._schema.validate(df)
+        for data_frame in merge_list:
+            self._schema.validate(data_frame)
         return pd.concat(merge_list)
 
     def _merge_contacts_dask(self, merge_list: List[dd.DataFrame]) -> dd.DataFrame:
         # validate schema
         merge_with_check = []
-        for df in merge_list:
+        for data_frame in merge_list:
             merge_with_check.append(
-                self._schema.validate(df)
+                self._schema.validate(data_frame)
             )  # needed to add check to task graph
         return dd.concat(merge_with_check)
 
     def merge_contacts(
         self, merge_list: List[Union[pd.DataFrame, dd.DataFrame]]
     ) -> Union[pd.DataFrame, dd.DataFrame]:
+        """Merge contacts"""
         if not self._use_dask:
             return self._merge_contacts_pandas(merge_list)
         return self._merge_contacts_dask(merge_list)

@@ -1,7 +1,6 @@
 """Console script for spoc."""
 import sys
 import click
-from traitlets import default
 from spoc.contacts import ContactExpander, ContactManipulator
 from spoc.labels import FragmentAnnotator
 from spoc.io import FileManager
@@ -9,9 +8,8 @@ from spoc.pixels import GenomicBinner
 
 
 @click.group()
-def main(args=None):
+def main():
     """Console script for spoc."""
-    pass
 
 
 @click.command()
@@ -63,6 +61,7 @@ def bin_contacts(
     sort_sisters,
     same_chromosome,
 ):
+    """Script for binning contacts"""
     # load data from disk
     file_manager = FileManager(verify_schemas_on_load=True, use_dask=True)
     contacts = file_manager.load_multiway_contacts(contact_path, number_fragments)
@@ -85,7 +84,7 @@ def merge():
     """Functionality to merge files"""
 
 
-@click.command()
+@click.command(name="contacts")
 @click.argument("contact_paths", nargs=-1)
 @click.option("-o", "--output", help="output path")
 @click.option(
@@ -94,18 +93,18 @@ def merge():
     default=3,
     help="Order of contacts",
 )
-def contacts(contact_paths, n_fragments, output):
+def merge_contacts(contact_paths, n_fragments, output):
     """Functionality to merge annotated fragments"""
     file_manager = FileManager(verify_schemas_on_load=True, use_dask=True)
     manipulator = ContactManipulator(n_fragments, use_dask=True)
-    contacts = [
+    contact_files = [
         file_manager.load_multiway_contacts(path, n_fragments) for path in contact_paths
     ]
-    merged = manipulator.merge_contacts(contacts)
+    merged = manipulator.merge_contacts(contact_files)
     file_manager.write_multiway_contacts(output, merged)
 
 
-merge.add_command(contacts)
+merge.add_command(merge_contacts)
 main.add_command(expand)
 main.add_command(annotate)
 main.add_command(merge)

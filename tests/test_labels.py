@@ -60,7 +60,7 @@ def test_annotator_drops_unknown_fragments(annotator_with_entries, good_df):
 def test_annotator_produces_correct_schema(annotator_with_entries, good_df):
     labelled_fragments = annotator_with_entries.annotate_fragments(good_df)
     # check schema
-    models.annotated_fragment_schema.validate(labelled_fragments)
+    models.AnnotatedFragmentSchema.validate(labelled_fragments)
 
 
 def test_annotator_calls_labels_correctly(annotator_with_entries, good_df):

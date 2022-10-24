@@ -128,7 +128,7 @@ def test_annotate_fragments_works(good_porec_file, label_library_path):
     # check content of file
     labelled_fragments = pd.read_parquet(output_path)
     assert len(labelled_fragments) == 2
-    models.annotated_fragment_schema.validate(labelled_fragments)
+    models.AnnotatedFragmentSchema.validate(labelled_fragments)
     expected = pd.Series([True, False])
     np.array_equal(labelled_fragments.is_labelled.values, expected.values)
     expected = pd.Series(["SisterB", "SisterA"])
@@ -140,7 +140,7 @@ def test_merge_contacts_works(good_triplet_files):
     runner = CliRunner()
     output_path = "tmp/test_output3.parquet"
     result = runner.invoke(
-        cli.contacts, [good_triplet_files[0], good_triplet_files[1], f"-o{output_path}"]
+        cli.merge_contacts, [good_triplet_files[0], good_triplet_files[1], f"-o{output_path}"]
     )
     # check content of file
     labelled_fragments = pd.read_parquet(output_path)

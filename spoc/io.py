@@ -4,7 +4,7 @@ import pickle
 from typing import Dict, Union
 import pandas as pd
 import dask.dataframe as dd
-from .models import fragment_schema, annotated_fragment_schema, HigherOrderContactSchema
+from .models import FragmentSchema, AnnotatedFragmentSchema, HigherOrderContactSchema
 
 
 class FileManager:
@@ -19,40 +19,51 @@ class FileManager:
         else:
             self._parquet_reader_func = pd.read_parquet
 
-    def write_label_library(self, path: str, data: Dict[str, bool]) -> None:
+    @staticmethod
+    def write_label_library(path: str, data: Dict[str, bool]) -> None:
+        """Writes label library to file"""
         with open(path, "wb") as handle:
             pickle.dump(data, handle)
 
-    def load_label_library(self, path: str):
+    @staticmethod
+    def load_label_library(path: str):
+        """Load label library"""
         with open(path, "rb") as handle:
             label_library = pickle.load(handle)
         return label_library
 
     def load_porec_fragments(self, path: str):
+        """Load porec fragments"""
         data = self._parquet_reader_func(path)
         if self._verify_schemas:
-            return fragment_schema.validate(data)
+            return FragmentSchema.validate(data)
         return data
 
     def load_annotated_fragments(self, path: str):
+        """Load annotated fragments"""
         data = self._parquet_reader_func(path)
         if self._verify_schemas:
-            return annotated_fragment_schema.validate(data)
+            return AnnotatedFragmentSchema.validate(data)
         return data
 
+    @staticmethod
     def write_annotated_fragments(
-        self, path: str, data: Union[pd.DataFrame, dd.DataFrame]
+        path: str, data: Union[pd.DataFrame, dd.DataFrame]
     ) -> None:
+        """Write annotated fragments"""
         data.to_parquet(path)
 
+    @staticmethod
     def write_multiway_contacts(
-        self, path: str, data: Union[pd.DataFrame, dd.DataFrame]
+        path: str, data: Union[pd.DataFrame, dd.DataFrame]
     ) -> None:
+        """Write multiway contacts"""
         data.to_parquet(path)
 
     def load_multiway_contacts(
         self, path: str, number_fragments: Union[int, None] = None
     ) -> Union[pd.DataFrame, dd.DataFrame]:
+        """Load multiway contacts"""
         data = self._parquet_reader_func(path)
         if self._verify_schemas:
             if number_fragments is None:
@@ -66,7 +77,9 @@ class FileManager:
             return schema.validate(data)
         return data
 
-    def load_chromosome_sizes(self, path: str):
+    @staticmethod
+    def load_chromosome_sizes(path: str):
+        """Load chromosome sizes"""
         # TODO: validate schema for this
         return pd.read_csv(
             path,
@@ -77,9 +90,12 @@ class FileManager:
             squeeze=True,
         )
 
-    def load_pixels(self, path: str):
+    @staticmethod
+    def load_pixels(path: str):
         """Loads pixels"""
         raise NotImplementedError
 
-    def write_pixels(self, path: str, data: Union[pd.DataFrame, dd.DataFrame]) -> None:
+    @staticmethod
+    def write_pixels(path: str, data: Union[pd.DataFrame, dd.DataFrame]) -> None:
+        """Write pixels"""
         data.to_parquet(path)

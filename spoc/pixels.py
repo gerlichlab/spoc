@@ -1,4 +1,5 @@
-"""This part of spoc is responsible for binned higher order contacts in the form of 'genomic pixels'"""
+"""This part of spoc is responsible for binned,
+higher order contacts in the form of 'genomic pixels'"""
 import pandas as pd
 import dask.dataframe as dd
 from cooler.util import binnify
@@ -29,7 +30,8 @@ class GenomicBinner:
         self._input_schema = HigherOrderContactSchema(contact_order)
         self._sort_sisters = sort_sisters
 
-    def _create_bins(self, chrom_sizes: pd.Series, bin_size: int) -> pr.PyRanges:
+    @staticmethod
+    def _create_bins(chrom_sizes: pd.Series, bin_size: int) -> pr.PyRanges:
         """Creates genomic bins of size bin_size"""
         bins_df = binnify(chrom_sizes, bin_size)
         bins_df.index.name = "bin_id"
@@ -60,9 +62,9 @@ class GenomicBinner:
             .query("contact_index != -1")
         )
 
-    def _assign_bins(self, df: pd.DataFrame) -> pd.DataFrame:
+    def _assign_bins(self, data_frame: pd.DataFrame) -> pd.DataFrame:
         # capture empty dataframe
-        if len(df) == 0:
+        if data_frame.empty:
             return pd.DataFrame(
                 columns=[
                     "contact_index",
@@ -76,14 +78,14 @@ class GenomicBinner:
                 dtype=int,
             )
         # create contact_index
-        df.loc[:, "contact_index"] = range(len(df))
+        data_frame.loc[:, "contact_index"] = range(len(data_frame))
         # create pyranges
         query_positions = map(
             self._create_pyranges_bin_query,
             [
-                df[["chrom_1", "pos_1", "contact_index"]],
-                df[["chrom_2", "pos_2", "contact_index"]],
-                df[["chrom_3", "pos_3", "contact_index"]],
+                data_frame[["chrom_1", "pos_1", "contact_index"]],
+                data_frame[["chrom_2", "pos_2", "contact_index"]],
+                data_frame[["chrom_3", "pos_3", "contact_index"]],
             ],
         )
         # assign bins
@@ -98,7 +100,8 @@ class GenomicBinner:
             )
         return merged_output
 
-    def _get_sister_order_selectors(self, contacts: dd.DataFrame):
+    @staticmethod
+    def _get_sister_order_selectors(contacts: dd.DataFrame):
         """Returns boolean arrays that indicate the order of sister contacts."""
         is_cis_cis_trans = (
             contacts.sister_identity_1 == contacts.sister_identity_2
@@ -111,7 +114,8 @@ class GenomicBinner:
         ) & (contacts.sister_identity_1 != contacts.sister_identity_2)
         return is_cis_cis_trans, is_cis_trans_cis, is_trans_cis_cis
 
-    def _reset_contact_columns(self, contacts: dd.DataFrame) -> dd.DataFrame:
+    @staticmethod
+    def _reset_contact_columns(contacts: dd.DataFrame) -> dd.DataFrame:
         contacts.columns = [
             "read_name",
             "chrom_1",
@@ -192,8 +196,8 @@ class GenomicBinner:
                 )
             )
         )
-
-    def _assign_midpoints(self, contacts: dd.DataFrame) -> dd.DataFrame:
+    @staticmethod
+    def _assign_midpoints(contacts: dd.DataFrame) -> dd.DataFrame:
         """Collapses start-end to a middle position"""
         return (
             contacts.assign(pos_1=lambda df: (df.start_1 + df.end_1) // 2)
@@ -233,7 +237,8 @@ class GenomicBinner:
             ),
         )
         # compute pixels -> assumption is that pixels fit into memory after computing
-        # TODO: think about how to achieve sorting without computing. Maybe wait for https://github.com/dask/dask/issues/958
+        # TODO: think about how to achieve sorting without computing. 
+        # Maybe wait for https://github.com/dask/dask/issues/958
         pixels = (
             triplet_bins.groupby(
                 ["chrom_1", "start_1", "chrom_2", "start_2", "chrom_3", "start_3"],
