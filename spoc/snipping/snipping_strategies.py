@@ -68,7 +68,7 @@ class Triplet1DSnippingStrategy(SnippingStrategy):
                 FLOOR((p.start_2 - t.pos)/{bin_size}::float) as offset_2,
                 SUM(p.contact_count) as contacts
             FROM pixel_frame as p
-            Inner JOIN {chunk_name} as t ON t.chrom = p.chrom_1
+            Inner JOIN {chunk_name} as t ON t.chrom = p.chrom
                 and
                     abs(FLOOR((p.start_1 - t.pos)/{bin_size}::float))::int <= {pixel_offset}
                 and
@@ -88,6 +88,10 @@ class Triplet1DSnippingStrategy(SnippingStrategy):
 
     def _prepare_trans_positions(self, trans_positions: pd.DataFrame):
         """Adds index and round positions to bins"""
+        if "pos" not in trans_positions.columns:
+            trans_positions = trans_positions.assign(
+                pos=lambda df_: (df_.start + df_.end)//2
+            )
         return trans_positions.assign(
             position_id=lambda df_: range(len(df_)),
             pos=lambda df_: (df_.pos // self._bin_size) * self._bin_size,
