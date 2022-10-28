@@ -2,7 +2,7 @@
 higher order contacts in the form of 'genomic pixels'"""
 import pandas as pd
 import dask.dataframe as dd
-from cooler.util import binnify
+import bioframe as bf
 import pyranges as pr
 from spoc.models import HigherOrderContactSchema
 
@@ -33,7 +33,7 @@ class GenomicBinner:
     @staticmethod
     def _create_bins(chrom_sizes: pd.Series, bin_size: int) -> pr.PyRanges:
         """Creates genomic bins of size bin_size"""
-        bins_df = binnify(chrom_sizes, bin_size)
+        bins_df = bf.binnify(chrom_sizes, bin_size)
         bins_df.index.name = "bin_id"
         return pr.PyRanges(
             bins_df.reset_index().rename(
