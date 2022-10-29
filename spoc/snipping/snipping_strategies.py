@@ -1,7 +1,6 @@
 """Snipping strategies for Snipper that implement specific snipping functionality"""
 from abc import ABC, abstractmethod
 from functools import lru_cache, partial
-from uuid import uuid4
 from enum import Enum
 from typing import Union
 from multiprocess.pool import ThreadPool
@@ -67,7 +66,7 @@ class Triplet1DSnippingStrategy(SnippingStrategy):
             FLOOR((p.start_2 - t.pos)/{bin_size}::float) as offset_2,
             SUM(p.contact_count) as contacts
         FROM {source_table} as p
-        Inner JOIN {chunk_name} as t ON t.chrom = p.chrom
+        INNER JOIN chunk as t ON t.chrom = p.chrom
             and
                 abs(FLOOR((p.start_1 - t.pos)/{bin_size}::float))::int <= {pixel_offset}
             and
@@ -104,7 +103,7 @@ class Triplet1DSnippingStrategy(SnippingStrategy):
                     self._get_array_coordinates_from_offset(snips.offset_2, half_window_size),
                 ),
                 snips.contacts.values,
-                shape=(snips.position_id.nunique(), output_size, output_size),
+                shape=(np.max(snips.position_id) + 1, output_size, output_size),
             )
             .mean(axis=0)
             .todense()
@@ -193,8 +192,7 @@ class Triplet1DSnippingStrategy(SnippingStrategy):
         cis_selector_offset = position_slack // self._bin_size
         # create local connection. No need to close it, is closed when reference to it goes out of scope
         local_connection = duckdb.connect()
-        chunk_name = f"local_chunk_{uuid4().hex}"
-        local_connection.register(chunk_name, chunk)
+        local_connection.register('chunk', chunk)
         # register pixels if needed
         if isinstance(pixels, PersistedPixels):
             source_table = f"read_parquet('{pixels.path}')"
@@ -208,7 +206,6 @@ class Triplet1DSnippingStrategy(SnippingStrategy):
                 pixel_offset=pixel_offset,
                 cis_selector_offset=cis_selector_offset,
                 bin_size=self._bin_size,
-                chunk_name=chunk_name,
                 relative_offset=relative_offset,
             )
         ).df()
