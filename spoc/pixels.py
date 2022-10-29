@@ -1,5 +1,6 @@
 """This part of spoc is responsible for binned,
 higher order contacts in the form of 'genomic pixels'"""
+from pathlib import Path
 import pandas as pd
 import dask.dataframe as dd
 import bioframe as bf
@@ -12,7 +13,10 @@ class PersistedPixels():
     Responsible for validation. This breaks the IO vs domain logic layer,
     but improves performance of pileup."""
 
-    def __ini__(self, path: str):
+    def __init__(self, path: str):
+        # check whether path exists
+        if not Path(path).exists():
+            raise ValueError(f"Path: {path} does not exist!")
         self._path = path
     
     @property

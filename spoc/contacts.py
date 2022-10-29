@@ -10,6 +10,7 @@ from .models import AnnotatedFragmentSchema, HigherOrderContactSchema
 
 class ContactExpander:
     """Expands n-way contacts over sequencing reads"""
+    # TODO: Implement upper triangular flipping of Triplets
 
     def __init__(self, number_fragments: int) -> None:
         self._number_fragments = number_fragments

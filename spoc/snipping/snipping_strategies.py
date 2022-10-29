@@ -88,7 +88,7 @@ class Triplet1DSnippingStrategy(SnippingStrategy):
         GROUP BY 1, 2
     """
 
-    def _prepare_trans_positions(self, trans_positions: pd.DataFrame):
+    def _align_positions_to_bins(self, trans_positions: pd.DataFrame):
         """Adds index and round positions to bins"""
         if "pos" not in trans_positions.columns:
             trans_positions = trans_positions.assign(
@@ -136,7 +136,7 @@ class Triplet1DSnippingStrategy(SnippingStrategy):
                     position_slack=position_slack,
                     relative_offset=relative_offset,
                 ),
-                np.array_split(self._prepare_trans_positions(trans_positions), threads),
+                np.array_split(self._align_positions_to_bins(trans_positions), threads),
             )
         # reduce result
         reduced = (
@@ -186,7 +186,7 @@ class Triplet1DSnippingStrategy(SnippingStrategy):
         local_connection.register(chunk_name, chunk)
         # register pixels if needed
         if isinstance(pixels, PersistedPixels):
-            source_table = f'read_parquet({pixels.path})'
+            source_table = f"read_parquet('{pixels.path}')"
         else:
             source_table = 'pixel_frame'
             local_connection.register(source_table, pixels)
