@@ -7,6 +7,19 @@ import pyranges as pr
 from spoc.models import HigherOrderContactSchema
 
 
+class PersistedPixels():
+    """Wrapper for path to pixel parquet file. 
+    Responsible for validation. This breaks the IO vs domain logic layer,
+    but improves performance of pileup."""
+
+    def __ini__(self, path: str):
+        self._path = path
+    
+    @property
+    def path(self):
+        return self._path
+
+
 class GenomicBinner:
     """Bins higher order contacts into genomic bins of fixed size.
     Is capable of sorting genomic bins along columns based on sister chromatid

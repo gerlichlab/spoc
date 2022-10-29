@@ -8,6 +8,8 @@ from typing import Union
 import pandas as pd
 import numpy as np
 from scipy.sparse import coo_matrix
+from sparse import COO
+from spoc.pixels import PersistedPixels
 import duckdb
 import bioframe
 import dask.dataframe as dd
@@ -67,7 +69,7 @@ class Triplet1DSnippingStrategy(SnippingStrategy):
                 FLOOR((p.start_1 - t.pos)/{bin_size}::float) as offset_1,
                 FLOOR((p.start_2 - t.pos)/{bin_size}::float) as offset_2,
                 SUM(p.contact_count) as contacts
-            FROM pixel_frame as p
+            FROM {source_table} as p
             Inner JOIN {chunk_name} as t ON t.chrom = p.chrom
                 and
                     abs(FLOOR((p.start_1 - t.pos)/{bin_size}::float))::int <= {pixel_offset}
@@ -100,7 +102,7 @@ class Triplet1DSnippingStrategy(SnippingStrategy):
     @lru_cache(maxsize=100)
     def _create_expected_for_cis_snipping(
         self,
-        pixels: pd.DataFrame,
+        pixels: Union[pd.DataFrame, PersistedPixels],
         half_window_size: int,
         position_slack: int,
         relative_offset: int,
@@ -112,7 +114,7 @@ class Triplet1DSnippingStrategy(SnippingStrategy):
 
     def snip(
         self,
-        pixels: pd.DataFrame,
+        pixels: Union[pd.DataFrame, PersistedPixels],
         trans_positions: pd.DataFrame,
         half_window_size: int,
         position_slack: Union[int, None] = None,
@@ -170,7 +172,7 @@ class Triplet1DSnippingStrategy(SnippingStrategy):
     def _snip_cis_window(
         self,
         chunk: pd.DataFrame,
-        pixels: pd.DataFrame,
+        pixels: Union[pd.DataFrame, PersistedPixels],
         half_window_size: int,
         position_slack: int,
         relative_offset: int,
@@ -182,11 +184,16 @@ class Triplet1DSnippingStrategy(SnippingStrategy):
         local_connection = duckdb.connect()
         chunk_name = f"local_chunk_{uuid4().hex}"
         local_connection.register(chunk_name, chunk)
-        # register pixels
-        local_connection.register('pixel_frame', pixels)
+        # register pixels if needed
+        if isinstance(pixels, PersistedPixels):
+            source_table = f'read_parquet({pixels.path})'
+        else:
+            source_table = 'pixel_frame'
+            local_connection.register(source_table, pixels)
         # do snipping
         return local_connection.execute(
             self.CIS_SNIPPING_QUERY.format(
+                source_table=source_table,
                 pixel_offset=pixel_offset,
                 cis_selector_offset=cis_selector_offset,
                 bin_size=self._bin_size,
