@@ -1,18 +1,16 @@
 """Snipping strategies for Snipper that implement specific snipping functionality"""
 from abc import ABC, abstractmethod
 from functools import lru_cache, partial
-from multiprocess.pool import ThreadPool
 from uuid import uuid4
 from enum import Enum
 from typing import Union
+from multiprocess.pool import ThreadPool
 import pandas as pd
 import numpy as np
-from scipy.sparse import coo_matrix
 from sparse import COO
-from spoc.pixels import PersistedPixels
 import duckdb
 import bioframe
-import dask.dataframe as dd
+from spoc.pixels import PersistedPixels
 
 
 class SnippingValues(Enum):
