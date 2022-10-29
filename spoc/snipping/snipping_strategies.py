@@ -14,20 +14,23 @@ import duckdb
 import bioframe
 import dask.dataframe as dd
 
+
 class SnippingValues(Enum):
     """Which values the snippet should consist of."""
+
     ICCF = 0
     OBSEXP = 1
 
+
 class SnippingStrategy(ABC):
     """Defines interface for snipping strategy"""
-    
-    def __init__(self, bin_size:int, snipping_value: SnippingValues, **kwargs):
+
+    def __init__(self, bin_size: int, snipping_value: SnippingValues, **kwargs):
         """Defines the values that should be snipped"""
         self._snipping_value = snipping_value
         if snipping_value == SnippingValues.OBSEXP:
-            self._n_random_regions = kwargs['n_random_regions']
-            self._genome = kwargs['genome']
+            self._n_random_regions = kwargs["n_random_regions"]
+            self._genome = kwargs["genome"]
         self._bin_size = bin_size
 
     @staticmethod
@@ -35,7 +38,7 @@ class SnippingStrategy(ABC):
         """Number of coordinates will not be exactly returned, due to rounding
         when distributing to chromosomes."""
         chrom_sizes = bioframe.fetch_chromsizes(genome)
-        chrom_fractions = chrom_sizes/chrom_sizes.sum()
+        chrom_fractions = chrom_sizes / chrom_sizes.sum()
         # accumulate output
         chrom_frames = []
         for chrom in chrom_sizes.index:
@@ -43,13 +46,10 @@ class SnippingStrategy(ABC):
             number_to_choose = int(chrom_fractions[chrom] * n_coordinates)
             starts = np.random.randint(0, max_coord, size=number_to_choose)
             ends = starts + length
-            chrom_frames.append(pd.DataFrame({
-                "chrom": chrom,
-                "start": starts,
-                "end":ends 
-            }))
+            chrom_frames.append(
+                pd.DataFrame({"chrom": chrom, "start": starts, "end": ends})
+            )
         return pd.concat(chrom_frames)
-
 
     @abstractmethod
     def snip(self, *args, **kwargs) -> pd.DataFrame:
@@ -63,36 +63,27 @@ class Triplet1DSnippingStrategy(SnippingStrategy):
     are assumed to contain contacts form the first sister chromatid."""
 
     CIS_SNIPPING_QUERY = """
-        WITH individual_regions as (
-            SELECT
-                t.position_id,
-                FLOOR((p.start_1 - t.pos)/{bin_size}::float) as offset_1,
-                FLOOR((p.start_2 - t.pos)/{bin_size}::float) as offset_2,
-                SUM(p.contact_count) as contacts
-            FROM {source_table} as p
-            Inner JOIN {chunk_name} as t ON t.chrom = p.chrom
-                and
-                    abs(FLOOR((p.start_1 - t.pos)/{bin_size}::float))::int <= {pixel_offset}
-                and
-                    abs(FLOOR((p.start_2 - t.pos)/{bin_size}::float))::int <= {pixel_offset}
-                and
-                    abs(FLOOR((p.start_3 - (t.pos + {relative_offset}))/{bin_size}::float))::int <= {cis_selector_offset}
-            GROUP BY 1,2,3
-        )
-
         SELECT
-            ind.offset_1 as offset_1,
-            ind.offset_2 as offset_2,
-            AVG(ind.contacts) as contacts
-        FROM individual_regions as ind
-        GROUP BY 1, 2
+            t.position_id,
+            FLOOR((p.start_1 - t.pos)/{bin_size}::float) as offset_1,
+            FLOOR((p.start_2 - t.pos)/{bin_size}::float) as offset_2,
+            SUM(p.contact_count) as contacts
+        FROM {source_table} as p
+        Inner JOIN {chunk_name} as t ON t.chrom = p.chrom
+            and
+                abs(FLOOR((p.start_1 - t.pos)/{bin_size}::float))::int <= {pixel_offset}
+            and
+                abs(FLOOR((p.start_2 - t.pos)/{bin_size}::float))::int <= {pixel_offset}
+            and
+                abs(FLOOR((p.start_3 - (t.pos + {relative_offset}))/{bin_size}::float))::int <= {cis_selector_offset}
+        GROUP BY 1,2,3
     """
 
     def _align_positions_to_bins(self, trans_positions: pd.DataFrame):
         """Adds index and round positions to bins"""
         if "pos" not in trans_positions.columns:
             trans_positions = trans_positions.assign(
-                pos=lambda df_: (df_.start + df_.end)//2
+                pos=lambda df_: (df_.start + df_.end) // 2
             )
         return trans_positions.assign(
             position_id=lambda df_: range(len(df_)),
@@ -107,10 +98,19 @@ class Triplet1DSnippingStrategy(SnippingStrategy):
         position_slack: int,
         relative_offset: int,
         threads: int = 2,
-        
     ):
-        random_regions = self._get_random_coordinates(self._n_random_regions, length=100, genome=self._genome)
-        return self.snip(pixels, random_regions, half_window_size, position_slack, relative_offset, threads=threads, override_snipping_value=True)
+        random_regions = self._get_random_coordinates(
+            self._n_random_regions, length=100, genome=self._genome
+        )
+        return self.snip(
+            pixels,
+            random_regions,
+            half_window_size,
+            position_slack,
+            relative_offset,
+            threads=threads,
+            override_snipping_value=True,
+        )
 
     def snip(
         self,
@@ -120,7 +120,7 @@ class Triplet1DSnippingStrategy(SnippingStrategy):
         position_slack: Union[int, None] = None,
         relative_offset: int = 0,
         threads: int = 2,
-        override_snipping_value: bool = False
+        override_snipping_value: bool = False,
     ):
         """Snips cis sister windows based on supplied trans positions."""
         # default is to take central pixel
@@ -130,7 +130,7 @@ class Triplet1DSnippingStrategy(SnippingStrategy):
         with ThreadPool(processes=threads) as pool:
             result = pool.map(
                 partial(
-                    self._snip_cis_window,
+                    self._snip_cis_windows,
                     pixels=pixels,
                     half_window_size=half_window_size,
                     position_slack=position_slack,
@@ -138,38 +138,47 @@ class Triplet1DSnippingStrategy(SnippingStrategy):
                 ),
                 np.array_split(self._align_positions_to_bins(trans_positions), threads),
             )
-        # reduce result
-        reduced = (
-            pd.concat(result)
-            .groupby(["offset_1", "offset_2"])
-            .mean()
-            .reset_index()
-            .assign(
-                array_index_1=lambda df_: df_.offset_1
-                + (half_window_size // self._bin_size),
-                array_index_2=lambda df_: df_.offset_2
-                + (half_window_size // self._bin_size),
-            )
-        )
-        # construct dense matrix
+        # construct sparse matrix to be reduced -> this is needed to fill in missing 0s
         output_size = 2 * (half_window_size // self._bin_size) + 1
-        dense_matrix = coo_matrix(
-            (
-                reduced.contacts.values,
-                (reduced.array_index_1.values, reduced.array_index_2.values),
-            ),
-            shape=(output_size, output_size),
-        ).toarray()
+        concat_data = pd.concat(result).assign(
+            array_index_0=lambda df_: (df_.position_id).astype(int),
+            array_index_1=lambda df_: (
+                df_.offset_1 + (half_window_size // self._bin_size)
+            ).astype(int),
+            array_index_2=lambda df_: (
+                df_.offset_2 + (half_window_size // self._bin_size)
+            ).astype(int),
+        )
+        dense_matrix = (
+            COO(
+                (
+                    concat_data.array_index_0.values,
+                    concat_data.array_index_1.values,
+                    concat_data.array_index_2.values,
+                ),
+                concat_data.contacts.values,
+                shape=(len(trans_positions), output_size, output_size),
+            )
+            .mean(axis=0)
+            .todense()
+        ) 
         # check whether expected is needed
-        if (self._snipping_value == SnippingValues.OBSEXP) and (not override_snipping_value):
-            expected  = self._create_expected_for_cis_snipping(pixels, half_window_size, position_slack, relative_offset, threads)
-            output = dense_matrix/expected
+        if (self._snipping_value == SnippingValues.OBSEXP) and (
+            not override_snipping_value
+        ):
+            expected = self._create_expected_for_cis_snipping(
+                pixels, half_window_size, position_slack, relative_offset, threads
+            )
+            output = dense_matrix / expected
         else:
             output = dense_matrix
-        genomic_extent = [f"{i * self._bin_size//1000 - half_window_size//1000} kb" for i in range(output_size)]
+        genomic_extent = [
+            f"{i * self._bin_size//1000 - half_window_size//1000} kb"
+            for i in range(output_size)
+        ]
         return pd.DataFrame(output, columns=genomic_extent, index=genomic_extent)
 
-    def _snip_cis_window(
+    def _snip_cis_windows(
         self,
         chunk: pd.DataFrame,
         pixels: Union[pd.DataFrame, PersistedPixels],
@@ -188,7 +197,7 @@ class Triplet1DSnippingStrategy(SnippingStrategy):
         if isinstance(pixels, PersistedPixels):
             source_table = f"read_parquet('{pixels.path}')"
         else:
-            source_table = 'pixel_frame'
+            source_table = "pixel_frame"
             local_connection.register(source_table, pixels)
         # do snipping
         return local_connection.execute(

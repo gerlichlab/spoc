@@ -109,7 +109,9 @@ class HigherOrderContactSchema:
         evaluation"""
         for column in data_frame.columns:
             if column not in self._schema.columns:
-                raise pa.errors.SchemaError(self._schema, data_frame, "Header is invalid!")
+                raise pa.errors.SchemaError(
+                    self._schema, data_frame, "Header is invalid!"
+                )
 
     def validate(
         self, data_frame: Union[pd.DataFrame, dd.DataFrame]

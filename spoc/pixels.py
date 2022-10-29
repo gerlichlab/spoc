@@ -8,8 +8,8 @@ import pyranges as pr
 from spoc.models import HigherOrderContactSchema
 
 
-class PersistedPixels():
-    """Wrapper for path to pixel parquet file. 
+class PersistedPixels:
+    """Wrapper for path to pixel parquet file.
     Responsible for validation. This breaks the IO vs domain logic layer,
     but improves performance of pileup."""
 
@@ -18,7 +18,7 @@ class PersistedPixels():
         if not Path(path).exists():
             raise ValueError(f"Path: {path} does not exist!")
         self._path = path
-    
+
     @property
     def path(self):
         return self._path
@@ -213,6 +213,7 @@ class GenomicBinner:
                 )
             )
         )
+
     @staticmethod
     def _assign_midpoints(contacts: dd.DataFrame) -> dd.DataFrame:
         """Collapses start-end to a middle position"""
@@ -254,7 +255,7 @@ class GenomicBinner:
             ),
         )
         # compute pixels -> assumption is that pixels fit into memory after computing
-        # TODO: think about how to achieve sorting without computing. 
+        # TODO: think about how to achieve sorting without computing.
         # Maybe wait for https://github.com/dask/dask/issues/958
         pixels = (
             triplet_bins.groupby(

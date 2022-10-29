@@ -32,8 +32,12 @@ class FragmentAnnotator:
     def _assign_label_state(self, data_frame: pd.DataFrame) -> pd.Series:
         """helper method that annotates a fragment data frame"""
         read_codes = data_frame.read_name.str.cat(
-            [data_frame.chrom, data_frame.start.astype("str"),
-                data_frame.end.astype("str")], sep="_"
+            [
+                data_frame.chrom,
+                data_frame.start.astype("str"),
+                data_frame.end.astype("str"),
+            ],
+            sep="_",
         )
         return pd.Series(read_codes.apply(self._is_read_labelled))
 

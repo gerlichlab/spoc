@@ -25,7 +25,7 @@ requirements = [
     "pyranges>=0.0.117",
     "duckdb==0.3.4",
     "bioframe==0.3.3",
-    "sparse==0.13.0"
+    "sparse==0.13.0",
 ]
 
 test_requirements = [
