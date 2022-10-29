@@ -90,6 +90,35 @@ class Triplet1DSnippingStrategy(SnippingStrategy):
             pos=lambda df_: (df_.pos // self._bin_size) * self._bin_size,
         )
 
+    def _get_array_coordinates_from_offset(self, offset:pd.Series, half_window_size:int):
+        """Transform offsets to start from 0 to be used as array index"""
+        return (offset + (half_window_size // self._bin_size)).astype(int).values
+
+    def _reduce_snipping_frame(self, snips: pd.DataFrame, half_window_size: int):
+        """Takes concat result of snipping and reduces
+        it along the region dimension"""
+        output_size = 2 * (half_window_size // self._bin_size) + 1
+        return (
+            COO(
+                (
+                    snips.position_id.values,
+                    self._get_array_coordinates_from_offset(snips.offset_1, half_window_size),
+                    self._get_array_coordinates_from_offset(snips.offset_2, half_window_size),
+                ),
+                snips.contacts.values,
+                shape=(snips.position_id.nunique(), output_size, output_size),
+            )
+            .mean(axis=0)
+            .todense()
+        )
+
+    def _get_genomic_extent(self, half_window_size: int):
+        output_size = 2 * (half_window_size // self._bin_size) + 1
+        return  [
+            f"{i * self._bin_size//1000 - half_window_size//1000} kb"
+            for i in range(output_size)
+        ]
+
     @lru_cache(maxsize=100)
     def _create_expected_for_cis_snipping(
         self,
@@ -138,30 +167,8 @@ class Triplet1DSnippingStrategy(SnippingStrategy):
                 ),
                 np.array_split(self._align_positions_to_bins(trans_positions), threads),
             )
-        # construct sparse matrix to be reduced -> this is needed to fill in missing 0s
-        output_size = 2 * (half_window_size // self._bin_size) + 1
-        concat_data = pd.concat(result).assign(
-            array_index_0=lambda df_: (df_.position_id).astype(int),
-            array_index_1=lambda df_: (
-                df_.offset_1 + (half_window_size // self._bin_size)
-            ).astype(int),
-            array_index_2=lambda df_: (
-                df_.offset_2 + (half_window_size // self._bin_size)
-            ).astype(int),
-        )
-        dense_matrix = (
-            COO(
-                (
-                    concat_data.array_index_0.values,
-                    concat_data.array_index_1.values,
-                    concat_data.array_index_2.values,
-                ),
-                concat_data.contacts.values,
-                shape=(len(trans_positions), output_size, output_size),
-            )
-            .mean(axis=0)
-            .todense()
-        ) 
+        # reduce along positions
+        dense_matrix = self._reduce_snipping_frame(pd.concat(result), half_window_size)
         # check whether expected is needed
         if (self._snipping_value == SnippingValues.OBSEXP) and (
             not override_snipping_value
@@ -172,10 +179,7 @@ class Triplet1DSnippingStrategy(SnippingStrategy):
             output = dense_matrix / expected
         else:
             output = dense_matrix
-        genomic_extent = [
-            f"{i * self._bin_size//1000 - half_window_size//1000} kb"
-            for i in range(output_size)
-        ]
+        genomic_extent = self._get_genomic_extent(half_window_size)
         return pd.DataFrame(output, columns=genomic_extent, index=genomic_extent)
 
     def _snip_cis_windows(
