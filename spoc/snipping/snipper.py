@@ -1,1 +1,15 @@
 """Snipping class that orchestrates IO und snipping strategies to implement snipping behavior"""
+from typing import List, Union, Dict
+import pandas as pd
+from spoc.snipping.snipping_strategies import SnippingStrategy
+from spoc.pixels import PersistedPixels
+
+class Snipper():
+
+    def __init__(self, strategies: List[SnippingStrategy]) -> None:
+        self._strategies = strategies
+    
+    def snip(self, pixels: Union[str, pd.DataFrame], snip_positions: pd.DataFrame, threads:int=2) -> Dict[str, pd.DataFrame]:
+        if isinstance(pixels, str):
+            pixels = PersistedPixels(pixels)
+        return [strategy.snip(pixels, snip_positions,threads) for strategy in self._strategies]

@@ -49,6 +49,13 @@ class SnippingStrategy(ABC):
             )
         return pd.concat(chrom_frames)
 
+    def __repr__(self) -> str:
+        return f"<Triplet1DSnippingStrategy>"
+
+    @abstractmethod
+    def get_params():
+        raise NotImplementedError
+
     @abstractmethod
     def snip(self,
         pixels: Union[pd.DataFrame, PersistedPixels],
@@ -88,6 +95,15 @@ class Triplet1DSnippingStrategy(SnippingStrategy):
         self._position_slack:int = kwargs.get("position_slack", self._bin_size) # default is binsize
         self._relative_offset:int = kwargs.get("relative_offset", 0)
         self._expected = None
+
+    def get_params(self) -> dict:
+        return {
+            "bin_size": self._bin_size,
+            "half_window_size": self._half_window_size,
+            "snipping_value": self._snipping_value,
+            "position_slack": self._position_slack,
+            "relative_offset": self._relative_offset
+        }
 
     def _align_positions_to_bins(self, trans_positions: pd.DataFrame):
         """Adds index and round positions to bins"""
