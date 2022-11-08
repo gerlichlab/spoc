@@ -36,6 +36,7 @@ class GenomicBinner:
         same_chromosome: bool = False,
         contact_order: int = 3,
         sort_sisters: bool = True,
+        upper_triangular: bool = False
     ) -> None:
         self._bins = self._create_bins(chrom_sizes, bin_size)
         self._same_chromosome = same_chromosome
@@ -46,6 +47,7 @@ class GenomicBinner:
         self._contact_order = contact_order
         self._input_schema = HigherOrderContactSchema(contact_order)
         self._sort_sisters = sort_sisters
+        self._upper_triangular = upper_triangular
 
     @staticmethod
     def _create_bins(chrom_sizes: pd.Series, bin_size: int) -> pr.PyRanges:
@@ -213,6 +215,30 @@ class GenomicBinner:
                 )
             )
         )
+
+    def _flip_upper_triangular(self, contacts: dd.DataFrame) -> dd.DataFrame:
+        """Flips contacts to upper triangular such that
+        start_1 <= start_2. This is a Triplet specific implementation.
+        TODO: Think about what this means for other contact order.
+        Symmetry is not trivial for higher dimensional matrices (see 
+        https://math.stackexchange.com/questions/615119/how-to-generalize-symmetry-for-higher-dimensional-arrays).
+        Ideally, we would have a contact class that has a notion of symmetry, and flipping would be offloaded
+        to that contact class. For example, non-sister sensitive triplets would have full symmetry, i.e. permutations
+        of indices do not matter. However, sister-sensitive triplets have a more restricted notion of symmetry since
+        only permutation of the first two indices leaves information unchanged. This function implements contact flipping
+        based on the latter notion of symmetry.
+        """
+        # create boolean indexer
+        is_lower_triangular = (contacts.chrom_1 == contacts.chrom_2) & (contacts.start_1 > contacts.start_2)
+        # select and flip
+        lower_flipped = contacts.loc[is_lower_triangular, :].rename(columns={"start_1": "start_2", "start_2": "start_1"})
+        return dd.concat(
+            (
+                contacts.loc[~is_lower_triangular, :], # upper triangular
+                lower_flipped
+            )
+        )
+
 
     @staticmethod
     def _assign_midpoints(contacts: dd.DataFrame) -> dd.DataFrame:
