@@ -1,6 +1,6 @@
 """Snipping strategies for Snipper that implement specific snipping functionality"""
 from abc import ABC, abstractmethod
-from functools import  partial
+from functools import partial
 from enum import Enum
 from typing import Union
 from multiprocess.pool import ThreadPool
@@ -22,13 +22,19 @@ class SnippingValues(Enum):
 class SnippingStrategy(ABC):
     """Defines interface for snipping strategy"""
 
-    def __init__(self, bin_size: int, half_window_size: int, snipping_value: SnippingValues, **kwargs):
+    def __init__(
+        self,
+        bin_size: int,
+        half_window_size: int,
+        snipping_value: SnippingValues,
+        **kwargs,
+    ):
         """Defines the values that should be snipped"""
         self._snipping_value = snipping_value
         self._half_window_size = half_window_size
         if snipping_value == SnippingValues.OBSEXP:
-            self._n_random_regions:int = kwargs.get("n_random_regions", 5000)
-            self._genome:str = kwargs.get("genome", "hg19")
+            self._n_random_regions: int = kwargs.get("n_random_regions", 5000)
+            self._genome: str = kwargs.get("genome", "hg19")
         self._bin_size = bin_size
 
     @staticmethod
@@ -57,11 +63,13 @@ class SnippingStrategy(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def snip(self,
+    def snip(
+        self,
         pixels: Union[pd.DataFrame, PersistedPixels],
         snip_positions: pd.DataFrame,
         threads: int = 2,
-        override_snipping_value: bool = False,) -> pd.DataFrame:
+        override_snipping_value: bool = False,
+    ) -> pd.DataFrame:
         """Do snipping"""
         raise NotImplementedError
 
@@ -89,11 +97,19 @@ class Triplet1DSnippingStrategy(SnippingStrategy):
         GROUP BY 1,2,3
     """
 
-    def __init__(self, bin_size: int, half_window_size: int, snipping_value: SnippingValues, **kwargs):
+    def __init__(
+        self,
+        bin_size: int,
+        half_window_size: int,
+        snipping_value: SnippingValues,
+        **kwargs,
+    ):
         """Override constructor to add additional parameters."""
         super().__init__(bin_size, half_window_size, snipping_value, **kwargs)
-        self._position_slack:int = kwargs.get("position_slack", self._bin_size) # default is binsize
-        self._relative_offset:int = kwargs.get("relative_offset", 0)
+        self._position_slack: int = kwargs.get(
+            "position_slack", self._bin_size
+        )  # default is binsize
+        self._relative_offset: int = kwargs.get("relative_offset", 0)
         self._expected = None
 
     def get_params(self) -> dict:
@@ -102,7 +118,7 @@ class Triplet1DSnippingStrategy(SnippingStrategy):
             "half_window_size": self._half_window_size,
             "snipping_value": self._snipping_value,
             "position_slack": self._position_slack,
-            "relative_offset": self._relative_offset
+            "relative_offset": self._relative_offset,
         }
 
     def _align_positions_to_bins(self, trans_positions: pd.DataFrame):
@@ -116,7 +132,7 @@ class Triplet1DSnippingStrategy(SnippingStrategy):
             pos=lambda df_: (df_.pos // self._bin_size) * self._bin_size,
         )
 
-    def _get_array_coordinates_from_offset(self, offset:pd.Series):
+    def _get_array_coordinates_from_offset(self, offset: pd.Series):
         """Transform offsets to start from 0 to be used as array index"""
         return (offset + (self._half_window_size // self._bin_size)).astype(int).values
 
@@ -141,7 +157,7 @@ class Triplet1DSnippingStrategy(SnippingStrategy):
 
     def _get_genomic_extent(self):
         output_size = 2 * (self._half_window_size // self._bin_size) + 1
-        return  [
+        return [
             f"{i * self._bin_size//1000 - self._half_window_size//1000} kb"
             for i in range(output_size)
         ]
@@ -187,9 +203,7 @@ class Triplet1DSnippingStrategy(SnippingStrategy):
         if (self._snipping_value == SnippingValues.OBSEXP) and (
             not override_snipping_value
         ):
-            expected = self._create_expected_for_cis_snipping(
-                pixels, threads
-            )
+            expected = self._create_expected_for_cis_snipping(pixels, threads)
             output = dense_matrix / expected
         else:
             output = dense_matrix
@@ -197,16 +211,14 @@ class Triplet1DSnippingStrategy(SnippingStrategy):
         return pd.DataFrame(output, columns=genomic_extent, index=genomic_extent)
 
     def _snip_cis_windows(
-        self,
-        chunk: pd.DataFrame,
-        pixels: Union[pd.DataFrame, PersistedPixels]
+        self, chunk: pd.DataFrame, pixels: Union[pd.DataFrame, PersistedPixels]
     ):
         # convert parameters into pixel units
         pixel_offset = self._half_window_size // self._bin_size
         cis_selector_offset = self._position_slack // self._bin_size
         # create local connection. No need to close it, is closed when reference to it goes out of scope
         local_connection = duckdb.connect()
-        local_connection.register('chunk', chunk)
+        local_connection.register("chunk", chunk)
         # register pixels if needed
         if isinstance(pixels, PersistedPixels):
             source_table = f"read_parquet('{pixels.path}')"

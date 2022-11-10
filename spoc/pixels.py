@@ -36,7 +36,7 @@ class GenomicBinner:
         same_chromosome: bool = False,
         contact_order: int = 3,
         sort_sisters: bool = True,
-        flip_contacts: bool = False
+        flip_contacts: bool = False,
     ) -> None:
         self._bins = self._create_bins(chrom_sizes, bin_size)
         self._same_chromosome = same_chromosome
@@ -220,7 +220,7 @@ class GenomicBinner:
         """Flips contacts to upper triangular such that
         start_1 <= start_2. This is a Triplet specific implementation.
         TODO: Think about what this means for other contact order.
-        Symmetry is not trivial for higher dimensional matrices (see 
+        Symmetry is not trivial for higher dimensional matrices (see
         https://math.stackexchange.com/questions/615119/how-to-generalize-symmetry-for-higher-dimensional-arrays).
         Ideally, we would have a contact class that has a notion of symmetry, and flipping would be offloaded
         to that contact class. For example, non-sister sensitive triplets would have full symmetry, i.e. permutations
@@ -229,19 +229,21 @@ class GenomicBinner:
         based on the latter notion of symmetry.
         """
         # create boolean indexer
-        is_lower_triangular = (contacts.chrom_1 == contacts.chrom_2) & (contacts.start_1 > contacts.start_2)
-        # select and flip
-        lower_flipped = contacts.loc[is_lower_triangular, :]\
-                        .rename(
-                            columns={"start_1": "start_2", "start_2": "start_1", "end_1": "end_2", "end_2": "end_1"}
-                            )
-        return dd.concat(
-            [
-                contacts.loc[~is_lower_triangular, :], # upper triangular
-                lower_flipped
-            ]
+        is_lower_triangular = (contacts.chrom_1 == contacts.chrom_2) & (
+            contacts.start_1 > contacts.start_2
         )
-
+        # select and flip
+        lower_flipped = contacts.loc[is_lower_triangular, :].rename(
+            columns={
+                "start_1": "start_2",
+                "start_2": "start_1",
+                "end_1": "end_2",
+                "end_2": "end_1",
+            }
+        )
+        return dd.concat(
+            [contacts.loc[~is_lower_triangular, :], lower_flipped]  # upper triangular
+        )
 
     @staticmethod
     def _assign_midpoints(contacts: dd.DataFrame) -> dd.DataFrame:
@@ -265,7 +267,9 @@ class GenomicBinner:
                 contacts
             )  # TODO: move this into contacts class?
         if self._flip_contacts:
-                contacts = self._flip_symmetric_contacts(contacts) # TODO: move this into contact class
+            contacts = self._flip_symmetric_contacts(
+                contacts
+            )  # TODO: move this into contact class
         contacts_w_midpoints = self._assign_midpoints(
             contacts
         )  # TODO: move this into contacts class?
