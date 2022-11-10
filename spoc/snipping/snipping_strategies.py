@@ -132,6 +132,7 @@ class Triplet1DSnippingStrategy(SnippingStrategy):
                     self._get_array_coordinates_from_offset(snips.offset_2),
                 ),
                 snips.contacts.values,
+                # TODO: fix shape such that if ids are missing from the end of the input, input shape will not be affected
                 shape=(np.max(snips.position_id) + 1, output_size, output_size),
             )
             .mean(axis=0)
