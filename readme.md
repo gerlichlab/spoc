@@ -15,7 +15,7 @@ pip install git+https://github.com/gerlichlab/spoc
 
 To get started, have a look at our example notebooks, that cover different aspects of spoc's capabilities:
 
-- TODO
+- [Snipping interface](./notebooks/snipping.ipynb)
 
 ## Documentation
 
