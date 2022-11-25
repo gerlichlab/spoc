@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 from itertools import product
 import pytest
-from spoc.snipping.snipping_strategies import Triplet1DSnippingStrategy, SnippingValues
+from spoc.snipping.snipping_strategies import TripletCCT1DSnippingStrategy, SnippingValues
 from spoc.pixels import PersistedPixels
 
 # Fixtures
@@ -323,7 +323,7 @@ def two_regions():
 
 @pytest.fixture
 def standard_snipping_strategy():
-    return Triplet1DSnippingStrategy(
+    return TripletCCT1DSnippingStrategy(
         bin_size=50_000,
         half_window_size=100_000,
         snipping_value=SnippingValues.ICCF,
@@ -332,7 +332,7 @@ def standard_snipping_strategy():
 
 @pytest.fixture
 def standard_snipping_strategy_from_string():
-    return Triplet1DSnippingStrategy(
+    return TripletCCT1DSnippingStrategy(
         bin_size=50_000,
         half_window_size=100_000,
         snipping_value="iccf",
@@ -342,7 +342,7 @@ def standard_snipping_strategy_from_string():
 
 @pytest.fixture
 def center_snipping_strategy():
-    return Triplet1DSnippingStrategy(
+    return TripletCCT1DSnippingStrategy(
         bin_size=50_000,
         half_window_size=100_000,
         snipping_value=SnippingValues.ICCF,
@@ -352,7 +352,7 @@ def center_snipping_strategy():
 
 @pytest.fixture
 def center_snipping_strategy_w_offset():
-    return Triplet1DSnippingStrategy(
+    return TripletCCT1DSnippingStrategy(
         bin_size=50_000,
         half_window_size=100_000,
         snipping_value=SnippingValues.ICCF,
@@ -363,7 +363,7 @@ def center_snipping_strategy_w_offset():
 
 @pytest.fixture
 def standard_snipping_strategy_obs_exp(single_region):
-    return Triplet1DSnippingStrategy(
+    return TripletCCT1DSnippingStrategy(
         bin_size=50_000,
         half_window_size=100_000,
         snipping_value=SnippingValues.OBSEXP,
@@ -524,7 +524,7 @@ def test_one_region_center_selection_obs_exp(
     """Tests whether snipping of complete region with center selection produces correct results"""
     # patch random coordinates to return same coordinates
     mocker.patch.object(
-        Triplet1DSnippingStrategy, "_get_random_coordinates", return_value=single_region
+        TripletCCT1DSnippingStrategy, "_get_random_coordinates", return_value=single_region
     )
     # do the snipping
     result = standard_snipping_strategy_obs_exp.snip(

@@ -77,7 +77,7 @@ class SnippingStrategy(ABC):
         raise NotImplementedError
 
 
-class Triplet1DSnippingStrategy(SnippingStrategy):
+class TripletCCT1DSnippingStrategy(SnippingStrategy):
     """Implements snipping of 2D-regions based on a set of 1D-regions.
     The 1D-regions are taken from the last column of pixels, which is assumed
     to contain contacts on the second sister chromatid. The first two pixels
