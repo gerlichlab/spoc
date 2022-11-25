@@ -330,6 +330,15 @@ def standard_snipping_strategy():
         position_slack=1_000_000,
     )
 
+@pytest.fixture
+def standard_snipping_strategy_from_string():
+    return Triplet1DSnippingStrategy(
+        bin_size=50_000,
+        half_window_size=100_000,
+        snipping_value="iccf",
+        position_slack=1_000_000,
+    )
+
 
 @pytest.fixture
 def center_snipping_strategy():
@@ -383,6 +392,21 @@ def test_entire_region_with_complete_pixels(
         result.values, expected_entire_single_region_complete.values
     )
 
+
+def test_entire_region_with_complete_pixels_strategy_from_string(
+    complete_synthetic_pixels,
+    single_region,
+    expected_entire_single_region_complete,
+    standard_snipping_strategy_from_string,
+):
+    """Test whether snipping of an entire region produces correct results when pixels are supplied as dataframe
+    and strategy is instantiated with a string"""
+    # do the snipping
+    result = standard_snipping_strategy_from_string.snip(complete_synthetic_pixels, single_region)
+    # check result
+    np.testing.assert_array_almost_equal(
+        result.values, expected_entire_single_region_complete.values
+    )
 
 def test_entire_region_with_complete_pixels_from_file(
     complete_persisted_pixels,

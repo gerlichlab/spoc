@@ -26,10 +26,13 @@ class SnippingStrategy(ABC):
         self,
         bin_size: int,
         half_window_size: int,
-        snipping_value: SnippingValues,
+        snipping_value: Union[str, SnippingValues],
         **kwargs,
     ):
         """Defines the values that should be snipped"""
+        if isinstance(snipping_value, str):
+            # check whether string refers to a snipping strategy
+            snipping_value = SnippingValues[snipping_value.upper()]
         self._snipping_value = snipping_value
         self._half_window_size = half_window_size
         if snipping_value == SnippingValues.OBSEXP:

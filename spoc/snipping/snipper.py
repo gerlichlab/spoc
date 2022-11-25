@@ -14,7 +14,7 @@ class Snipper:
         pixels: Union[str, pd.DataFrame],
         snip_positions: pd.DataFrame,
         threads: int = 2,
-    ) -> Dict[str, pd.DataFrame]:
+    ) -> List[pd.DataFrame]:
         if isinstance(pixels, str):
             pixels = PersistedPixels(pixels)
         return [
