@@ -17,7 +17,7 @@ class PersistedPixels:
         # check whether path exists
         if not Path(path).exists():
             raise ValueError(f"Path: {path} does not exist!")
-        self._path = path
+        self._path = Path(path)
 
     @property
     def path(self):
