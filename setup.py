@@ -23,7 +23,7 @@ requirements = [
     "matplotlib>=3.5.3",
     "seaborn>=0.11.2",
     "pyranges>=0.0.117",
-    "duckdb==0.3.4",
+    "duckdb==0.6.1",
     "bioframe==0.3.3",
     "sparse==0.13.0",
     "multiprocess>=0.70.13"
