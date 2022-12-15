@@ -25,3 +25,4 @@ bioframe==0.3.3
 sparse==0.13.0
 pytest-mock==3.10.0
 multiprocess>=0.70.13
+scipy

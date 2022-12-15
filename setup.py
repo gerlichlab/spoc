@@ -26,7 +26,8 @@ requirements = [
     "duckdb==0.6.1",
     "bioframe==0.3.3",
     "sparse==0.13.0",
-    "multiprocess>=0.70.13"
+    "multiprocess>=0.70.13",
+    "scipy"
 ]
 
 test_requirements = [

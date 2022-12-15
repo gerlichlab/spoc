@@ -1,15 +1,19 @@
 """Snipping strategies for Snipper that implement specific snipping functionality"""
-from abc import ABC, abstractmethod
-from functools import partial
+from abc import ABC, abstractmethod, abstractproperty
 from enum import Enum
-from typing import Union
-from multiprocess.pool import ThreadPool
-import pandas as pd
-import numpy as np
-from sparse import COO
-import duckdb
+from functools import partial
+from typing import Dict, List, Tuple, Union
+
 import bioframe
-from spoc.pixels import PersistedPixels
+import duckdb
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import scipy.stats as ss
+from multiprocess.pool import ThreadPool
+from sparse import COO
+
+from ..pixels import PersistedPixels
 
 
 class SnippingValues(Enum):
@@ -238,3 +242,159 @@ class TripletCCT1DSnippingStrategy(SnippingStrategy):
                 relative_offset=self._relative_offset,
             )
         ).df()
+
+
+class TripletCCTSnippingStrategy(SnippingStrategy):
+    SNIPPING_QUERY = """
+        SELECT poi.position_id AS position_id,
+               CEIL((triplets.start_1 - poi.pos) / {binsize}::float)::int AS bin_1,
+               CEIL((triplets.start_2 - poi.pos) / {binsize}::float)::int AS bin_2,
+               CEIL((triplets.start_3 - poi.pos) / {binsize}::float)::int AS bin_3,
+               SUM(triplets.contact_count)::int AS contacts
+        FROM {triplets} AS triplets
+        INNER JOIN poi ON poi.chrom = triplets.chrom
+        WHERE poi.snip_start <= triplets.start_1 AND triplets.start_1 < poi.snip_end AND
+              poi.snip_start <= triplets.start_2 AND triplets.start_2 < poi.snip_end AND
+              poi.snip_start <= triplets.start_3 AND triplets.start_3 < poi.snip_end
+        GROUP BY position_id, bin_1, bin_2, bin_3
+    """
+    
+    REDUCTION_QUERY = abstractproperty()
+    
+    @abstractmethod
+    def _create_snip_regions(self, snip_positions: pd.DataFrame) -> pd.DataFrame:
+        pass
+    
+    @abstractmethod
+    def _get_snips(self, pixels, snip_regions, threads, **kwargs) -> pd.DataFrame:
+        pass
+    
+    @abstractmethod
+    def _flip_coords_by_strand(self, snip_regions: pd.DataFrame, snips: pd.DataFrame, strand: str):
+        pass
+    
+    @staticmethod
+    def _convert_coords(coords: pd.Series, strand: str) -> pd.Series:
+        if strand == "+":
+            return coords
+        elif strand == "-":
+            return -1 * coords
+        else:
+            raise ValueError
+
+    @abstractmethod
+    def _aggregate_snips(self, snips: pd.DataFrame):
+        pass
+
+    @abstractmethod
+    def _get_genomic_coordinates(self) -> List[str]:
+        pass
+
+
+class TripletCCT2DSnippingStrategy(TripletCCTSnippingStrategy):
+    REDUCTION_QUERY = """
+        SELECT position_id, bin_3, SUM(contacts)::int AS contacts
+        FROM full_snips
+        WHERE {offset_11} <= bin_1 AND bin_1 <= {offset_12} AND
+            {offset_21} <= bin_2 AND bin_2 <= {offset_22}
+        GROUP BY position_id, bin_3
+    """
+    
+    def __init__(self, bin_size, half_window_size, snipping_value, offsets, **kwargs):
+        super().__init__(bin_size, half_window_size, snipping_value, **kwargs)
+        self._offsets = self._parse_offsets(offsets)
+        self._expected = None
+    
+    def _parse_offsets(self, supplied_offsets) -> Dict[str, int]:
+        if isinstance(supplied_offsets, str):
+            raise NotImplementedError
+        elif isinstance(supplied_offsets, tuple):
+            offsets = dict.fromkeys(('offset_11', 'offset_12', 'offset_21', 'offset_22'))
+            if len(supplied_offsets) != 2:
+                raise ValueError
+            for i, offsets_set in enumerate(supplied_offsets):
+                if len(offsets_set) != 2:
+                    raise ValueError
+                offset_set_1, offset_set_2 = offsets_set
+                if not isinstance(offset_set_1, int) or not isinstance(offset_set_2, int):
+                    raise ValueError
+                offsets[f"offset_{i + 1}1"] = offset_set_1
+                offsets[f"offset_{i + 1}2"] = offset_set_2
+        else:
+            raise ValueError
+        return offsets
+        
+    def get_params(self):
+        return None
+
+    def snip(self, pixels, snip_positions, strand=None, threads=1, ci=.95) -> pd.DataFrame:
+        snip_regions = self._create_snip_regions(snip_positions)
+        snips = self._get_snips(pixels, snip_regions, threads)
+        if strand is not None:
+            self._flip_coords_by_strand(snip_regions, snips, strand)
+        avg_profile, ci_margin = self._aggregate_snips(snips, ci=ci)
+        return pd.DataFrame({'avg': avg_profile, 'margin': ci_margin}, index=self._get_genomic_coordinates())  # Maybe it would be better to put genomic coordinates as another column instead of index?
+    
+    def _create_snip_regions(self, snip_positions):
+        if "pos" not in snip_positions.columns:
+            snip_regions = snip_positions.assign(pos=lambda df_: (df_['start'] + df_['end']) // 2)
+        else:
+            snip_regions = snip_positions.copy()
+        snip_regions['snip_start'] = snip_regions['pos'] - self._half_window_size - self._bin_size + 1
+        snip_regions['snip_end'] = snip_regions['pos'] + self._half_window_size + 1
+        snip_regions['position_id'] = range(len(snip_regions))
+        return snip_regions
+    
+    def _get_snips(self, pixels, snip_regions, threads):
+        con = duckdb.connect()
+        con.execute(f"PRAGMA threads={threads};")
+        con.register('poi', snip_regions)
+        if isinstance(pixels, PersistedPixels):
+            triplets = f"read_parquet('{pixels.path}')"
+        else:
+            triplets = "pixels"
+            con.register(triplets, pixels)
+        snips_rel = con.query(self.SNIPPING_QUERY.format(triplets=triplets, binsize=self._bin_size))
+        reduced_rel = snips_rel.query('full_snips', self.REDUCTION_QUERY.format(offset_11=self._offsets['offset_11'] // self._bin_size,
+                                                                                offset_12=self._offsets['offset_12'] // self._bin_size,
+                                                                                offset_21=self._offsets['offset_21'] // self._bin_size,
+                                                                                offset_22=self._offsets['offset_22'] // self._bin_size))
+        return reduced_rel.df()
+    
+    def _flip_coords_by_strand(self, snip_regions: pd.DataFrame, snips: pd.DataFrame, strand: str):
+        if not strand in snip_regions.columns:
+            raise ValueError
+        regions_strands = dict(snip_regions[['position_id', strand]].to_records(index=False))
+        corrected_coords = snips.groupby('position_id', group_keys=False).apply(lambda df: self._convert_coords(df['bin_3'], regions_strands[df.name]))
+        snips['bin_3'] = corrected_coords
+
+    def _aggregate_snips(self, snips: pd.DataFrame, ci: float = .95) -> Tuple[pd.DataFrame, pd.DataFrame]:
+        snip_size = 2 * (self._half_window_size // self._bin_size) + 1
+        n_positions = snips['position_id'].nunique()
+        bin_1_snip_size = abs(self._offsets['offset_12'] // self._bin_size - self._offsets['offset_11'] // self._bin_size) + 1
+        bin_2_snip_size = abs(self._offsets['offset_22'] // self._bin_size - self._offsets['offset_21'] // self._bin_size) + 1
+        snip_groupsize = bin_1_snip_size * bin_2_snip_size
+        
+        half_window_bins = self._half_window_size // self._bin_size
+        
+        sparse_matrix = COO((snips['position_id'].values, snips['bin_3'].values + half_window_bins),
+                            data=snips['contacts'].values,
+                            shape=(n_positions, snip_size))
+
+        avg_profile = sparse_matrix.mean(axis=0).todense() / snip_groupsize
+        var_profile = sparse_matrix.var(axis=0).todense() / snip_groupsize ** 2
+        t_val = ss.t(n_positions - 1).isf((1 - ci) / 2)
+        ci_margin = t_val * (var_profile / n_positions) ** 0.5
+        return avg_profile, ci_margin
+    
+    def _get_genomic_coordinates(self):
+        output_size = 2 * (self._half_window_size // self._bin_size) + 1
+        return [f"{i * self._bin_size // 1000 - self._half_window_size // 1000} kb"
+                for i in range(output_size)]
+
+
+def plot_1d_profile(profile: pd.DataFrame, line_kwargs: Dict = {}, fill_kwargs: Dict = {}):
+    plt.plot(profile.index, profile['avg'], color='black', **line_kwargs)
+    plt.fill_between(profile.index, profile['avg'], profile['avg'] + profile['margin'], color='black', alpha=.3, **fill_kwargs)
+    plt.fill_between(profile.index, profile['avg'], profile['avg'] - profile['margin'], color='black', alpha=.3, **fill_kwargs)
+    plt.xticks(rotation=60)
