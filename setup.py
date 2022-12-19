@@ -4,7 +4,7 @@
 
 from setuptools import setup, find_packages
 
-with open("README.rst") as readme_file:
+with open("readme.md") as readme_file:
     readme = readme_file.read()
 
 with open("HISTORY.rst") as history_file:
@@ -12,18 +12,21 @@ with open("HISTORY.rst") as history_file:
 
 requirements = [
     "Click>=7.0",
-    "pandas==1.2.4",
+    "pandas==1.3.0",
     "numpy==1.19.0",
     "pandera>=0.9.0",
     "pydantic==1.9.1",
     "pyarrow==8.0.0",
     "hypothesis==6.52.4",
     "dask==2022.7.1",
-    "cooler==0.8.11",
     "ipykernel",
     "matplotlib>=3.5.3",
     "seaborn>=0.11.2",
     "pyranges>=0.0.117",
+    "duckdb==0.3.4",
+    "bioframe==0.3.3",
+    "sparse==0.13.0",
+    "multiprocess>=0.70.13"
 ]
 
 test_requirements = [

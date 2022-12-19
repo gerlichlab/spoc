@@ -1,10 +1,11 @@
 """Dataframe models"""
 
+from typing import Iterable, Union
 import pandera as pa
 import pandas as pd
-from typing import Iterable
+import dask.dataframe as dd
 
-fragment_schema = pa.DataFrameSchema(
+FragmentSchema = pa.DataFrameSchema(
     {
         "chrom": pa.Column(str),
         "start": pa.Column(int),
@@ -19,10 +20,10 @@ fragment_schema = pa.DataFrameSchema(
         "align_base_qscore": pa.Column(int),
         "pass_filter": pa.Column(bool),
     },
-    coerce=True
+    coerce=True,
 )
 
-annotated_fragment_schema = pa.DataFrameSchema(
+AnnotatedFragmentSchema = pa.DataFrameSchema(
     {
         "chrom": pa.Column(str),
         "start": pa.Column(int),
@@ -41,7 +42,7 @@ annotated_fragment_schema = pa.DataFrameSchema(
             str, checks=[pa.Check(lambda x: x.isin(["SisterA", "SisterB"]))]
         ),
     },
-    coerce=True
+    coerce=True,
 )
 
 # schemas for higher order contacts
@@ -77,10 +78,11 @@ class HigherOrderContactSchema:
                 self.common_fields,
                 **self._expand_contact_fields(range(1, number_fragments + 1)),
             ),
-            coerce=True
+            coerce=True,
         )
 
-    def _get_contact_fields(self):
+    @staticmethod
+    def _get_contact_fields():
         return {
             "chrom": pa.Column(str),
             "start": pa.Column(int),
@@ -94,7 +96,7 @@ class HigherOrderContactSchema:
             ),
         }
 
-    def _expand_contact_fields(self, expansions: Iterable = [1, 2, 3]) -> dict:
+    def _expand_contact_fields(self, expansions: Iterable = (1, 2, 3)) -> dict:
         """adds suffixes to fields"""
         output = {}
         for i in expansions:
@@ -102,6 +104,32 @@ class HigherOrderContactSchema:
                 output[key + f"_{i}"] = value
         return output
 
-    def validate(self, df: pd.DataFrame) -> None:
+    def validate_header(self, data_frame: Union[pd.DataFrame, dd.DataFrame]) -> None:
+        """Validates only header, needed to validate that dask taskgraph can be built before
+        evaluation"""
+        for column in data_frame.columns:
+            if column not in self._schema.columns:
+                raise pa.errors.SchemaError(
+                    self._schema, data_frame, "Header is invalid!"
+                )
+
+    def validate(
+        self, data_frame: Union[pd.DataFrame, dd.DataFrame]
+    ) -> Union[pd.DataFrame, dd.DataFrame]:
         """Validate multiway contact dataframe"""
-        return self._schema.validate(df)
+        return self._schema.validate(data_frame)
+
+
+# schemas for higher order pixels TODO: add higher order pixels or generic order
+
+TripletPixelSchema = pa.DataFrameSchema(
+    {
+        "chrom": pa.Column(str),
+        "start_1": pa.Column(int),
+        "start_2": pa.Column(int),
+        "start_3": pa.Column(int),
+        "count": pa.Column(int),
+        "corrected_count": pa.Column(float, required=False),
+    },
+    coerce=True,
+)

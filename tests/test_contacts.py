@@ -1,4 +1,3 @@
-from array import array
 import pytest
 import pandas as pd
 import pandera as pa
