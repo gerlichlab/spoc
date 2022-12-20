@@ -2,7 +2,7 @@
 from abc import ABC, abstractmethod, abstractproperty
 from enum import Enum
 from functools import partial
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import bioframe
 import duckdb
@@ -11,9 +11,15 @@ import numpy as np
 import pandas as pd
 import scipy.stats as ss
 from multiprocess.pool import ThreadPool
+import numpy.typing as npt
 from sparse import COO
 
 from ..pixels import PersistedPixels
+
+
+PixelsData = Union[pd.DataFrame, PersistedPixels]
+IntArray = npt.NDArray[np.int_]
+FloatArray = npt.NDArray[np.float_]
 
 
 class SnippingValues(Enum):
@@ -266,7 +272,7 @@ class TripletCCTSnippingStrategy(SnippingStrategy):
         pass
     
     @abstractmethod
-    def _get_snips(self, pixels, snip_regions, threads, **kwargs) -> pd.DataFrame:
+    def _get_snips(self, pixels: PixelsData, snip_regions: pd.DataFrame, threads: int, **kwargs) -> pd.DataFrame:
         pass
     
     @abstractmethod
@@ -299,43 +305,75 @@ class TripletCCT2DSnippingStrategy(TripletCCTSnippingStrategy):
             {offset_21} <= bin_2 AND bin_2 <= {offset_22}
         GROUP BY position_id, bin_3
     """
+    _selection_order: Dict[str, int] = {'u': 1, 'c': 2, 'd': 3}
     
-    def __init__(self, bin_size, half_window_size, snipping_value, offsets, **kwargs):
+    def __init__(self, bin_size: int, half_window_size: int, snipping_value: SnippingValues, offsets: Union[str, Tuple[Tuple[int, int], Tuple[int, int]]], **kwargs):
         super().__init__(bin_size, half_window_size, snipping_value, **kwargs)
         self._offsets = self._parse_offsets(offsets)
-        self._expected = None
     
-    def _parse_offsets(self, supplied_offsets) -> Dict[str, int]:
+    def _parse_offsets(self, supplied_offsets: Union[str, Tuple[Tuple[int, int], Tuple[int, int]]]) -> Dict[str, int]:
         if isinstance(supplied_offsets, str):
-            raise NotImplementedError
+            if len(supplied_offsets) != 2:
+                raise ValueError(f"The length of supplied offsets {supplied_offsets} is not equal to 2.")
+            first_coord, second_coord = supplied_offsets
+            if first_coord not in self._selection_order or second_coord not in self._selection_order:
+                raise ValueError(f"Valid characters for str offsets are {' '.join(self._selection_order.keys())}")
+            row_selection = max(first_coord, second_coord, key=lambda x: self._selection_order[x])  # careful here: it depends on the sorting order of the data
+            col_selection = min(first_coord, second_coord, key=lambda x: self._selection_order[x])
+            offset_11, offset_12 = self._get_offset_by_selection(row_selection)
+            offset_21, offset_22 = self._get_offset_by_selection(col_selection)
+            offsets = {"offset_11": offset_11, "offset_12": offset_12, "offset_21": offset_21, "offset_22": offset_22}
         elif isinstance(supplied_offsets, tuple):
             offsets = dict.fromkeys(('offset_11', 'offset_12', 'offset_21', 'offset_22'))
             if len(supplied_offsets) != 2:
-                raise ValueError
+                raise ValueError(f"The length of supplied offsets {supplied_offsets} is not equal to 2.")
             for i, offsets_set in enumerate(supplied_offsets):
                 if len(offsets_set) != 2:
-                    raise ValueError
+                    raise ValueError(f"The length of the pair {i} of offsets {offsets_set} is not equal to 2.")
                 offset_set_1, offset_set_2 = offsets_set
                 if not isinstance(offset_set_1, int) or not isinstance(offset_set_2, int):
-                    raise ValueError
+                    raise ValueError(f"One of the offsets {offset_set_1}, {offset_set_2} are not instances of int.")
                 offsets[f"offset_{i + 1}1"] = offset_set_1
                 offsets[f"offset_{i + 1}2"] = offset_set_2
         else:
-            raise ValueError
-        return offsets
+            raise ValueError(f"Supplied offsets {supplied_offsets} are not an instance of neither str nor tuple.")
+        return offsets  # We'd better have it as a dataclass
+    
+    def _get_offset_by_selection(self, selection: str) -> Tuple[int, int]:
+        pad_factor = self._half_window_size
+        small_pad_from_zero = round(pad_factor / 3)
+        if selection == 'u':
+            return (-pad_factor, -small_pad_from_zero)
+        elif selection == 'c':
+            return (-small_pad_from_zero, small_pad_from_zero)
+        elif selection == 'd':
+            return (small_pad_from_zero, pad_factor)
+        else:
+            raise ValueError('selection is not one of u, c, d')
         
     def get_params(self):
         return None
 
-    def snip(self, pixels, snip_positions, strand=None, threads=1, ci=.95) -> pd.DataFrame:
+    def snip(self, pixels: PixelsData, snip_positions: pd.DataFrame, strand: Optional[str] = None, threads: int = 1, ci: float = .95) -> pd.DataFrame:
         snip_regions = self._create_snip_regions(snip_positions)
+        n_regions = len(snip_regions)
         snips = self._get_snips(pixels, snip_regions, threads)
         if strand is not None:
             self._flip_coords_by_strand(snip_regions, snips, strand)
-        avg_profile, ci_margin = self._aggregate_snips(snips, ci=ci)
+        avg_obs_profile, var_obs_profile = self._aggregate_snips(snips, n_regions)
+        if self._snipping_value == SnippingValues.ICCF:
+            avg_profile = avg_obs_profile
+            ci_margin = self._ci_mean_1_sample(var_obs_profile, n_regions, ci=ci)
+        elif self._snipping_value == SnippingValues.OBSEXP:
+            avg_exp_profile, var_exp_profile = self._create_expected_snips(pixels, threads)
+            avg_profile = avg_obs_profile / avg_exp_profile
+            n_exp = self._n_random_regions
+            ci_margin = self._ci_ratio_mean_sample(avg_obs_profile, var_obs_profile, n_regions, avg_exp_profile, var_exp_profile, n_exp, ci)
+        else:
+            raise NotImplementedError
         return pd.DataFrame({'avg': avg_profile, 'margin': ci_margin}, index=self._get_genomic_coordinates())  # Maybe it would be better to put genomic coordinates as another column instead of index?
     
-    def _create_snip_regions(self, snip_positions):
+    def _create_snip_regions(self, snip_positions: pd.DataFrame) -> pd.DataFrame:
         if "pos" not in snip_positions.columns:
             snip_regions = snip_positions.assign(pos=lambda df_: (df_['start'] + df_['end']) // 2)
         else:
@@ -345,7 +383,7 @@ class TripletCCT2DSnippingStrategy(TripletCCTSnippingStrategy):
         snip_regions['position_id'] = range(len(snip_regions))
         return snip_regions
     
-    def _get_snips(self, pixels, snip_regions, threads):
+    def _get_snips(self, pixels: PixelsData, snip_regions: pd.DataFrame, threads: int) -> pd.DataFrame:
         con = duckdb.connect()
         con.execute(f"PRAGMA threads={threads};")
         con.register('poi', snip_regions)
@@ -361,40 +399,67 @@ class TripletCCT2DSnippingStrategy(TripletCCTSnippingStrategy):
                                                                                 offset_22=self._offsets['offset_22'] // self._bin_size))
         return reduced_rel.df()
     
-    def _flip_coords_by_strand(self, snip_regions: pd.DataFrame, snips: pd.DataFrame, strand: str):
+    def _flip_coords_by_strand(self, snip_regions: pd.DataFrame, snips: pd.DataFrame, strand: str) -> None:
         if not strand in snip_regions.columns:
             raise ValueError
         regions_strands = dict(snip_regions[['position_id', strand]].to_records(index=False))
         corrected_coords = snips.groupby('position_id', group_keys=False).apply(lambda df: self._convert_coords(df['bin_3'], regions_strands[df.name]))
         snips['bin_3'] = corrected_coords
 
-    def _aggregate_snips(self, snips: pd.DataFrame, ci: float = .95) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    def _aggregate_snips(self, snips: pd.DataFrame, n_regions: int) -> Tuple[FloatArray, FloatArray]:
         snip_size = 2 * (self._half_window_size // self._bin_size) + 1
-        n_positions = snips['position_id'].nunique()
         bin_1_snip_size = abs(self._offsets['offset_12'] // self._bin_size - self._offsets['offset_11'] // self._bin_size) + 1
         bin_2_snip_size = abs(self._offsets['offset_22'] // self._bin_size - self._offsets['offset_21'] // self._bin_size) + 1
         snip_groupsize = bin_1_snip_size * bin_2_snip_size
         
         half_window_bins = self._half_window_size // self._bin_size
-        
+
         sparse_matrix = COO((snips['position_id'].values, snips['bin_3'].values + half_window_bins),
                             data=snips['contacts'].values,
-                            shape=(n_positions, snip_size))
+                            shape=(n_regions, snip_size))
 
         avg_profile = sparse_matrix.mean(axis=0).todense() / snip_groupsize
         var_profile = sparse_matrix.var(axis=0).todense() / snip_groupsize ** 2
-        t_val = ss.t(n_positions - 1).isf((1 - ci) / 2)
-        ci_margin = t_val * (var_profile / n_positions) ** 0.5
-        return avg_profile, ci_margin
+        return avg_profile, var_profile
     
-    def _get_genomic_coordinates(self):
+    def _create_expected_snips(self, pixels: PixelsData, threads: int) -> Tuple[FloatArray, FloatArray]:
+        n_random = self._n_random_regions
+        len_random = 100
+        genome = self._genome
+        random_intervals = self._get_random_coordinates(n_random, len_random, genome)
+        random_snip_regions = self._create_snip_regions(random_intervals)
+        random_snips = self._get_snips(pixels, random_snip_regions, threads)
+        avg_random_profile, var_random_profile = self._aggregate_snips(random_snips, n_random)
+        return avg_random_profile, var_random_profile
+    
+    @staticmethod
+    def _ci_mean_1_sample(var_profile: FloatArray, n_obs: int, ci: float) -> FloatArray:
+        t_value = ss.t(n_obs - 1).isf((1 - ci) / 2)
+        ci_margin = t_value * (var_profile / n_obs) ** 0.5
+        return ci_margin
+    
+    @staticmethod
+    def _ci_mean_2_sample(var_obs: FloatArray, n_obs: int, var_exp: FloatArray, n_exp: int, ci: float) -> FloatArray:
+        t_value = ss.t(n_obs + n_exp - 2).isf((1 - ci) / 2)
+        ci_margin = t_value * np.sqrt(var_obs / n_obs + var_exp / n_exp)
+        return ci_margin
+    
+    @staticmethod
+    def _ci_ratio_mean_sample(avg_obs: FloatArray, var_obs: FloatArray, n_obs: int, avg_exp: FloatArray, var_exp: FloatArray, n_exp: int, ci: float) -> FloatArray:
+        t_value = ss.t(n_obs + n_exp - 2).isf((1 - ci) / 2)
+        std_ratio = np.abs(avg_obs / avg_exp) * np.sqrt(var_obs / avg_obs ** 2 / n_obs + var_exp / avg_exp ** 2 / n_exp)
+        ci_margin = t_value * std_ratio
+        return ci_margin
+
+    
+    def _get_genomic_coordinates(self) -> List[str]:
         output_size = 2 * (self._half_window_size // self._bin_size) + 1
         return [f"{i * self._bin_size // 1000 - self._half_window_size // 1000} kb"
                 for i in range(output_size)]
 
 
-def plot_1d_profile(profile: pd.DataFrame, line_kwargs: Dict = {}, fill_kwargs: Dict = {}):
-    plt.plot(profile.index, profile['avg'], color='black', **line_kwargs)
-    plt.fill_between(profile.index, profile['avg'], profile['avg'] + profile['margin'], color='black', alpha=.3, **fill_kwargs)
-    plt.fill_between(profile.index, profile['avg'], profile['avg'] - profile['margin'], color='black', alpha=.3, **fill_kwargs)
+def plot_1d_profile(profile: pd.DataFrame, color: Optional[str] = None, line_kwargs: Dict = {}, fill_kwargs: Dict = {}):
+    plt.plot(profile.index, profile['avg'], color=color, **line_kwargs)
+    plt.fill_between(profile.index, profile['avg'], profile['avg'] + profile['margin'], alpha=.3, color=color, **fill_kwargs)
+    plt.fill_between(profile.index, profile['avg'], profile['avg'] - profile['margin'], alpha=.3, color=color, **fill_kwargs)
     plt.xticks(rotation=60)
