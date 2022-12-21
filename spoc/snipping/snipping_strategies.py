@@ -292,9 +292,10 @@ class TripletCCTSnippingStrategy(SnippingStrategy):
     def _aggregate_snips(self, snips: pd.DataFrame):
         pass
 
-    @abstractmethod
     def _get_genomic_coordinates(self) -> List[str]:
-        pass
+        output_size = 2 * (self._half_window_size // self._bin_size) + 1
+        return [f"{i * self._bin_size // 1000 - self._half_window_size // 1000} kb"
+                for i in range(output_size)]
 
 
 class TripletCCT2DSnippingStrategy(TripletCCTSnippingStrategy):
@@ -384,6 +385,18 @@ class TripletCCT2DSnippingStrategy(TripletCCTSnippingStrategy):
         return snip_regions
     
     def _get_snips(self, pixels: PixelsData, snip_regions: pd.DataFrame, threads: int) -> pd.DataFrame:
+        if isinstance(pixels, PersistedPixels):
+            with ThreadPool(threads) as p:
+                snip_results = p.map(partial(self._execute_snipping, pixels=pixels, threads=1),
+                                     np.array_split(snip_regions, threads))
+                snips = pd.concat(snip_results, ignore_index=True)
+        elif isinstance(pixels, pd.DataFrame):
+            snips = self._execute_snipping(snip_regions, pixels, threads)
+        else:
+            raise NotImplementedError("pixels must be an instance of either PersistedPixels or pandas.DataFrame.")
+        return snips
+    
+    def _execute_snipping(self, snip_regions: pd.DataFrame, pixels: PixelsData, threads: int = 1) -> pd.DataFrame:
         con = duckdb.connect()
         con.execute(f"PRAGMA threads={threads};")
         con.register('poi', snip_regions)
@@ -450,12 +463,6 @@ class TripletCCT2DSnippingStrategy(TripletCCTSnippingStrategy):
         std_ratio = np.abs(avg_obs / avg_exp) * np.sqrt(var_obs / avg_obs ** 2 / n_obs + var_exp / avg_exp ** 2 / n_exp)
         ci_margin = t_value * std_ratio
         return ci_margin
-
-    
-    def _get_genomic_coordinates(self) -> List[str]:
-        output_size = 2 * (self._half_window_size // self._bin_size) + 1
-        return [f"{i * self._bin_size // 1000 - self._half_window_size // 1000} kb"
-                for i in range(output_size)]
 
 
 def plot_1d_profile(profile: pd.DataFrame, color: Optional[str] = None, line_kwargs: Dict = {}, fill_kwargs: Dict = {}):
