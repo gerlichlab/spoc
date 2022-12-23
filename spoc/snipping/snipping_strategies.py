@@ -2,20 +2,21 @@
 from abc import ABC, abstractmethod, abstractproperty
 from enum import Enum
 from functools import partial
-from typing import Dict, List, Optional, Tuple, Union
+from multiprocessing.pool import ThreadPool
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import bioframe
 import duckdb
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 import scipy.stats as ss
-from multiprocess.pool import ThreadPool
-import numpy.typing as npt
+import seaborn as sns
+from matplotlib.colors import LogNorm
 from sparse import COO
 
 from ..pixels import PersistedPixels
-
 
 PixelsData = Union[pd.DataFrame, PersistedPixels]
 IntArray = npt.NDArray[np.int_]
@@ -69,10 +70,11 @@ class SnippingStrategy(ABC):
         return pd.concat(chrom_frames)
 
     def __repr__(self) -> str:
-        return f"<Triplet1DSnippingStrategy>"
+        cls_name = self.__class__.__name__
+        return f"{cls_name}({', '.join((f'{key}={value}' for key, value in self.get_params().items()))})"
 
     @abstractmethod
-    def get_params():
+    def get_params() -> Dict[str, Any]:
         raise NotImplementedError
 
     @abstractmethod
@@ -85,169 +87,6 @@ class SnippingStrategy(ABC):
     ) -> pd.DataFrame:
         """Do snipping"""
         raise NotImplementedError
-
-
-class TripletCCT1DSnippingStrategy(SnippingStrategy):
-    """Implements snipping of 2D-regions based on a set of 1D-regions.
-    The 1D-regions are taken from the last column of pixels, which is assumed
-    to contain contacts on the second sister chromatid. The first two pixels
-    are assumed to contain contacts form the first sister chromatid."""
-
-    CIS_SNIPPING_QUERY = """
-        SELECT
-            t.position_id,
-            FLOOR((p.start_1 - t.pos)/{bin_size}::float) as offset_1,
-            FLOOR((p.start_2 - t.pos)/{bin_size}::float) as offset_2,
-            SUM(p.contact_count) as contacts
-        FROM {source_table} as p
-        INNER JOIN chunk as t ON t.chrom = p.chrom
-            and
-                abs(FLOOR((p.start_1 - t.pos)/{bin_size}::float))::int <= {pixel_offset}
-            and
-                abs(FLOOR((p.start_2 - t.pos)/{bin_size}::float))::int <= {pixel_offset}
-            and
-                abs(FLOOR((p.start_3 - (t.pos + {relative_offset}))/{bin_size}::float))::int <= {cis_selector_offset}
-        GROUP BY 1,2,3
-    """
-
-    def __init__(
-        self,
-        bin_size: int,
-        half_window_size: int,
-        snipping_value: SnippingValues,
-        **kwargs,
-    ):
-        """Override constructor to add additional parameters."""
-        super().__init__(bin_size, half_window_size, snipping_value, **kwargs)
-        self._position_slack: int = kwargs.get(
-            "position_slack", self._bin_size
-        )  # default is binsize
-        self._relative_offset: int = kwargs.get("relative_offset", 0)
-        self._expected = None
-
-    def get_params(self) -> dict:
-        return {
-            "bin_size": self._bin_size,
-            "half_window_size": self._half_window_size,
-            "snipping_value": self._snipping_value,
-            "position_slack": self._position_slack,
-            "relative_offset": self._relative_offset,
-        }
-
-    def _align_positions_to_bins(self, trans_positions: pd.DataFrame):
-        """Adds index and round positions to bins"""
-        if "pos" not in trans_positions.columns:
-            trans_positions = trans_positions.assign(
-                pos=lambda df_: (df_.start + df_.end) // 2
-            )
-        return trans_positions.assign(
-            position_id=lambda df_: range(len(df_)),
-            pos=lambda df_: (df_.pos // self._bin_size) * self._bin_size,
-        )
-
-    def _get_array_coordinates_from_offset(self, offset: pd.Series):
-        """Transform offsets to start from 0 to be used as array index"""
-        return (offset + (self._half_window_size // self._bin_size)).astype(int).values
-
-    def _reduce_snipping_frame(self, snips: pd.DataFrame):
-        """Takes concat result of snipping and reduces
-        it along the region dimension"""
-        output_size = 2 * (self._half_window_size // self._bin_size) + 1
-        return (
-            COO(
-                (
-                    snips.position_id.values,
-                    self._get_array_coordinates_from_offset(snips.offset_1),
-                    self._get_array_coordinates_from_offset(snips.offset_2),
-                ),
-                snips.contacts.values,
-                # TODO: fix shape such that if ids are missing from the end of the input, input shape will not be affected
-                shape=(np.max(snips.position_id) + 1, output_size, output_size),
-            )
-            .mean(axis=0) # this reduces the result along the region id dimension
-            .todense()
-        )
-
-    def _get_genomic_extent(self):
-        output_size = 2 * (self._half_window_size // self._bin_size) + 1
-        return [
-            f"{i * self._bin_size//1000 - self._half_window_size//1000} kb"
-            for i in range(output_size)
-        ]
-
-    def _create_expected_for_cis_snipping(
-        self,
-        pixels: Union[pd.DataFrame, PersistedPixels],
-        threads: int = 2,
-    ):
-        if self._expected is None:
-            random_regions = self._get_random_coordinates(
-                self._n_random_regions, length=100, genome=self._genome
-            )
-            self._expected = self.snip(
-                pixels,
-                random_regions,
-                threads=threads,
-                override_snipping_value=True,
-            )
-            return self._expected
-        return self._expected
-
-    def snip(
-        self,
-        pixels: Union[pd.DataFrame, PersistedPixels],
-        snip_positions: pd.DataFrame,
-        threads: int = 2,
-        override_snipping_value: bool = False,
-    ):
-        """Snips cis sister windows based on supplied trans positions."""
-        # dispatch
-        with ThreadPool(processes=threads) as pool:
-            result = pool.map(
-                partial(
-                    self._snip_cis_windows,
-                    pixels=pixels,
-                ),
-                np.array_split(self._align_positions_to_bins(snip_positions), threads),
-            )
-        # reduce along positions
-        dense_matrix = self._reduce_snipping_frame(pd.concat(result))
-        # check whether expected is needed
-        if (self._snipping_value == SnippingValues.OBSEXP) and (
-            not override_snipping_value
-        ):
-            expected = self._create_expected_for_cis_snipping(pixels, threads)
-            output = dense_matrix / expected
-        else:
-            output = dense_matrix
-        genomic_extent = self._get_genomic_extent()
-        return pd.DataFrame(output, columns=genomic_extent, index=genomic_extent)
-
-    def _snip_cis_windows(
-        self, chunk: pd.DataFrame, pixels: Union[pd.DataFrame, PersistedPixels]
-    ):
-        # convert parameters into pixel units
-        pixel_offset = self._half_window_size // self._bin_size
-        cis_selector_offset = self._position_slack // self._bin_size
-        # create local connection. No need to close it, is closed when reference to it goes out of scope
-        local_connection = duckdb.connect()
-        local_connection.register("chunk", chunk)
-        # register pixels if needed
-        if isinstance(pixels, PersistedPixels):
-            source_table = f"read_parquet('{pixels.path}')"
-        else:
-            source_table = "pixel_frame"
-            local_connection.register(source_table, pixels)
-        # do snipping
-        return local_connection.execute(
-            self.CIS_SNIPPING_QUERY.format(
-                source_table=source_table,
-                pixel_offset=pixel_offset,
-                cis_selector_offset=cis_selector_offset,
-                bin_size=self._bin_size,
-                relative_offset=self._relative_offset,
-            )
-        ).df()
 
 
 class TripletCCTSnippingStrategy(SnippingStrategy):
@@ -292,10 +131,140 @@ class TripletCCTSnippingStrategy(SnippingStrategy):
     def _aggregate_snips(self, snips: pd.DataFrame):
         pass
 
-    def _get_genomic_coordinates(self) -> List[str]:
+    def _get_genomic_coordinates(self) -> List[str]:    
         output_size = 2 * (self._half_window_size // self._bin_size) + 1
         return [f"{i * self._bin_size // 1000 - self._half_window_size // 1000} kb"
                 for i in range(output_size)]
+
+
+class TripletCCT1DSnippingStrategy(TripletCCTSnippingStrategy):
+    REDUCTION_QUERY = """
+        SELECT position_id, bin_1, bin_2, SUM(contacts)::int as contacts
+        FROM full_snips
+        WHERE {offset_1} <= bin_3 AND  bin_3 <= {offset_2}
+        GROUP BY position_id, bin_1, bin_2
+    """
+    
+    def __init__(self, bin_size: int, half_window_size: int, snipping_value: SnippingValues, offset: Union[int, Tuple[int, int]], **kwargs):
+        super().__init__(bin_size, half_window_size, snipping_value, **kwargs)
+        self._offset = self._parse_offset(offset)
+    
+    def _parse_offset(self, supplied_offset: Union[int, Tuple[int, int]]) -> Dict[str, int]:
+        if isinstance(supplied_offset, int) or isinstance(supplied_offset, np.integer):
+            supplied_offset = int(supplied_offset)
+            offsets = {'offset_1': supplied_offset, 'offset_2': supplied_offset}
+        elif isinstance(supplied_offset, tuple):
+            if len(supplied_offset) != 2:
+                raise ValueError(f"tuple offset must be of length 2.")
+            first_coord, second_coord = supplied_offset
+            if not isinstance(first_coord, int) or not isinstance(second_coord, int):
+                raise ValueError(f"Both offsets in a tuple offset must be integers.")
+            offset_1 = min(first_coord, second_coord)
+            offset_2 = max(first_coord, second_coord)
+            offsets = {'offset_1': offset_1, 'offset_2': offset_2}
+        else:
+            raise ValueError('offset must be either int or a tuple of 2 ints.')
+        return offsets
+    
+    def get_params(self) -> Dict[str, Any]:
+        offset = set(self._offset.values())
+        if len(offset) == 1:
+            (offset,) = offset
+        else:
+            offset = tuple(offset)
+        return {"bin_size": self._bin_size,
+                "half_window_size": self._half_window_size,
+                "snipping_value": self._snipping_value,
+                "offset": offset}
+    
+    def snip(self, pixels: PixelsData, snip_positions: pd.DataFrame, strand: Optional[str] = None, threads: int = 1) -> pd.DataFrame:
+        snip_regions = self._create_snip_regions(snip_positions)
+        n_regions = len(snip_regions)
+        snips = self._get_snips(pixels, snip_regions, threads)
+        if strand is not None:
+            self._flip_coords_by_strand(snip_regions, snips, strand)
+        avg_obs_matrix = self._aggregate_snips(snips, n_regions)
+        if self._snipping_value == SnippingValues.ICCF:
+            avg_matrix = avg_obs_matrix
+        elif self._snipping_value == SnippingValues.OBSEXP:
+            avg_exp_matrix = self._create_expected_snips(pixels, threads)
+            avg_matrix = avg_obs_matrix / avg_exp_matrix
+        else:
+            raise NotImplementedError
+        genomic_coordinates = self._get_genomic_coordinates()
+        return pd.DataFrame(avg_matrix, columns=genomic_coordinates, index=genomic_coordinates)
+    
+    def _create_snip_regions(self, snip_positions: pd.DataFrame) -> pd.DataFrame:
+        if "pos" not in snip_positions.columns:
+            snip_regions = snip_positions.assign(pos=lambda df_: (df_['start'] + df_['end']) // 2)
+        else:
+            snip_regions = snip_positions.copy()
+        snip_regions['snip_start'] = snip_regions['pos'] - self._half_window_size - self._bin_size + 1
+        snip_regions['snip_end'] = snip_regions['pos'] + self._half_window_size + 1
+        snip_regions['position_id'] = range(len(snip_regions))
+        return snip_regions
+    
+    def _get_snips(self, pixels: PixelsData, snip_regions: pd.DataFrame, threads: int) -> pd.DataFrame:
+        if isinstance(pixels, PersistedPixels):
+            with ThreadPool(threads) as p:
+                snip_results = p.map(partial(self._execute_snipping, pixels=pixels, threads=1),
+                                     np.array_split(snip_regions, threads))
+                snips = pd.concat(snip_results, ignore_index=True)
+        elif isinstance(pixels, pd.DataFrame):
+            snips = self._execute_snipping(snip_regions, pixels, threads)
+        else:
+            raise NotImplementedError("pixels must be an instance of either PersistedPixels or pandas.DataFrame.")
+        return snips
+
+    def _execute_snipping(self, snip_regions: pd.DataFrame, pixels: PixelsData, threads: int = 1) -> pd.DataFrame:
+        con = duckdb.connect()
+        con.execute(f"PRAGMA threads={threads};")
+        con.register('poi', snip_regions)
+        if isinstance(pixels, PersistedPixels):
+            triplets = f"read_parquet('{pixels.path}')"
+        else:
+            triplets = "pixels"
+            con.register(triplets, pixels)
+        snips_rel = con.query(self.SNIPPING_QUERY.format(triplets=triplets, binsize=self._bin_size))
+        reduced_rel = snips_rel.query('full_snips', self.REDUCTION_QUERY.format(offset_1=self._offset['offset_1'] // self._bin_size,
+                                                                                offset_2=self._offset['offset_2'] // self._bin_size))
+        return reduced_rel.df()
+
+    def _flip_coords_by_strand(self, snip_regions: pd.DataFrame, snips: pd.DataFrame, strand: str) -> None:
+        if not strand in snip_regions.columns:
+            raise ValueError(f'column "{strand}" is absend from regions dataframe.')
+        regions_strands = dict(snip_regions[['position_id', strand]].to_records(index=False))
+        for coord_id in ('bin_1', 'bin_2'):
+            corrected_coords = snips.groupby('position_id', group_keys=False).apply(lambda df: self._convert_coords(df[coord_id], regions_strands[df.name]))
+            snips[coord_id] = corrected_coords
+            #  Also need to switch bin_1 and bin_2 for position_id with negative strand.
+    
+    def _aggregate_snips(self, snips: pd.DataFrame, n_regions: int) -> FloatArray:
+        snip_size = 2 * (self._half_window_size // self._bin_size) + 1
+        bin_3_snip_size = abs(self._offset['offset_2'] // self._bin_size - self._offset['offset_1'] // self._bin_size) + 1
+        snip_groupsize = bin_3_snip_size
+
+        half_window_bins = self._half_window_size // self._bin_size
+
+        sparse_matrix = COO((snips['position_id'].values,
+                             snips['bin_1'].values + half_window_bins,
+                             snips['bin_2'].values + half_window_bins),
+                            data=snips['contacts'].values,
+                            shape=(n_regions, snip_size, snip_size))
+        avg_matrix = sparse_matrix.mean(axis=0).todense() / snip_groupsize
+        if np.allclose(avg_matrix, np.tril(avg_matrix)) or np.allclose(avg_matrix, np.triu(avg_matrix)):
+            avg_matrix = avg_matrix + avg_matrix.T - np.diag(np.diag(avg_matrix))
+        return avg_matrix
+    
+    def _create_expected_snips(self, pixels: PixelsData, threads: int) -> FloatArray:
+        n_random = self._n_random_regions
+        len_random = 100
+        genome = self._genome
+        random_intervals = self._get_random_coordinates(n_random, len_random, genome)
+        random_snip_regions = self._create_snip_regions(random_intervals)
+        random_snips = self._get_snips(pixels, random_snip_regions, threads)
+        avg_random_matrix = self._aggregate_snips(random_snips, n_random)
+        return avg_random_matrix
 
 
 class TripletCCT2DSnippingStrategy(TripletCCTSnippingStrategy):
@@ -342,7 +311,7 @@ class TripletCCT2DSnippingStrategy(TripletCCTSnippingStrategy):
     
     def _get_offset_by_selection(self, selection: str) -> Tuple[int, int]:
         pad_factor = self._half_window_size
-        small_pad_from_zero = round(pad_factor / 3)
+        small_pad_from_zero = int(round(pad_factor / 3, -int(np.log10(self._bin_size))))
         if selection == 'u':
             return (-pad_factor, -small_pad_from_zero)
         elif selection == 'c':
@@ -353,7 +322,11 @@ class TripletCCT2DSnippingStrategy(TripletCCTSnippingStrategy):
             raise ValueError('selection is not one of u, c, d')
         
     def get_params(self):
-        return None
+        return {"bin_size": self._bin_size,
+                "half_window_size": self._half_window_size,
+                "snipping_value": self._snipping_value,
+                "offsets": ((self._offsets['offset_11'], self._offsets['offset_12']),
+                            (self._offsets['offset_21'], self._offsets['offset_22']))}
 
     def snip(self, pixels: PixelsData, snip_positions: pd.DataFrame, strand: Optional[str] = None, threads: int = 1, ci: float = .95) -> pd.DataFrame:
         snip_regions = self._create_snip_regions(snip_positions)
@@ -414,7 +387,7 @@ class TripletCCT2DSnippingStrategy(TripletCCTSnippingStrategy):
     
     def _flip_coords_by_strand(self, snip_regions: pd.DataFrame, snips: pd.DataFrame, strand: str) -> None:
         if not strand in snip_regions.columns:
-            raise ValueError
+            raise ValueError(f'column "{strand}" is absend from regions dataframe.')
         regions_strands = dict(snip_regions[['position_id', strand]].to_records(index=False))
         corrected_coords = snips.groupby('position_id', group_keys=False).apply(lambda df: self._convert_coords(df['bin_3'], regions_strands[df.name]))
         snips['bin_3'] = corrected_coords
@@ -470,3 +443,47 @@ def plot_1d_profile(profile: pd.DataFrame, color: Optional[str] = None, line_kwa
     plt.fill_between(profile.index, profile['avg'], profile['avg'] + profile['margin'], alpha=.3, color=color, **fill_kwargs)
     plt.fill_between(profile.index, profile['avg'], profile['avg'] - profile['margin'], alpha=.3, color=color, **fill_kwargs)
     plt.xticks(rotation=60)
+
+
+def get_data_lims(mtx: pd.DataFrame) -> Tuple[float, float]:
+    data_min = mtx.min().min()
+    data_max = mtx.max().max()
+    return data_min, data_max
+
+
+def get_plot_lims(data_min: float, data_max: float) -> Tuple[float, float]:
+    log2_highest_dev = max(abs(np.log2(data_max)), abs(np.log2(data_min)))
+    vmax = 2 ** log2_highest_dev
+    vmin = 2 ** (-log2_highest_dev)
+    return vmin, vmax
+
+
+class MidPointLogNorm(LogNorm):
+    # https://stackoverflow.com/a/48632237 with modifications
+    def __init__(self, vmin=None, vmax=None, center=None, base=2, clip=False):
+        LogNorm.__init__(self, vmin=vmin, vmax=vmax, clip=clip)
+        self.center = center
+        self.base = base
+    def __call__(self, value, clip=None):
+        result, is_scalar = self.process_value(value)
+        x = [np.log(self.vmin) / np.log(self.base), np.log(self.center) / np.log(self.base), np.log(self.vmax) / np.log(self.base)]
+        y = [0, 0.5, 1]
+        return np.ma.array(np.interp(np.log(value) / np.log(self.base), x, y), mask=result.mask, copy=False)
+
+    
+def plot_oe_mtx(mtx: pd.DataFrame, cmap: str = 'RdBu_r'):
+    data_min, data_max = get_data_lims(mtx)
+    vmin, vmax = get_plot_lims(data_min, data_max)
+    g = sns.heatmap(mtx, cmap='RdBu_r', norm=MidPointLogNorm(vmin, vmax, center=1), square=True, cbar_kws=dict(format='%.2e'))
+    cbar = g.collections[0].colorbar
+    cbar.ax.set_ylim(data_min, data_max)
+    major_ticks = cbar.get_ticks()
+    major_ticks = np.append(major_ticks, [data_min, data_max])
+    major_ticks = [tick for tick in major_ticks if data_min <= tick <= data_max]
+    cbar.set_ticks(major_ticks)
+    minor_ticks = cbar.get_ticks(minor=True)
+    bounded_minor_ticks = [tick for tick in minor_ticks if data_min <= tick <= data_max]
+    minor_tick_intermode = ss.mode(np.diff(bounded_minor_ticks), keepdims=False).mode
+    adjusted_minor_ticks = [tick for tick in bounded_minor_ticks if abs(tick - data_min) > minor_tick_intermode and abs(tick - data_max) > minor_tick_intermode]
+    cbar.set_ticks(adjusted_minor_ticks, minor=True)
+    return g
