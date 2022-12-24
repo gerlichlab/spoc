@@ -237,7 +237,19 @@ class TripletCCT1DSnippingStrategy(TripletCCTSnippingStrategy):
         for coord_id in ('bin_1', 'bin_2'):
             corrected_coords = snips.groupby('position_id', group_keys=False).apply(lambda df: self._convert_coords(df[coord_id], regions_strands[df.name]))
             snips[coord_id] = corrected_coords
-            #  Also need to switch bin_1 and bin_2 for position_id with negative strand.
+        new_coords = snips.groupby('position_id', group_keys=False).apply(lambda df: self._switch_coords_by_strand(df[['bin_1', 'bin_2']], regions_strands[df.name]))
+        snips['bin_1'] = new_coords['bin_1']
+        snips['bin_2'] = new_coords['bin_2']
+    
+    @staticmethod
+    def _switch_coords_by_strand(coords, strand):
+        if strand == "+":
+            return coords
+        elif strand == "-":
+            switched_coords = pd.DataFrame({'bin_1': coords['bin_2'], 'bin_2': coords['bin_1']})
+            return switched_coords
+        else:
+            raise ValueError('strand values should be either "+" or "-".')
     
     def _aggregate_snips(self, snips: pd.DataFrame, n_regions: int) -> FloatArray:
         snip_size = 2 * (self._half_window_size // self._bin_size) + 1
@@ -252,8 +264,8 @@ class TripletCCT1DSnippingStrategy(TripletCCTSnippingStrategy):
                             data=snips['contacts'].values,
                             shape=(n_regions, snip_size, snip_size))
         avg_matrix = sparse_matrix.mean(axis=0).todense() / snip_groupsize
-        if np.allclose(avg_matrix, np.tril(avg_matrix)) or np.allclose(avg_matrix, np.triu(avg_matrix)):
-            avg_matrix = avg_matrix + avg_matrix.T - np.diag(np.diag(avg_matrix))
+        # if np.allclose(avg_matrix, np.tril(avg_matrix)) or np.allclose(avg_matrix, np.triu(avg_matrix)):
+        #     avg_matrix = avg_matrix + avg_matrix.T - np.diag(np.diag(avg_matrix))
         return avg_matrix
     
     def _create_expected_snips(self, pixels: PixelsData, threads: int) -> FloatArray:
