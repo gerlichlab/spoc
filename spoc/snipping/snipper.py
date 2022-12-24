@@ -13,12 +13,12 @@ class Snipper:
         self,
         pixels: Union[str, pd.DataFrame],
         snip_positions: pd.DataFrame,
-        strand: Optional[str] = None,
         threads: int = 2,
+        **kwargs: Dict,
     ) -> List[pd.DataFrame]:
         if isinstance(pixels, str):
             pixels = PersistedPixels(pixels)
         return [
-            strategy.snip(pixels, snip_positions, strand=strand, threads=threads)
+            strategy.snip(pixels, snip_positions, threads=threads, **kwargs)
             for strategy in self._strategies
         ]
