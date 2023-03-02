@@ -188,10 +188,11 @@ class TripletCCT1DSnippingStrategy(TripletCCTSnippingStrategy):
                 "snipping_value": self._snipping_value,
                 "offset": offset}
     
-    def snip(self, pixels: PixelsData, snip_positions: pd.DataFrame, strand: Optional[str] = None, threads: int = 1, symmetrize: bool = True) -> pd.DataFrame:
+    def snip(self, pixels: PixelsData, snip_positions: pd.DataFrame, strand: Optional[str] = None, threads: int = 1, symmetrize: bool = True, mem_limit: Optional[int] = None) -> pd.DataFrame:
+        """Mem limit in GB"""
         snip_regions = self._create_snip_regions(snip_positions, strand)
         n_regions = len(snip_regions)
-        snips = self._get_snips(pixels, snip_regions, threads)
+        snips = self._get_snips(pixels, snip_regions, threads, mem_limit)
         avg_obs_matrix = self._aggregate_snips(snips, n_regions, symmetrize=symmetrize)
         if self._snipping_value == SnippingValues.ICCF:
             avg_matrix = avg_obs_matrix
@@ -203,21 +204,25 @@ class TripletCCT1DSnippingStrategy(TripletCCTSnippingStrategy):
         genomic_coordinates = self._get_genomic_coordinates()
         return pd.DataFrame(avg_matrix, columns=genomic_coordinates, index=genomic_coordinates)
 
-    def _get_snips(self, pixels: PixelsData, snip_regions: pd.DataFrame, threads: int) -> pd.DataFrame:
+    def _get_snips(self, pixels: PixelsData, snip_regions: pd.DataFrame, threads: int, mem_limit: Optional[int] = None) -> pd.DataFrame:
         if isinstance(pixels, PersistedPixels):
+            if mem_limit is not None:
+                mem_limit = mem_limit / threads
             with ThreadPool(threads) as p:
-                snip_results = p.map(partial(self._execute_snipping, pixels=pixels, threads=1),
+                snip_results = p.map(partial(self._execute_snipping, pixels=pixels, threads=1, mem_limit=mem_limit),
                                      np.array_split(snip_regions, threads))
                 snips = pd.concat(snip_results, ignore_index=True)
         elif isinstance(pixels, pd.DataFrame):
-            snips = self._execute_snipping(snip_regions, pixels, threads)
+            snips = self._execute_snipping(snip_regions, pixels, threads, mem_limit)
         else:
             raise NotImplementedError("pixels must be an instance of either PersistedPixels or pandas.DataFrame.")
         return snips
 
-    def _execute_snipping(self, snip_regions: pd.DataFrame, pixels: PixelsData, threads: int = 1) -> pd.DataFrame:
+    def _execute_snipping(self, snip_regions: pd.DataFrame, pixels: PixelsData, threads: int = 1, mem_limit: Optional[int] = None) -> pd.DataFrame:
         con = duckdb.connect()
         con.execute(f"PRAGMA threads={threads};")
+        if mem_limit is not None:
+            con.execute(f"PRAGMA memory_limit='{mem_limit}GB';")
         con.register('poi', snip_regions)
         if isinstance(pixels, PersistedPixels):
             triplets = f"read_parquet('{pixels.path}')"
@@ -319,10 +324,10 @@ class TripletCCT2DSnippingStrategy(TripletCCTSnippingStrategy):
                 "offsets": ((self._offsets['offset_11'], self._offsets['offset_12']),
                             (self._offsets['offset_21'], self._offsets['offset_22']))}
 
-    def snip(self, pixels: PixelsData, snip_positions: pd.DataFrame, strand: Optional[str] = None, threads: int = 1, ci: float = .95) -> pd.DataFrame:
+    def snip(self, pixels: PixelsData, snip_positions: pd.DataFrame, strand: Optional[str] = None, threads: int = 1, ci: float = .95, mem_limit: Optional[int] = None) -> pd.DataFrame:
         snip_regions = self._create_snip_regions(snip_positions, strand)
         n_regions = len(snip_regions)
-        snips = self._get_snips(pixels, snip_regions, threads)
+        snips = self._get_snips(pixels, snip_regions, threads, mem_limit)
         avg_obs_profile, var_obs_profile = self._aggregate_snips(snips, n_regions)
         if self._snipping_value == SnippingValues.ICCF:
             avg_profile = avg_obs_profile
@@ -336,21 +341,25 @@ class TripletCCT2DSnippingStrategy(TripletCCTSnippingStrategy):
             raise NotImplementedError
         return pd.DataFrame({'avg': avg_profile, 'margin': ci_margin}, index=self._get_genomic_coordinates())  # Maybe it would be better to put genomic coordinates as another column instead of index?
     
-    def _get_snips(self, pixels: PixelsData, snip_regions: pd.DataFrame, threads: int) -> pd.DataFrame:
+    def _get_snips(self, pixels: PixelsData, snip_regions: pd.DataFrame, threads: int, mem_limit: Optional[int] = None) -> pd.DataFrame:
         if isinstance(pixels, PersistedPixels):
+            if mem_limit is not None:
+                mem_limit = mem_limit / threads
             with ThreadPool(threads) as p:
-                snip_results = p.map(partial(self._execute_snipping, pixels=pixels, threads=1),
+                snip_results = p.map(partial(self._execute_snipping, pixels=pixels, threads=1, mem_limit=mem_limit),
                                      np.array_split(snip_regions, threads))
                 snips = pd.concat(snip_results, ignore_index=True)
         elif isinstance(pixels, pd.DataFrame):
-            snips = self._execute_snipping(snip_regions, pixels, threads)
+            snips = self._execute_snipping(snip_regions, pixels, threads, mem_limit)
         else:
             raise NotImplementedError("pixels must be an instance of either PersistedPixels or pandas.DataFrame.")
         return snips
     
-    def _execute_snipping(self, snip_regions: pd.DataFrame, pixels: PixelsData, threads: int = 1) -> pd.DataFrame:
+    def _execute_snipping(self, snip_regions: pd.DataFrame, pixels: PixelsData, threads: int = 1, mem_limit: Optional[int] = None) -> pd.DataFrame:
         con = duckdb.connect()
         con.execute(f"PRAGMA threads={threads};")
+        if mem_limit is not None:
+            con.execute(f"PRAGMA memory_limit='{mem_limit}GB';")
         con.register('poi', snip_regions)
         if isinstance(pixels, PersistedPixels):
             triplets = f"read_parquet('{pixels.path}')"
