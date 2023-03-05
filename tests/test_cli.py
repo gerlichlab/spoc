@@ -9,7 +9,7 @@ import shutil
 import os
 from click.testing import CliRunner
 
-from spoc import cli, models
+from spoc import cli, dataframe_models
 
 
 @pytest.fixture
@@ -128,7 +128,7 @@ def test_annotate_fragments_works(good_porec_file, label_library_path):
     # check content of file
     labelled_fragments = pd.read_parquet(output_path)
     assert len(labelled_fragments) == 2
-    models.AnnotatedFragmentSchema.validate(labelled_fragments)
+    dataframe_models.AnnotatedFragmentSchema.validate(labelled_fragments)
     expected = pd.Series([True, False])
     np.array_equal(labelled_fragments.is_labelled.values, expected.values)
     expected = pd.Series(["SisterB", "SisterA"])

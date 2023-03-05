@@ -4,7 +4,7 @@ import pickle
 from typing import Dict, Union
 import pandas as pd
 import dask.dataframe as dd
-from .models import FragmentSchema, AnnotatedFragmentSchema, HigherOrderContactSchema
+from .dataframe_models import FragmentSchema, AnnotatedFragmentSchema, HigherOrderContactSchema
 
 
 class FileManager:

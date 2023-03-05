@@ -5,7 +5,7 @@ import pandas as pd
 import dask.dataframe as dd
 import bioframe as bf
 import pyranges as pr
-from spoc.models import HigherOrderContactSchema
+from spoc.dataframe_models import HigherOrderContactSchema
 
 
 class PersistedPixels:

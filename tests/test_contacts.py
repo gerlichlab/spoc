@@ -4,7 +4,7 @@ import pandera as pa
 import numpy as np
 import dask.dataframe as dd
 
-from spoc import contacts, models
+from spoc import contacts, dataframe_models
 
 
 @pytest.fixture
@@ -72,7 +72,7 @@ def test_expander_drops_reads_w_too_little_fragments(triplet_expander, good_df):
 
 def test_expander_returns_correct_schema(triplet_expander, good_df):
     result = triplet_expander.expand(good_df)
-    models.HigherOrderContactSchema(number_fragments=3).validate(result)
+    dataframe_models.HigherOrderContactSchema(number_fragments=3).validate(result)
 
 
 def test_expander_returns_correct_number_of_contacts(triplet_expander, good_df):

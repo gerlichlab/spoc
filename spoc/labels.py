@@ -4,7 +4,7 @@ This incudes annotation of labeled fragments, contact-type and sister identity."
 from typing import Dict, Union
 import pandas as pd
 import numpy as np
-from .models import FragmentSchema
+from .dataframe_models import FragmentSchema
 
 
 class FragmentAnnotator:

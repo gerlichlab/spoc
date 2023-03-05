@@ -5,7 +5,7 @@ import pandas as pd
 import pandera as pa
 import numpy as np
 
-from spoc import labels, models
+from spoc import dataframe_models, labels
 
 
 @pytest.fixture
@@ -60,7 +60,7 @@ def test_annotator_drops_unknown_fragments(annotator_with_entries, good_df):
 def test_annotator_produces_correct_schema(annotator_with_entries, good_df):
     labelled_fragments = annotator_with_entries.annotate_fragments(good_df)
     # check schema
-    models.AnnotatedFragmentSchema.validate(labelled_fragments)
+    dataframe_models.AnnotatedFragmentSchema.validate(labelled_fragments)
 
 
 def test_annotator_calls_labels_correctly(annotator_with_entries, good_df):

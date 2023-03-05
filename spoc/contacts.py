@@ -5,7 +5,7 @@ from typing import List, Union
 import pandas as pd
 import dask.dataframe as dd
 import numpy as np
-from .models import AnnotatedFragmentSchema, HigherOrderContactSchema
+from .dataframe_models import AnnotatedFragmentSchema, HigherOrderContactSchema
 
 
 class ContactExpander:
