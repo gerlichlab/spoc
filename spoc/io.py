@@ -4,6 +4,7 @@ import pickle
 from typing import Dict, Union
 import pandas as pd
 import dask.dataframe as dd
+from .contacts import Contacts
 from .dataframe_models import FragmentSchema, AnnotatedFragmentSchema, HigherOrderContactSchema
 
 
@@ -55,27 +56,16 @@ class FileManager:
 
     @staticmethod
     def write_multiway_contacts(
-        path: str, data: Union[pd.DataFrame, dd.DataFrame]
+        path: str, contacts: Contacts
     ) -> None:
         """Write multiway contacts"""
-        data.to_parquet(path)
+        contacts.data.to_parquet(path)
 
     def load_multiway_contacts(
-        self, path: str, number_fragments: Union[int, None] = None
-    ) -> Union[pd.DataFrame, dd.DataFrame]:
+        self, path: str, number_fragments: int
+    ) -> Contacts:
         """Load multiway contacts"""
-        data = self._parquet_reader_func(path)
-        if self._verify_schemas:
-            if number_fragments is None:
-                raise ValueError(
-                    "Number of fragments needs to be specified if schema is validated!"
-                )
-            schema = HigherOrderContactSchema(number_fragments)
-            schema.validate_header(
-                data
-            )  # this is needed to catch problems that cause task graph construction failures
-            return schema.validate(data)
-        return data
+        return Contacts(self._parquet_reader_func(path), number_fragments=number_fragments)
 
     @staticmethod
     def load_chromosome_sizes(path: str):

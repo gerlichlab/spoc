@@ -96,7 +96,7 @@ def merge():
 def merge_contacts(contact_paths, n_fragments, output):
     """Functionality to merge annotated fragments"""
     file_manager = FileManager(verify_schemas_on_load=True, use_dask=True)
-    manipulator = ContactManipulator(n_fragments, use_dask=True)
+    manipulator = ContactManipulator()
     contact_files = [
         file_manager.load_multiway_contacts(path, n_fragments) for path in contact_paths
     ]

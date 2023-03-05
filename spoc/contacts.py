@@ -5,7 +5,29 @@ from typing import List, Union
 import pandas as pd
 import dask.dataframe as dd
 import numpy as np
+from typing import Union, Optional
 from .dataframe_models import AnnotatedFragmentSchema, HigherOrderContactSchema
+
+
+class Contacts:
+    """N-way genomic contacts"""
+
+    def __init__(self, contact_frame: Optional[Union[pd.DataFrame, dd.DataFrame]] = None, number_fragments: int = 3) -> None:
+        self._schema = HigherOrderContactSchema(number_fragments=3)
+        if isinstance(contact_frame, pd.DataFrame):
+            self.is_dask = False
+        else:
+            self.is_dask = True
+        self.number_fragments = number_fragments
+        self._data = self._schema.validate(contact_frame)
+    
+    @property
+    def data(self):
+        return self._data
+    
+    @data.setter
+    def data(self, contact_frame):
+        self._data = self._schema.validate(contact_frame)
 
 
 class ContactExpander:
@@ -24,7 +46,7 @@ class ContactExpander:
             output[key + f"_{suffix}"] = getattr(row, key)
         return output
 
-    def expand(self, fragments: pd.DataFrame) -> pd.DataFrame:
+    def expand(self, fragments: pd.DataFrame) -> Contacts:
         """expand contacts n-ways"""
         # check input
         AnnotatedFragmentSchema.validate(fragments)
@@ -48,37 +70,22 @@ class ContactExpander:
                 for index, align in enumerate(alignments, start=1):
                     contact.update(self._add_suffix(align, index))
                 result.append(contact)
-        return pd.DataFrame(result)
+        return Contacts(pd.DataFrame(result), number_fragments=self._number_fragments)
 
 
 class ContactManipulator:
     """Responsible for performing operations on
     contact data such as merging, splitting and subsetting."""
 
-    def __init__(self, number_fragments: int, use_dask: bool = False) -> None:
-        self._number_fragments = number_fragments
-        self._schema = HigherOrderContactSchema(number_fragments=number_fragments)
-        self._use_dask = use_dask
-
-    def _merge_contacts_pandas(self, merge_list: List[pd.DataFrame]) -> pd.DataFrame:
-        # validate schema
-        for data_frame in merge_list:
-            self._schema.validate(data_frame)
-        return pd.concat(merge_list)
-
-    def _merge_contacts_dask(self, merge_list: List[dd.DataFrame]) -> dd.DataFrame:
-        # validate schema
-        merge_with_check = []
-        for data_frame in merge_list:
-            merge_with_check.append(
-                self._schema.validate(data_frame)
-            )  # needed to add check to task graph
-        return dd.concat(merge_with_check)
-
     def merge_contacts(
-        self, merge_list: List[Union[pd.DataFrame, dd.DataFrame]]
-    ) -> Union[pd.DataFrame, dd.DataFrame]:
+        self, merge_list: List[Contacts]
+    ) -> Contacts:
         """Merge contacts"""
-        if not self._use_dask:
-            return self._merge_contacts_pandas(merge_list)
-        return self._merge_contacts_dask(merge_list)
+        # validate that merge is possible
+        assert len(set([i.number_fragments for i in merge_list])) == 1, "All contacts need to have the same order!"
+        assert len(set([i.is_dask for i in merge_list])) == 1, "Mixture of dask and pandas dataframes is not supported!"
+        
+        number_fragments = merge_list[0].number_fragments
+        if merge_list[0].is_dask:
+            return Contacts(dd.concat([i.data for i in merge_list]), number_fragments=number_fragments)
+        return  Contacts(pd.concat([i.data for i in merge_list]), number_fragments=number_fragments)

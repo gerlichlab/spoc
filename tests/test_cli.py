@@ -139,7 +139,7 @@ def test_merge_contacts_works(good_triplet_files):
     """happy path for merging contacts"""
     runner = CliRunner()
     output_path = "tmp/test_output3.parquet"
-    result = runner.invoke(
+    runner.invoke(
         cli.merge_contacts,
         [good_triplet_files[0], good_triplet_files[1], f"-o{output_path}"],
     )
