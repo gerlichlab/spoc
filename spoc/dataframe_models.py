@@ -1,6 +1,7 @@
 """Dataframe models"""
 
-from typing import Iterable, Union
+from typing import Iterable, Union, Dict
+import copy
 import pandera as pa
 import pandas as pd
 import dask.dataframe as dd
@@ -19,36 +20,17 @@ FragmentSchema = pa.DataFrameSchema(
         "align_score": pa.Column(int),
         "align_base_qscore": pa.Column(int),
         "pass_filter": pa.Column(bool),
+        "is_labelled": pa.Column(bool, required=False),
+        "sister_identity": pa.Column(str, required=False)
     },
     coerce=True,
 )
 
-AnnotatedFragmentSchema = pa.DataFrameSchema(
-    {
-        "chrom": pa.Column(str),
-        "start": pa.Column(int),
-        "end": pa.Column(int),
-        "strand": pa.Column(bool),
-        "read_name": pa.Column(str),
-        "read_start": pa.Column(int),
-        "read_end": pa.Column(int),
-        "read_length": pa.Column(int),
-        "mapping_quality": pa.Column(int),
-        "align_score": pa.Column(int),
-        "align_base_qscore": pa.Column(int),
-        "is_labelled": pa.Column(bool),
-        "pass_filter": pa.Column(bool),
-        "sister_identity": pa.Column(
-            str, checks=[pa.Check(lambda x: x.isin(["SisterA", "SisterB"]))]
-        ),
-    },
-    coerce=True,
-)
 
 # schemas for higher order contacts
 
 
-class HigherOrderContactSchema:
+class ContactSchema:
     """Dynamic schema for n-way contacts"""
 
     # field groups
@@ -65,42 +47,37 @@ class HigherOrderContactSchema:
         "mapping_quality": pa.Column(int),
         "align_score": pa.Column(int),
         "align_base_qscore": pa.Column(int),
-        "is_labelled": pa.Column(bool),
+        "is_labelled": pa.Column(bool), # TODO: make optional
         "sister_identity": pa.Column(
             str, checks=[pa.Check(lambda x: x.isin(["SisterA", "SisterB"]))]
-        ),
+        ), # TODO: make optional
     }
 
-    def __init__(self, number_fragments: int = 3) -> None:
+    def __init__(self, number_fragments: int = 3, is_labelled: bool = True) -> None:
         self._number_fragments = number_fragments
         self._schema = pa.DataFrameSchema(
             dict(
                 self.common_fields,
-                **self._expand_contact_fields(range(1, number_fragments + 1)),
+                **self._expand_contact_fields(range(1, number_fragments + 1), is_labelled),
             ),
             coerce=True,
         )
 
-    @staticmethod
-    def _get_contact_fields():
-        return {
-            "chrom": pa.Column(str),
-            "start": pa.Column(int),
-            "end": pa.Column(int),
-            "mapping_quality": pa.Column(int),
-            "align_score": pa.Column(int),
-            "align_base_qscore": pa.Column(int),
-            "is_labelled": pa.Column(bool),
-            "sister_identity": pa.Column(
-                str, checks=[pa.Check(lambda x: x.isin(["SisterA", "SisterB"]))]
-            ),
-        }
+    @classmethod
+    def get_contact_fields(cls, is_labelled: bool) -> Dict:
+        if is_labelled:
+            return copy.deepcopy(cls.contact_fields)
+        else:
+            return {
+                key: value for key, value in copy.deepcopy(cls.contact_fields).items() if key not in ['is_labelled', 'sister_identity']
+            }
+            
 
-    def _expand_contact_fields(self, expansions: Iterable = (1, 2, 3)) -> dict:
+    def _expand_contact_fields(self, expansions: Iterable = (1, 2, 3), is_labelled: bool = True) -> dict:
         """adds suffixes to fields"""
         output = {}
         for i in expansions:
-            for key, value in self._get_contact_fields().items():
+            for key, value in self.get_contact_fields(is_labelled).items():
                 output[key + f"_{i}"] = value
         return output
 

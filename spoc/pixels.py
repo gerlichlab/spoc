@@ -5,7 +5,7 @@ import pandas as pd
 import dask.dataframe as dd
 import bioframe as bf
 import pyranges as pr
-from spoc.dataframe_models import HigherOrderContactSchema
+from spoc.dataframe_models import ContactSchema
 
 
 class PersistedPixels:
@@ -45,7 +45,7 @@ class GenomicBinner:
                 "Only contacts of order 3 are currently supported!"
             )
         self._contact_order = contact_order
-        self._input_schema = HigherOrderContactSchema(contact_order)
+        self._input_schema = ContactSchema(contact_order)
         self._sort_sisters = sort_sisters
         self._flip_contacts = flip_contacts
 

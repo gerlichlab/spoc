@@ -1,8 +1,8 @@
 """Console script for spoc."""
 import sys
 import click
-from spoc.contacts import ContactExpander, ContactManipulator
-from spoc.labels import FragmentAnnotator
+from spoc.contacts import ContactManipulator
+from spoc.fragments import FragmentAnnotator, FragmentExpander
 from spoc.io import FileManager
 from spoc.pixels import GenomicBinner
 
@@ -23,7 +23,7 @@ def main():
 )
 def expand(fragments_path, expanded_contacts_path, n_fragments):
     """Script for expanding labelled fragments to contacts"""
-    expander = ContactExpander(number_fragments=n_fragments)
+    expander = FragmentExpander(number_fragments=n_fragments)
     file_manager = FileManager(verify_schemas_on_load=True)
     input_fragments = file_manager.load_annotated_fragments(fragments_path)
     expanded = expander.expand(input_fragments)

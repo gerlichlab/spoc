@@ -5,7 +5,7 @@ from typing import Dict, Union
 import pandas as pd
 import dask.dataframe as dd
 from .contacts import Contacts
-from .dataframe_models import FragmentSchema, AnnotatedFragmentSchema, HigherOrderContactSchema
+from .dataframe_models import FragmentSchema, AnnotatedFragmentSchema, ContactSchema
 
 
 class FileManager:
@@ -33,6 +33,7 @@ class FileManager:
             label_library = pickle.load(handle)
         return label_library
 
+    # TODO: load porec fragments and load annotated fragments should be one method
     def load_porec_fragments(self, path: str):
         """Load porec fragments"""
         data = self._parquet_reader_func(path)
