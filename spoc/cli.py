@@ -25,7 +25,7 @@ def expand(fragments_path, expanded_contacts_path, n_fragments):
     """Script for expanding labelled fragments to contacts"""
     expander = FragmentExpander(number_fragments=n_fragments)
     file_manager = FileManager(verify_schemas_on_load=True)
-    input_fragments = file_manager.load_annotated_fragments(fragments_path)
+    input_fragments = file_manager.load_fragments(fragments_path)
     expanded = expander.expand(input_fragments)
     file_manager.write_multiway_contacts(expanded_contacts_path, expanded)
 
@@ -39,9 +39,9 @@ def annotate(fragments_path, label_library_path, labelled_fragments_path):
     file_manager = FileManager(verify_schemas_on_load=True)
     label_library = file_manager.load_label_library(label_library_path)
     annotator = FragmentAnnotator(label_library)
-    input_fragments = file_manager.load_porec_fragments(fragments_path)
+    input_fragments = file_manager.load_fragments(fragments_path)
     result = annotator.annotate_fragments(input_fragments)
-    file_manager.write_annotated_fragments(labelled_fragments_path, result)
+    file_manager.write_fragments(labelled_fragments_path, result)
 
 
 @click.command()
@@ -74,7 +74,7 @@ def bin_contacts(
         contact_order=number_fragments,
         sort_sisters=sort_sisters,
     )
-    pixels = binner.bin_contacts(contacts)
+    pixels = binner.bin_contacts(contacts.data)
     # persisting
     file_manager.write_pixels(pixel_path, pixels)
 

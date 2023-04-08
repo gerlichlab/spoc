@@ -5,7 +5,8 @@ from typing import Dict, Union
 import pandas as pd
 import dask.dataframe as dd
 from .contacts import Contacts
-from .dataframe_models import FragmentSchema, AnnotatedFragmentSchema, ContactSchema
+from .dataframe_models import FragmentSchema, ContactSchema
+from .fragments import Fragments
 
 
 class FileManager:
@@ -33,27 +34,17 @@ class FileManager:
             label_library = pickle.load(handle)
         return label_library
 
-    # TODO: load porec fragments and load annotated fragments should be one method
-    def load_porec_fragments(self, path: str):
-        """Load porec fragments"""
-        data = self._parquet_reader_func(path)
-        if self._verify_schemas:
-            return FragmentSchema.validate(data)
-        return data
-
-    def load_annotated_fragments(self, path: str):
+    def load_fragments(self, path: str):
         """Load annotated fragments"""
         data = self._parquet_reader_func(path)
-        if self._verify_schemas:
-            return AnnotatedFragmentSchema.validate(data)
-        return data
+        return Fragments(data)
 
     @staticmethod
-    def write_annotated_fragments(
-        path: str, data: Union[pd.DataFrame, dd.DataFrame]
+    def write_fragments(
+        path: str, fragments: Fragments
     ) -> None:
         """Write annotated fragments"""
-        data.to_parquet(path)
+        fragments.data.to_parquet(path)
 
     @staticmethod
     def write_multiway_contacts(
