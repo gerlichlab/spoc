@@ -61,22 +61,19 @@ class GenomicBinner:
         self,
         bin_size: int,
         chrom_sizes: pd.Series,
-        same_chromosome: bool = False,
         contact_order: int = 3,
-        sort_sisters: bool = True,
         flip_contacts: bool = False,
+        label_string: Optional[str] = None,
     ) -> None:
         self._bins = self._create_bins(chrom_sizes, bin_size)
         self._bin_size = bin_size
-        self._same_chromosome = same_chromosome
         if contact_order != 3:
             raise NotImplementedError(
                 "Only contacts of order 3 are currently supported!"
             )
         self._contact_order = contact_order
-        self._input_schema = ContactSchema(contact_order)
-        self._sort_sisters = sort_sisters
         self._flip_contacts = flip_contacts
+        self._label_string = label_string
 
     @staticmethod
     def _create_bins(chrom_sizes: pd.Series, bin_size: int) -> pr.PyRanges:
@@ -110,35 +107,33 @@ class GenomicBinner:
             .query("contact_index != -1")
         )
 
+    def _get_assigned_bin_output_structure(self):
+        columns = (
+            ['contact_index'] + 
+            [
+                    c for index in range(1 , self._contact_order + 1)
+                            for c in [f'chrom_{index}', f'start_{index}']
+            ]
+        )
+        return pd.DataFrame(columns=columns, dtype=int)
+
     def _assign_bins(self, data_frame: pd.DataFrame) -> pd.DataFrame:
         # capture empty dataframe
         if data_frame.empty:
-            return pd.DataFrame(
-                columns=[
-                    "contact_index",
-                    "chrom_1",
-                    "start_1",
-                    "chrom_2",
-                    "start_2",
-                    "chrom_3",
-                    "start_3",
-                ],
-                dtype=int,
-            )
+            return self._get_assigned_bin_output_structure()
         # create contact_index
         data_frame.loc[:, "contact_index"] = range(len(data_frame))
         # create pyranges
         query_positions = map(
             self._create_pyranges_bin_query,
             [
-                data_frame[["chrom_1", "pos_1", "contact_index"]],
-                data_frame[["chrom_2", "pos_2", "contact_index"]],
-                data_frame[["chrom_3", "pos_3", "contact_index"]],
+                data_frame[[f'chrom_{index}', f'pos_{index}', 'contact_index']]
+                    for index in range(1, self._contact_order + 1)
             ],
         )
         # assign bins
         assigned_bins = list(
-            map(self._intersect_with_genomic_bins, range(1, 4), query_positions)
+            map(self._intersect_with_genomic_bins, range(1, self.contact_oder + 1), query_positions)
         )
         # merge output
         merged_output = assigned_bins[0]
@@ -162,20 +157,12 @@ class GenomicBinner:
         ) & (contacts.sister_identity_1 != contacts.sister_identity_2)
         return is_cis_cis_trans, is_cis_trans_cis, is_trans_cis_cis
 
-    @staticmethod
-    def _reset_contact_columns(contacts: dd.DataFrame) -> dd.DataFrame:
-        contacts.columns = [
-            "read_name",
-            "chrom_1",
-            "start_1",
-            "end_1",
-            "chrom_2",
-            "start_2",
-            "end_2",
-            "chrom_3",
-            "start_3",
-            "end_3",
+    def _reset_contact_columns(self, contacts: dd.DataFrame) -> dd.DataFrame:
+        columns = [
+            c for index in range(1, self._contact_order + 1)
+                for c in [f'chrom_{index}', f'start_{index}', f'end_{index}']
         ]
+        contacts.columns = ['read_name'] + columns
         return contacts
 
     def _sort_sister_contacts(self, contacts: dd.DataFrame) -> dd.DataFrame:
@@ -274,14 +261,21 @@ class GenomicBinner:
             [contacts.loc[~is_lower_triangular, :], lower_flipped]  # upper triangular
         )
 
-    @staticmethod
-    def _assign_midpoints(contacts: dd.DataFrame) -> dd.DataFrame:
+    def _assign_midpoints(self, contacts: dd.DataFrame) -> dd.DataFrame:
         """Collapses start-end to a middle position"""
         return (
-            contacts.assign(pos_1=lambda df: (df.start_1 + df.end_1) // 2)
-            .assign(pos_2=lambda df: (df.start_2 + df.end_2) // 2)
-            .assign(pos_3=lambda df: (df.start_3 + df.end_3) // 2)
-            .drop(["start_1", "end_1", "start_2", "end_2", "start_3", "end_3"], axis=1)
+            contacts
+                .assign(
+                    **{
+                        f"pos_{index}": lambda df_: (df_[f'start_{index}'] + df_[f'end_{index}'])//2
+                            for index in range(1, self._contact_order + 1)
+                    }
+                )
+                .drop(
+                    [
+                        c for index in range(1, self._contact_order + 1) for c in [f'start_{index}', f'end_{index}']
+                    ], axis=1
+                )
         )
 
     def bin_contacts(self, contacts: Contacts) -> pd.DataFrame:
@@ -302,18 +296,7 @@ class GenomicBinner:
         # assign bins TODO: map partitions will not work for pandas dataframe
         triplet_bins = contacts_w_midpoints.map_partitions(
             self._assign_bins,
-            meta=pd.DataFrame(
-                columns=[
-                    "contact_index",
-                    "chrom_1",
-                    "start_1",
-                    "chrom_2",
-                    "start_2",
-                    "chrom_3",
-                    "start_3",
-                ],
-                dtype=int,
-            ),
+            meta=self._get_assigned_bin_output_structure()
         )
         # compute pixels -> assumption is that pixels fit into memory after computing
         # TODO: think about how to achieve sorting without computing.
@@ -321,7 +304,10 @@ class GenomicBinner:
         # TODO: this won't work for pandas contacts
         pixels = (
             triplet_bins.groupby(
-                ["chrom_1", "start_1", "chrom_2", "start_2", "chrom_3", "start_3"],
+                [
+                    c for index in range(1, self._contact_order + 1)
+                        for c in [f'chrom_{index}', f'start_{index}']
+                ],
                 observed=True,
             )
             .size()
@@ -334,12 +320,12 @@ class GenomicBinner:
                 (pixels.chrom_1.astype(str) == pixels.chrom_2.astype(str))
                 & (pixels.chrom_2.astype(str) == pixels.chrom_3.astype(str))
             ]
-            .drop(["chrom_2", "chrom_3"], axis=1)
+            .drop([f'chrom_{index}' for index in range(2, self._contact_order + 1)], axis=1)
             .rename(columns={"chrom_1": "chrom"})
         )
         # sort pixels
         pixels_sorted = pixels.sort_values(
-            ["chrom", "start_1", "start_2", "start_3"]
+            ['chrom'] + [f'start_{index}' for index in range(1, self._contact_order + 1)]
         ).reset_index(drop=True)
         # construct pixels and return
         return Pixels(
