@@ -2,8 +2,8 @@ import pytest
 import dask.dataframe as dd
 import pandas as pd
 import numpy as np
-import pandera as pa
 from spoc import pixels
+from spoc.contacts import Contacts
 
 
 @pytest.fixture
@@ -48,12 +48,6 @@ def genomic_binner_sister_sensitive(chromosome_sizes):
         same_chromosome=True,
     )
 
-
-@pytest.fixture
-def bad_contacts():
-    return pd.DataFrame({"be": ["bop"]})
-
-
 @pytest.fixture
 def contacts():
     df = pd.DataFrame(
@@ -86,7 +80,7 @@ def contacts():
             "sister_identity_3": ["SisterB", "SisterA", "SisterA", "SisterB"],
         }
     )
-    return dd.from_pandas(df, chunksize=1000)
+    return Contacts(dd.from_pandas(df, chunksize=1000))
 
 
 @pytest.fixture
@@ -175,7 +169,7 @@ def contacts_w_lower_triangular():
             "sister_identity_3": ["SisterB", "SisterA", "SisterA", "SisterB"] * 2,
         }
     )
-    return dd.from_pandas(df, chunksize=1000)
+    return Contacts(dd.from_pandas(df, chunksize=1000))
 
 
 @pytest.fixture
@@ -219,23 +213,18 @@ def expected_pixels_w_sister_sorting_and_flipping():
     )
 
 
-def test_genomic_binner_rejects_bad(genomic_binner, bad_contacts):
-    with pytest.raises(pa.errors.SchemaError):
-        genomic_binner.bin_contacts(bad_contacts)
-
-
 def test_genomic_binner_bins_correctly_wo_sister_sorting(
     genomic_binner, contacts, expected_pixels_wo_sister_sorting
 ):
     result = genomic_binner.bin_contacts(contacts)
-    np.array_equal(result.values, expected_pixels_wo_sister_sorting.values)
+    np.array_equal(result.data.values, expected_pixels_wo_sister_sorting.values)
 
 
 def test_genomic_binner_sorts_sisters_correctly(
     genomic_binner_sister_sensitive, contacts, expected_pixels_w_sister_sorting
 ):
     result = genomic_binner_sister_sensitive.bin_contacts(contacts)
-    np.array_equal(result.values, expected_pixels_w_sister_sorting.values)
+    np.array_equal(result.data.values, expected_pixels_w_sister_sorting.values)
 
 
 def test_genomic_binner_flips_triplets_correctly(
@@ -246,4 +235,4 @@ def test_genomic_binner_flips_triplets_correctly(
     result = genomic_binner_sister_sensitive_w_flipping.bin_contacts(
         contacts_w_lower_triangular
     )
-    np.array_equal(result.values, expected_pixels_w_sister_sorting_and_flipping.values)
+    np.array_equal(result.data.values, expected_pixels_w_sister_sorting_and_flipping.values)

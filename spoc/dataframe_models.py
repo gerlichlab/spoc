@@ -21,7 +21,7 @@ FragmentSchema = pa.DataFrameSchema(
         "align_base_qscore": pa.Column(int),
         "pass_filter": pa.Column(bool),
         "is_labelled": pa.Column(bool, required=False),
-        "sister_identity": pa.Column(str, required=False)
+        "sister_identity": pa.Column(str, required=False),
     },
     coerce=True,
 )
@@ -47,10 +47,10 @@ class ContactSchema:
         "mapping_quality": pa.Column(int),
         "align_score": pa.Column(int),
         "align_base_qscore": pa.Column(int),
-        "is_labelled": pa.Column(bool), # TODO: make optional
+        "is_labelled": pa.Column(bool),  # TODO: make optional
         "sister_identity": pa.Column(
             str, checks=[pa.Check(lambda x: x.isin(["SisterA", "SisterB"]))]
-        ), # TODO: make optional
+        ),  # TODO: make optional
     }
 
     def __init__(self, number_fragments: int = 3, is_labelled: bool = True) -> None:
@@ -58,7 +58,9 @@ class ContactSchema:
         self._schema = pa.DataFrameSchema(
             dict(
                 self.common_fields,
-                **self._expand_contact_fields(range(1, number_fragments + 1), is_labelled),
+                **self._expand_contact_fields(
+                    range(1, number_fragments + 1), is_labelled
+                ),
             ),
             coerce=True,
         )
@@ -69,11 +71,14 @@ class ContactSchema:
             return copy.deepcopy(cls.contact_fields)
         else:
             return {
-                key: value for key, value in copy.deepcopy(cls.contact_fields).items() if key not in ['is_labelled', 'sister_identity']
+                key: value
+                for key, value in copy.deepcopy(cls.contact_fields).items()
+                if key not in ["is_labelled", "sister_identity"]
             }
-            
 
-    def _expand_contact_fields(self, expansions: Iterable = (1, 2, 3), is_labelled: bool = True) -> dict:
+    def _expand_contact_fields(
+        self, expansions: Iterable = (1, 2, 3), is_labelled: bool = True
+    ) -> dict:
         """adds suffixes to fields"""
         output = {}
         for i in expansions:
@@ -100,6 +105,7 @@ class ContactSchema:
 
 # schemas for higher order pixels TODO: add higher order pixels or generic order
 
+
 class PixelSchema:
     """Dynamic schema for n-way pixels"""
 
@@ -116,7 +122,7 @@ class PixelSchema:
         self._schema = pa.DataFrameSchema(
             dict(
                 self.constant_fields,
-                **self._expand_contact_fields(range(1, number_fragments + 1))
+                **self._expand_contact_fields(range(1, number_fragments + 1)),
             ),
             coerce=True,
         )
@@ -134,7 +140,7 @@ class PixelSchema:
             for key, value in self._get_contact_fields().items():
                 output[key + f"_{i}"] = value
         return output
-    
+
     def validate_header(self, data_frame: Union[pd.DataFrame, dd.DataFrame]) -> None:
         """Validates only header, needed to validate that dask taskgraph can be built before
         evaluation"""

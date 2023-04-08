@@ -16,16 +16,15 @@ class Fragments:
 
     def __init__(self, fragment_frame: Union[pd.DataFrame, dd.DataFrame]) -> None:
         self._data = FragmentSchema.validate(fragment_frame)
-        self._is_labelled = True if 'is_labelled' in fragment_frame.columns else False
-    
+        self._is_labelled = True if "is_labelled" in fragment_frame.columns else False
+
     @property
     def data(self):
         return self._data
-    
+
     @property
     def is_labelled(self):
         return self._is_labelled
-        
 
 
 class FragmentAnnotator:
@@ -108,8 +107,12 @@ class FragmentExpander:
                 contact = {"read_name": read_name, "read_length": read_length}
                 # add reads
                 for index, align in enumerate(alignments, start=1):
-                    contact.update(self._add_suffix(align, index, fragments.is_labelled))
+                    contact.update(
+                        self._add_suffix(align, index, fragments.is_labelled)
+                    )
                 result.append(contact)
-        return Contacts(pd.DataFrame(result),
-                        number_fragments=self._number_fragments,
-                        is_labelled=fragments.is_labelled)
+        return Contacts(
+            pd.DataFrame(result),
+            number_fragments=self._number_fragments,
+            is_labelled=fragments.is_labelled,
+        )

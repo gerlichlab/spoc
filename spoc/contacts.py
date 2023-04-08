@@ -10,9 +10,15 @@ from .dataframe_models import ContactSchema
 class Contacts:
     """N-way genomic contacts"""
 
-    def __init__(self, contact_frame: Optional[Union[pd.DataFrame, dd.DataFrame]] = None,
-                 number_fragments: int = 3, is_labelled: bool = True) -> None:
-        self._schema = ContactSchema(number_fragments=number_fragments, is_labelled=is_labelled)
+    def __init__(
+        self,
+        contact_frame: Optional[Union[pd.DataFrame, dd.DataFrame]] = None,
+        number_fragments: int = 3,
+        is_labelled: bool = True,
+    ) -> None:
+        self._schema = ContactSchema(
+            number_fragments=number_fragments, is_labelled=is_labelled
+        )
         if isinstance(contact_frame, pd.DataFrame):
             self.is_dask = False
         else:
@@ -20,15 +26,15 @@ class Contacts:
         self.number_fragments = number_fragments
         self.is_labelled = is_labelled
         self._data = self._schema.validate(contact_frame)
-    
+
     @property
     def data(self):
         return self._data
-    
+
     @data.setter
     def data(self, contact_frame):
         self._data = self._schema.validate(contact_frame)
-    
+
     def flip_symmetric_contacts(self) -> None:
         """Flips contacts based on inherent symmetry. TODO"""
         raise NotImplementedError
@@ -41,16 +47,23 @@ class ContactManipulator:
     """Responsible for performing operations on
     contact data such as merging, splitting and subsetting."""
 
-    def merge_contacts(
-        self, merge_list: List[Contacts]
-    ) -> Contacts:
+    def merge_contacts(self, merge_list: List[Contacts]) -> Contacts:
         """Merge contacts"""
         # validate that merge is possible
-        assert len(set([i.number_fragments for i in merge_list])) == 1, "All contacts need to have the same order!"
-        assert len(set([i.is_dask for i in merge_list])) == 1, "Mixture of dask and pandas dataframes is not supported!"
+        assert (
+            len(set([i.number_fragments for i in merge_list])) == 1
+        ), "All contacts need to have the same order!"
+        assert (
+            len(set([i.is_dask for i in merge_list])) == 1
+        ), "Mixture of dask and pandas dataframes is not supported!"
         # TODO: assert all contacts are labelled
-        
+
         number_fragments = merge_list[0].number_fragments
         if merge_list[0].is_dask:
-            return Contacts(dd.concat([i.data for i in merge_list]), number_fragments=number_fragments)
-        return  Contacts(pd.concat([i.data for i in merge_list]), number_fragments=number_fragments)
+            return Contacts(
+                dd.concat([i.data for i in merge_list]),
+                number_fragments=number_fragments,
+            )
+        return Contacts(
+            pd.concat([i.data for i in merge_list]), number_fragments=number_fragments
+        )

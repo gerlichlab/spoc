@@ -18,7 +18,9 @@ def empty_annotator():
 @pytest.fixture
 def annotator_with_entries():
     """Annotator with entries"""
-    return fragments.FragmentAnnotator({"dummy_chr1_1_4": True, "dummy_chr1_2_5": False})
+    return fragments.FragmentAnnotator(
+        {"dummy_chr1_1_4": True, "dummy_chr1_2_5": False}
+    )
 
 
 @pytest.fixture
@@ -45,6 +47,7 @@ def unlabelled_fragments():
         }
     )
 
+
 @pytest.fixture
 def labelled_fragments():
     return pd.DataFrame(
@@ -62,7 +65,7 @@ def labelled_fragments():
             "align_base_qscore": [1, 2, 3],
             "pass_filter": [True] * 3,
             "is_labelled": [True] * 3,
-            "sister_identity": ["SisterA"] * 3
+            "sister_identity": ["SisterA"] * 3,
         }
     )
 
@@ -71,36 +74,52 @@ def test_fragment_constructor_rejects_df_w_wrong_structure(bad_df):
     with pytest.raises(pa.errors.SchemaError):
         fragments.Fragments(bad_df)
 
+
 def test_fragments_constructor_accepts_unlabelled_fragments(unlabelled_fragments):
     frag = fragments.Fragments(unlabelled_fragments)
     assert not frag.is_labelled
+
 
 def test_fragments_constructor_accepts_labelled_fragments(labelled_fragments):
     frag = fragments.Fragments(labelled_fragments)
     assert frag.is_labelled
 
 
-def test_annotator_drops_unknown_fragments(annotator_with_entries, unlabelled_fragments):
-    labelled_fragments = annotator_with_entries.annotate_fragments(fragments.Fragments(unlabelled_fragments))
+def test_annotator_drops_unknown_fragments(
+    annotator_with_entries, unlabelled_fragments
+):
+    labelled_fragments = annotator_with_entries.annotate_fragments(
+        fragments.Fragments(unlabelled_fragments)
+    )
     # check length
     assert len(labelled_fragments.data) == 2
 
 
-def test_annotator_produces_correct_schema(annotator_with_entries, unlabelled_fragments):
-    labelled_fragments = annotator_with_entries.annotate_fragments(fragments.Fragments(unlabelled_fragments))
+def test_annotator_produces_correct_schema(
+    annotator_with_entries, unlabelled_fragments
+):
+    labelled_fragments = annotator_with_entries.annotate_fragments(
+        fragments.Fragments(unlabelled_fragments)
+    )
     # check schema (fragment constructor checks it)
     assert labelled_fragments.is_labelled
 
 
 def test_annotator_calls_labels_correctly(annotator_with_entries, unlabelled_fragments):
-    labelled_fragments = annotator_with_entries.annotate_fragments(fragments.Fragments(unlabelled_fragments))
+    labelled_fragments = annotator_with_entries.annotate_fragments(
+        fragments.Fragments(unlabelled_fragments)
+    )
     # check values
     expected = pd.Series([True, False])
     np.array_equal(labelled_fragments.data.is_labelled.values, expected.values)
 
 
-def test_annotator_calls_sisters_correctly(annotator_with_entries, unlabelled_fragments):
-    labelled_fragments = annotator_with_entries.annotate_fragments(fragments.Fragments(unlabelled_fragments))
+def test_annotator_calls_sisters_correctly(
+    annotator_with_entries, unlabelled_fragments
+):
+    labelled_fragments = annotator_with_entries.annotate_fragments(
+        fragments.Fragments(unlabelled_fragments)
+    )
     # check values
     expected = pd.Series(["SisterB", "SisterA"])
     np.array_equal(labelled_fragments.data.sister_identity.values, expected.values)

@@ -5,23 +5,51 @@ import pandas as pd
 import dask.dataframe as dd
 import bioframe as bf
 import pyranges as pr
-from spoc.dataframe_models import ContactSchema
+from typing import Union, Optional
+from .dataframe_models import ContactSchema, PixelSchema
+from .contacts import Contacts
 
 
-class PersistedPixels:
-    """Wrapper for path to pixel parquet file.
-    Responsible for validation. This breaks the IO vs domain logic layer,
-    but improves performance of pileup."""
+class Pixels:
+    """Genomic pixels"""
 
-    def __init__(self, path: str):
-        # check whether path exists
-        if not Path(path).exists():
-            raise ValueError(f"Path: {path} does not exist!")
-        self._path = Path(path)
+    def __init__(
+        self,
+        pixel_source: Union[pd.DataFrame, dd.DataFrame, str],
+        number_fragments: Optional[int] = None,
+        binsize: Optional[int] = None,
+        label_string: Optional[str] = None,
+    ):
+        """Constructor for genomic pixels. pixel_source
+        can be a pandas or dask dataframe or a path. Caveate is that
+        if pixels are a path, source data is not validated.
+        Labelstring specifies the label state of pixels and should be of length
+        number_fragments and specify sister chromatid identity. For example,
+        pixels of size 3, where the first two contacts are from one sister chromatid
+        and the second two from another should be specified as AAB."""
+        self._schema = PixelSchema(number_fragments=number_fragments)
+        self._binsize = binsize
+        self._label_string = label_string
+        self._number_fragments = number_fragments
+        if isinstance(pixel_source, pd.DataFrame) or isinstance(
+            pixel_source, dd.DataFrame
+        ):
+            self._data = self._schema.validate(pixel_source)
+            self._path = None
+        else:
+            # check whether path exists
+            if not Path(pixel_source).exists():
+                raise ValueError(f"Path: {pixel_source} does not exist!")
+            self._path = Path(pixel_source)
+            self._data = None
 
     @property
     def path(self):
         return self._path
+
+    @property
+    def data(self):
+        return self._data
 
 
 class GenomicBinner:
@@ -39,6 +67,7 @@ class GenomicBinner:
         flip_contacts: bool = False,
     ) -> None:
         self._bins = self._create_bins(chrom_sizes, bin_size)
+        self._bin_size = bin_size
         self._same_chromosome = same_chromosome
         if contact_order != 3:
             raise NotImplementedError(
@@ -255,13 +284,10 @@ class GenomicBinner:
             .drop(["start_1", "end_1", "start_2", "end_2", "start_3", "end_3"], axis=1)
         )
 
-    def bin_contacts(self, contacts: dd.DataFrame) -> pd.DataFrame:
+    def bin_contacts(self, contacts: Contacts) -> pd.DataFrame:
         """Bins genomic contacts"""
-        # validate input header
-        self._input_schema.validate_header(
-            contacts
-        )  # TODO: validate this in the contacts constructor
         # check if sister sorting should be performed
+        contacts = contacts.data
         if self._sort_sisters:
             contacts = self._sort_sister_contacts(
                 contacts
@@ -273,7 +299,7 @@ class GenomicBinner:
         contacts_w_midpoints = self._assign_midpoints(
             contacts
         )  # TODO: move this into contacts class?
-        # assign bins
+        # assign bins TODO: map partitions will not work for pandas dataframe
         triplet_bins = contacts_w_midpoints.map_partitions(
             self._assign_bins,
             meta=pd.DataFrame(
@@ -292,6 +318,7 @@ class GenomicBinner:
         # compute pixels -> assumption is that pixels fit into memory after computing
         # TODO: think about how to achieve sorting without computing.
         # Maybe wait for https://github.com/dask/dask/issues/958
+        # TODO: this won't work for pandas contacts
         pixels = (
             triplet_bins.groupby(
                 ["chrom_1", "start_1", "chrom_2", "start_2", "chrom_3", "start_3"],
@@ -299,23 +326,28 @@ class GenomicBinner:
             )
             .size()
             .reset_index()
-            .rename(columns={0: "contact_count"})
+            .rename(columns={0: "count"})
         ).compute()
-        if self._same_chromosome:
-            pixels = (
-                pixels.loc[
-                    (pixels.chrom_1.astype(str) == pixels.chrom_2.astype(str))
-                    & (pixels.chrom_2.astype(str) == pixels.chrom_3.astype(str))
-                ]
-                .drop(["chrom_2", "chrom_3"], axis=1)
-                .rename(columns={"chrom_1": "chrom"})
-            )
-            return pixels.sort_values(
-                ["chrom", "start_1", "start_2", "start_3"]
-            ).reset_index(drop=True)
-        return pixels.sort_values(
-            ["chrom_1", "start_1", "chrom_2", "start_2", "chrom_3", "start_3"]
+        # only retain pixels on same chromosome
+        pixels = (
+            pixels.loc[
+                (pixels.chrom_1.astype(str) == pixels.chrom_2.astype(str))
+                & (pixels.chrom_2.astype(str) == pixels.chrom_3.astype(str))
+            ]
+            .drop(["chrom_2", "chrom_3"], axis=1)
+            .rename(columns={"chrom_1": "chrom"})
+        )
+        # sort pixels
+        pixels_sorted = pixels.sort_values(
+            ["chrom", "start_1", "start_2", "start_3"]
         ).reset_index(drop=True)
+        # construct pixels and return
+        return Pixels(
+            pixels_sorted,
+            number_fragments=self._contact_order,
+            binsize=self._bin_size,
+            label_string="TODO:addlogic",
+        )
 
 
 class PixelManipulator:

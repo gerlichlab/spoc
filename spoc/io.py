@@ -40,24 +40,20 @@ class FileManager:
         return Fragments(data)
 
     @staticmethod
-    def write_fragments(
-        path: str, fragments: Fragments
-    ) -> None:
+    def write_fragments(path: str, fragments: Fragments) -> None:
         """Write annotated fragments"""
         fragments.data.to_parquet(path)
 
     @staticmethod
-    def write_multiway_contacts(
-        path: str, contacts: Contacts
-    ) -> None:
+    def write_multiway_contacts(path: str, contacts: Contacts) -> None:
         """Write multiway contacts"""
         contacts.data.to_parquet(path)
 
-    def load_multiway_contacts(
-        self, path: str, number_fragments: int
-    ) -> Contacts:
+    def load_multiway_contacts(self, path: str, number_fragments: int) -> Contacts:
         """Load multiway contacts"""
-        return Contacts(self._parquet_reader_func(path), number_fragments=number_fragments)
+        return Contacts(
+            self._parquet_reader_func(path), number_fragments=number_fragments
+        )
 
     @staticmethod
     def load_chromosome_sizes(path: str):

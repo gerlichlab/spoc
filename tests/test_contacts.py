@@ -52,6 +52,7 @@ def labelled_df():
         }
     )
 
+
 @pytest.fixture
 def unlabelled_df():
     return pd.DataFrame(
@@ -71,6 +72,7 @@ def unlabelled_df():
         }
     )
 
+
 @pytest.fixture
 def labelled_fragments(labelled_df):
     return fragments.Fragments(labelled_df)
@@ -81,19 +83,26 @@ def unlabelled_fragments(unlabelled_df):
     return fragments.Fragments(unlabelled_df)
 
 
-@pytest.mark.parametrize('fragments', ['labelled_fragments', 'unlabelled_fragments'])
-def test_expander_drops_reads_w_too_little_fragments(triplet_expander, fragments, request):
+@pytest.mark.parametrize("fragments", ["labelled_fragments", "unlabelled_fragments"])
+def test_expander_drops_reads_w_too_little_fragments(
+    triplet_expander, fragments, request
+):
     result = triplet_expander.expand(request.getfixturevalue(fragments)).data
     assert len(set(result.read_name)) == 1
     assert result.read_name[0] == "dummy"
 
-@pytest.mark.parametrize('fragments', ['labelled_fragments', 'unlabelled_fragments'])
-def test_expander_returns_correct_number_of_contacts(triplet_expander, fragments, request):
+
+@pytest.mark.parametrize("fragments", ["labelled_fragments", "unlabelled_fragments"])
+def test_expander_returns_correct_number_of_contacts(
+    triplet_expander, fragments, request
+):
     result = triplet_expander.expand(request.getfixturevalue(fragments)).data
     assert len(result) == 4
 
 
-def test_expander_returns_correct_contacts_labelled(triplet_expander, labelled_fragments):
+def test_expander_returns_correct_contacts_labelled(
+    triplet_expander, labelled_fragments
+):
     result = triplet_expander.expand(labelled_fragments).data
     assert np.array_equal(result["start_1"].values, np.array([1, 1, 1, 2]))
     assert np.array_equal(result["end_1"].values, np.array([4, 4, 4, 5]))
@@ -114,7 +123,10 @@ def test_expander_returns_correct_contacts_labelled(triplet_expander, labelled_f
         np.array(["SisterA", "SisterB", "SisterB", "SisterB"]),
     )
 
-def test_expander_returns_correct_contacts_unlabelled(triplet_expander, unlabelled_fragments):
+
+def test_expander_returns_correct_contacts_unlabelled(
+    triplet_expander, unlabelled_fragments
+):
     result = triplet_expander.expand(unlabelled_fragments).data
     assert np.array_equal(result["start_1"].values, np.array([1, 1, 1, 2]))
     assert np.array_equal(result["end_1"].values, np.array([4, 4, 4, 5]))
@@ -127,10 +139,12 @@ def test_expander_returns_correct_contacts_unlabelled(triplet_expander, unlabell
 
 def test_contacts_constructor_rejects_wrong_df(bad_df):
     with pytest.raises(pa.errors.SchemaError):
-        contacts.Contacts(bad_df, number_fragments= 3)
+        contacts.Contacts(bad_df, number_fragments=3)
 
 
-def test_merge_works_for_good_pandas_df(triplet_expander, contact_manipulator, labelled_fragments):
+def test_merge_works_for_good_pandas_df(
+    triplet_expander, contact_manipulator, labelled_fragments
+):
     contacts = triplet_expander.expand(labelled_fragments)
     result = contact_manipulator.merge_contacts([contacts, contacts]).data
     assert result.shape[0] == 8
@@ -141,7 +155,9 @@ def test_merge_works_for_good_dask_df(
     triplet_expander, contact_manipulator, labelled_fragments
 ):
     cont = triplet_expander.expand(labelled_fragments)
-    contacts_dask = contacts.Contacts(dd.from_pandas(cont.data, npartitions=1), number_fragments=3)
+    contacts_dask = contacts.Contacts(
+        dd.from_pandas(cont.data, npartitions=1), number_fragments=3
+    )
     result = contact_manipulator.merge_contacts(
         [contacts_dask, contacts_dask]
     ).data.compute()
@@ -154,10 +170,11 @@ def test_merge_fails_for_pandas_dask_mixed(
 ):
     with pytest.raises(AssertionError):
         contacts_pandas = triplet_expander.expand(labelled_fragments)
-        contacts_dask = contacts.Contacts(dd.from_pandas(contacts_pandas.data, npartitions=1), number_fragments=3)
-        contact_manipulator.merge_contacts(
-            [contacts_pandas, contacts_dask]
+        contacts_dask = contacts.Contacts(
+            dd.from_pandas(contacts_pandas.data, npartitions=1), number_fragments=3
         )
+        contact_manipulator.merge_contacts([contacts_pandas, contacts_dask])
+
 
 # TODO: merge rejects labelled and unlabelled contacts
 

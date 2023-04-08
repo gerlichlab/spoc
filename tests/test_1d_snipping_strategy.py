@@ -4,7 +4,10 @@ import pandas as pd
 import numpy as np
 from itertools import product
 import pytest
-from spoc.snipping.snipping_strategies import TripletCCT1DSnippingStrategy, SnippingValues
+from spoc.snipping.snipping_strategies import (
+    TripletCCT1DSnippingStrategy,
+    SnippingValues,
+)
 from spoc.pixels import PersistedPixels
 
 # Fixtures
@@ -330,6 +333,7 @@ def standard_snipping_strategy():
         position_slack=1_000_000,
     )
 
+
 @pytest.fixture
 def standard_snipping_strategy_from_string():
     return TripletCCT1DSnippingStrategy(
@@ -402,11 +406,14 @@ def test_entire_region_with_complete_pixels_strategy_from_string(
     """Test whether snipping of an entire region produces correct results when pixels are supplied as dataframe
     and strategy is instantiated with a string"""
     # do the snipping
-    result = standard_snipping_strategy_from_string.snip(complete_synthetic_pixels, single_region)
+    result = standard_snipping_strategy_from_string.snip(
+        complete_synthetic_pixels, single_region
+    )
     # check result
     np.testing.assert_array_almost_equal(
         result.values, expected_entire_single_region_complete.values
     )
+
 
 def test_entire_region_with_complete_pixels_from_file(
     complete_persisted_pixels,
@@ -524,7 +531,9 @@ def test_one_region_center_selection_obs_exp(
     """Tests whether snipping of complete region with center selection produces correct results"""
     # patch random coordinates to return same coordinates
     mocker.patch.object(
-        TripletCCT1DSnippingStrategy, "_get_random_coordinates", return_value=single_region
+        TripletCCT1DSnippingStrategy,
+        "_get_random_coordinates",
+        return_value=single_region,
     )
     # do the snipping
     result = standard_snipping_strategy_obs_exp.snip(
