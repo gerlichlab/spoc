@@ -300,7 +300,7 @@ class GenomicBinner:
         )
         # compute pixels -> assumption is that pixels fit into memory after computing
         # TODO: think about how to achieve sorting without computing.
-        # Maybe wait for https://github.com/dask/dask/issues/958
+        # Maybe wait for https://github.com/dask/dask/issues/958 -> should work now -> bump version
         # TODO: this won't work for pandas contacts
         pixels = (
             triplet_bins.groupby(
