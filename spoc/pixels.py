@@ -63,7 +63,7 @@ class GenomicBinner:
         chrom_sizes: pd.Series,
         contact_order: int = 3,
         flip_contacts: bool = False,
-        label_string: Optional[str] = None,
+        label_string: Optional[str] = None, # TODO: this is not implemented yet
     ) -> None:
         self._bins = self._create_bins(chrom_sizes, bin_size)
         self._bin_size = bin_size

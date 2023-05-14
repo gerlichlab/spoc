@@ -40,8 +40,7 @@ def labelled_df():
             "align_score": [1, 2, 3, 4, 5, 6],
             "align_base_qscore": [1, 2, 3, 4, 5, 6],
             "pass_filter": [True] * 6,
-            "is_labelled": [False, True, False, True, False, True],
-            "sister_identity": [
+            "meta_data": [
                 "SisterA",
                 "SisterB",
                 "SisterA",
@@ -111,15 +110,15 @@ def test_expander_returns_correct_contacts_labelled(
     assert np.array_equal(result["start_3"].values, np.array([3, 4, 4, 4]))
     assert np.array_equal(result["end_3"].values, np.array([6, 7, 7, 7]))
     assert np.array_equal(
-        result["sister_identity_1"].values,
+        result["meta_data_1"].values,
         np.array(["SisterA", "SisterA", "SisterA", "SisterB"]),
     )
     assert np.array_equal(
-        result["sister_identity_2"].values,
+        result["meta_data_2"].values,
         np.array(["SisterB", "SisterB", "SisterA", "SisterA"]),
     )
     assert np.array_equal(
-        result["sister_identity_3"].values,
+        result["meta_data_3"].values,
         np.array(["SisterA", "SisterB", "SisterB", "SisterB"]),
     )
 
@@ -134,7 +133,7 @@ def test_expander_returns_correct_contacts_unlabelled(
     assert np.array_equal(result["end_2"].values, np.array([5, 5, 6, 6]))
     assert np.array_equal(result["start_3"].values, np.array([3, 4, 4, 4]))
     assert np.array_equal(result["end_3"].values, np.array([6, 7, 7, 7]))
-    assert "sister_identity_1" not in result.columns
+    assert "meta_data_1" not in result.columns
 
 
 def test_contacts_constructor_rejects_wrong_df(bad_df):

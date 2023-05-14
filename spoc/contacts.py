@@ -14,17 +14,17 @@ class Contacts:
         self,
         contact_frame: Optional[Union[pd.DataFrame, dd.DataFrame]] = None,
         number_fragments: int = 3,
-        is_labelled: bool = True,
+        contains_meta_data: bool = True,
     ) -> None:
         self._schema = ContactSchema(
-            number_fragments=number_fragments, is_labelled=is_labelled
+            number_fragments=number_fragments, contains_meta_data=contains_meta_data
         )
         if isinstance(contact_frame, pd.DataFrame):
             self.is_dask = False
         else:
             self.is_dask = True
         self.number_fragments = number_fragments
-        self.is_labelled = is_labelled
+        self.contains_meta_data = contains_meta_data
         self._data = self._schema.validate(contact_frame)
 
     @property
@@ -56,7 +56,7 @@ class ContactManipulator:
         assert (
             len(set([i.is_dask for i in merge_list])) == 1
         ), "Mixture of dask and pandas dataframes is not supported!"
-        # TODO: assert all contacts are labelled
+        # TODO: assert all have same labelling state
 
         number_fragments = merge_list[0].number_fragments
         if merge_list[0].is_dask:

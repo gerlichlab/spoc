@@ -16,15 +16,15 @@ class Fragments:
 
     def __init__(self, fragment_frame: Union[pd.DataFrame, dd.DataFrame]) -> None:
         self._data = FragmentSchema.validate(fragment_frame)
-        self._is_labelled = True if "is_labelled" in fragment_frame.columns else False
+        self._contains_meta_data = True if "meta_data" in fragment_frame.columns else False
 
     @property
     def data(self):
         return self._data
 
     @property
-    def is_labelled(self):
-        return self._is_labelled
+    def contains_meta_data(self):
+        return self._contains_meta_data
 
 
 class FragmentAnnotator:
@@ -68,7 +68,8 @@ class FragmentAnnotator:
         return Fragments(
             fragments.data.assign(is_labelled=self._assign_label_state)
             .dropna(subset=["is_labelled"])
-            .assign(sister_identity=self._assign_sister)
+            .assign(meta_data=self._assign_sister)
+            .drop("is_labelled", axis=1)
         )
 
 
@@ -108,11 +109,11 @@ class FragmentExpander:
                 # add reads
                 for index, align in enumerate(alignments, start=1):
                     contact.update(
-                        self._add_suffix(align, index, fragments.is_labelled)
+                        self._add_suffix(align, index, fragments.contains_meta_data)
                     )
                 result.append(contact)
         return Contacts(
             pd.DataFrame(result),
             number_fragments=self._number_fragments,
-            is_labelled=fragments.is_labelled,
+            contains_meta_data=fragments.contains_meta_data,
         )
