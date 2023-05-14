@@ -114,6 +114,5 @@ class FragmentExpander:
                 result.append(contact)
         return Contacts(
             pd.DataFrame(result),
-            number_fragments=self._number_fragments,
-            contains_meta_data=fragments.contains_meta_data,
+            number_fragments=self._number_fragments
         )
