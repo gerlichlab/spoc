@@ -44,11 +44,12 @@ class Contacts:
     def flip_symmetric_contacts(self) -> None:
         """Flips contacts based on inherent symmetry. TODO"""
         if self._metadata_combi is None:
-            raise ValueError("Flipping symmetry is only supported for pure metadata combinations. Either subset or pass to constructor.")
+            raise ValueError("""Flipping symmetry is only supported for pure metadata combinations.
+                             Either subset or pass to constructor.""")
         raise NotImplementedError
 
     def __repr__(self) -> str:
-        return f"<Contacts | order: {self.number_fragments} | labelled: {self.is_labelled}>"
+        return f"<Contacts | order: {self.number_fragments} | contains metadata: {self.contains_meta_data}>"
 
 
 class ContactManipulator:
