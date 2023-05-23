@@ -1,10 +1,12 @@
 """Managing multi-way contacts."""
 
+from __future__ import annotations # needed for self reference in type hints
 from typing import List, Union
 import pandas as pd
 import dask.dataframe as dd
 from typing import Union, Optional
-from .dataframe_models import ContactSchema
+from spoc.dataframe_models import ContactSchema
+from spoc.symmetry import LabelledSymmetryFlipper, UnlabelledSymmetryFlipper
 
 
 class Contacts:
@@ -41,12 +43,17 @@ class Contacts:
         """Filters on metadata"""
         # TODO
 
-    def flip_symmetric_contacts(self) -> None:
-        """Flips contacts based on inherent symmetry. TODO"""
-        if self._metadata_combi is None:
+    def flip_symmetric_contacts(self) -> Contacts:
+        """Flips contacts based on inherent symmetry"""
+        if self.contains_meta_data and self._metadata_combi is None:
             raise ValueError("""Flipping symmetry is only supported for pure metadata combinations.
                              Either subset or pass to constructor.""")
-        raise NotImplementedError
+        if self.contains_meta_data:
+            flipper = LabelledSymmetryFlipper(self._metadata_combi)
+        else:
+            flipper = UnlabelledSymmetryFlipper()
+        result = flipper.flip_contacts(self.data)
+        return Contacts(result, number_fragments=self.number_fragments)
 
     def __repr__(self) -> str:
         return f"<Contacts | order: {self.number_fragments} | contains metadata: {self.contains_meta_data}>"
