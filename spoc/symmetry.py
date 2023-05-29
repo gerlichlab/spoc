@@ -28,7 +28,7 @@ class UnlabelledSymmetryFlipper(SymmetryFlipper):
         for i in range(len(order)):
             for column in columns:
                 current_name = f"{column}_{i+1}"
-                new_name = f"{column}_{order[i]}"
+                new_name = f"{column}_{order.index(i+1) + 1}"
                 rename_columns[current_name] = new_name
         return rename_columns
 

@@ -14,21 +14,29 @@ class Contacts:
 
     def __init__(
         self,
-        contact_frame: Optional[Union[pd.DataFrame, dd.DataFrame]] = None,
-        number_fragments: int = 3,
+        contact_frame: Union[pd.DataFrame, dd.DataFrame],
+        number_fragments: Optional[int] = None,
         metadata_combi: Optional[List[str]] = None
     ) -> None:
         self.contains_meta_data = "meta_data_1" in contact_frame.columns # All contacts contain at least one fragment
+        if number_fragments is None:
+            self.number_fragments = self._guess_number_fragments(contact_frame)
+        else:
+            self.number_fragments = number_fragments
         self._schema = ContactSchema(
-            number_fragments=number_fragments, contains_meta_data=self.contains_meta_data
+            number_fragments=self.number_fragments, contains_meta_data=self.contains_meta_data
         )
         if isinstance(contact_frame, pd.DataFrame):
             self.is_dask = False
         else:
             self.is_dask = True
-        self.number_fragments = number_fragments
         self._data = self._schema.validate(contact_frame)
         self._metadata_combi = metadata_combi
+
+    def _guess_number_fragments(self, contact_frame: Union[pd.DataFrame, dd.DataFrame]) -> int:
+        """Guesses the number of fragments from the contact frame"""
+        return max(int(i.split("_")[1]) for i in contact_frame.columns if "start" in i)
+
 
     @property
     def data(self):
