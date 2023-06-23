@@ -4,7 +4,7 @@ from __future__ import annotations # needed for self reference in type hints
 from typing import List, Union
 import pandas as pd
 import dask.dataframe as dd
-from typing import Union, Optional
+from typing import Union, Optional, Dict
 from itertools import permutations, product
 from spoc.dataframe_models import ContactSchema
 import numpy as np
@@ -21,6 +21,7 @@ class Contacts:
         number_fragments: Optional[int] = None,
         metadata_combi: Optional[List[str]] = None,
         label_sorted: bool = False,
+        binary_labels_equal: bool = False,
     ) -> None:
         self.contains_meta_data = "meta_data_1" in contact_frame.columns # All contacts contain at least one fragment
         if number_fragments is None:
@@ -37,11 +38,23 @@ class Contacts:
         self._data = self._schema.validate(contact_frame)
         self.metadata_combi = metadata_combi
         self.label_sorted = label_sorted
+        self.binary_labels_equal = binary_labels_equal
 
     def _guess_number_fragments(self, contact_frame: DataFrame) -> int:
         """Guesses the number of fragments from the contact frame"""
         return max(int(i.split("_")[1]) for i in contact_frame.columns if "start" in i)
 
+    def get_label_values(self) -> List[str]:
+        """Returns all label values"""
+        if not self.contains_meta_data:
+            raise ValueError("Contacts do not contain metadata!")
+        output = set()
+        for i in range(self.number_fragments):
+            if self.is_dask:
+                output.update(self.data[f"meta_data_{i+1}"].unique().compute())
+            else:
+                output.update(self.data[f"meta_data_{i+1}"].unique())
+        return output
 
     @property
     def data(self):
@@ -105,9 +118,11 @@ class ContactManipulator:
             subsets.append(df.query(query).rename(columns=self._generate_rename_columns(perm)))
         # determine which method to use for concatenation
         if isinstance(df, pd.DataFrame):
-            result = pd.concat(subsets)
+            result = pd.concat(subsets).sort_index()
         else:
-            result = dd.concat(subsets)
+            result = dd.concat(subsets).reset_index()\
+                                        .sort_values("index")\
+                                        .set_index("index")
         return result
 
     def sort_labels(self, contacts:Contacts) -> Contacts:
@@ -115,9 +130,7 @@ class ContactManipulator:
         if not contacts.contains_meta_data:
             raise ValueError("Sorting labels for unlabelled contacts is not implemented.")
         # get label values. TODO: this should be a method of contacts
-        label_values = set()
-        for i in range(contacts.number_fragments):
-            label_values.update(contacts.data[f"meta_data_{i+1}"].unique())
+        label_values = contacts.get_label_values()
         # iterate over all permutations of label values
         subsets = []
         for perm in product(label_values, repeat=contacts.number_fragments):
@@ -126,17 +139,66 @@ class ContactManipulator:
             subsets.append(contacts.data.query(query).rename(columns=self._generate_rename_columns(desired_order)))
         # determine which method to use for concatenation
         if contacts.is_dask:
-            result = dd.concat(subsets).sort_index()
+            # this is a bit of a hack to get the index sorted. Dask does not support index sorting
+            result = dd.concat(subsets).reset_index()\
+                                        .sort_values("index")\
+                                        .set_index("index")
         else:
             result = pd.concat(subsets).sort_index()
         return Contacts(result, number_fragments=contacts.number_fragments, label_sorted=True)
 
 
-    def subset_on_metadata(self, contacts:Contacts, metadata_combi: List[List[str]]) -> Contacts:
-        """Subset contacts based on metadata and sort label states.
-        If the metadata combination list contains more than one element, all
-        combinations will be assumed to be equivalent and renamed to the first
-        element in the list."""
+    def _generate_binary_label_mapping(self, label_values:List[str], number_fragments: int) -> Dict[str, str]:
+        sorted_labels = sorted(label_values)
+        mapping = {}
+        for i in range(number_fragments + 1):
+            target = [sorted_labels[0]]*(number_fragments - i) + [sorted_labels[-1]]*(i)
+            source = [sorted_labels[0]]*(i) + [sorted_labels[-1]]*(number_fragments - i)
+            if i <= (number_fragments // 2):
+                mapping[tuple(source)] = tuple(target)
+            else:
+                mapping[tuple(source)] = ()
+        return mapping
+
+    def equate_binary_labels(self, contacts:Contacts) -> Contacts:
+        """Binary labels often only carry information about whether
+        they happen between the same or different fragments. This
+        method equates these labels be replacing all equivalent binary labels with
+        the alphabetically first label.
+        For example, if we have a contact between two fragments
+        that are labelled A and B, the label is either AB or BA. For most
+        applications, there is no difference between these two contacts and this
+        method would replace both labels with AB.
+        """
+        assert contacts.contains_meta_data, "Contacts do not contain metadata!"
+        assert contacts.label_sorted, "Contacts are not label sorted!"
+        # get label values
+        label_values = contacts.get_label_values()
+        assert len(label_values) == 2, "Equate binary labels only works for binary labels!"
+        # generate mapping diectionary
+        mapping = self._generate_binary_label_mapping(label_values, contacts.number_fragments)
+        subsets = []
+        for source, target in mapping.items():
+            query = " and ".join([f"meta_data_{i+1} == '{j}'" for i, j in enumerate(source)])
+            subset = contacts.data.query(query)
+            # assign target labels to dataframe
+            for i, j in enumerate(target):
+                subset[f"meta_data_{i+1}"] = j
+            subsets.append(subset)
+        # determine which method to use for concatenation
+        if contacts.is_dask:
+            # this is a bit of a hack to get the index sorted. Dask does not support index sorting
+            result = dd.concat(subsets).reset_index()\
+                                        .sort_values("index")\
+                                        .set_index("index")
+        else:
+            result = pd.concat(subsets).sort_index()
+        return Contacts(result, number_fragments=contacts.number_fragments, label_sorted=True,
+                        binary_labels_equal=True)
+
+
+    def subset_on_metadata(self, contacts:Contacts, metadata_combi: List[str]) -> Contacts:
+        """Subset contacts based on metadata and sort label states."""
         # TODO
 
 
