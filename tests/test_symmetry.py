@@ -29,6 +29,10 @@ def unlabelled_contacts_2d():
     )
 
 @pytest.fixture
+def unlabelled_contacts_2d_dask(unlabelled_contacts_2d):
+    return dd.from_pandas(unlabelled_contacts_2d, npartitions=2)
+
+@pytest.fixture
 def unlabelled_contacts_3d():
     return pd.DataFrame(
         {
@@ -54,6 +58,10 @@ def unlabelled_contacts_3d():
             "align_base_qscore_3": [10, 10, 5]
         }
     )
+
+@pytest.fixture
+def unlabelled_contacts_3d_dask(unlabelled_contacts_3d):
+    return dd.from_pandas(unlabelled_contacts_3d, npartitions=2)
 
 @pytest.fixture
 def unlabelled_contacts_2d_flipped():
@@ -240,4 +248,14 @@ def test_labelled_contacts_are_sorted_correctly(unsorted, sorted_contacts, reque
     contacts = Contacts(unsorted)
     result = ContactManipulator().sort_labels(contacts)
     pd.testing.assert_frame_equal(result.data, sorted_contacts)
+    assert result.label_sorted
+
+@pytest.mark.parametrize("unsorted, sorted_contacts",
+                            [('labelled_binary_contacts_2d', 'labelled_binary_contacts_2d_sorted'),
+                             ('labelled_binary_contacts_3d', 'labelled_binary_contacts_3d_sorted')])
+def test_labelled_contacts_are_sorted_correctly_dask(unsorted, sorted_contacts, request):
+    unsorted, sorted_contacts = dd.from_pandas(request.getfixturevalue(unsorted), npartitions=1), request.getfixturevalue(sorted_contacts)
+    contacts = Contacts(unsorted)
+    result = ContactManipulator().sort_labels(contacts)
+    pd.testing.assert_frame_equal(result.data.compute().reset_index(drop=True), sorted_contacts.reset_index(drop=True))
     assert result.label_sorted
