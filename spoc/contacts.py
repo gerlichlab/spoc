@@ -1,7 +1,7 @@
 """Managing multi-way contacts."""
 
 from __future__ import annotations # needed for self reference in type hints
-from typing import List, Union
+from typing import List, Union, Optional
 import pandas as pd
 import dask.dataframe as dd
 from typing import Union, Optional, Dict
@@ -22,6 +22,7 @@ class Contacts:
         metadata_combi: Optional[List[str]] = None,
         label_sorted: bool = False,
         binary_labels_equal: bool = False,
+        symmetry_flipped: bool = False,
     ) -> None:
         self.contains_meta_data = "meta_data_1" in contact_frame.columns # All contacts contain at least one fragment
         if number_fragments is None:
@@ -39,6 +40,7 @@ class Contacts:
         self.metadata_combi = metadata_combi
         self.label_sorted = label_sorted
         self.binary_labels_equal = binary_labels_equal
+        self.symmetry_flipped = symmetry_flipped
 
     def _guess_number_fragments(self, contact_frame: DataFrame) -> int:
         """Guesses the number of fragments from the contact frame"""
@@ -99,23 +101,79 @@ class ContactManipulator:
         )
 
     @staticmethod
-    def _generate_rename_columns(order):
+    def _generate_rename_columns(order, start_index=1):
         columns = ["chrom", "start", "end", "mapping_quality", "align_score", "align_base_qscore", "meta_data"]
         rename_columns = {}
         for i in range(len(order)):
             for column in columns:
-                current_name = f"{column}_{i+1}"
-                new_name = f"{column}_{order.index(i+1) + 1}"
+                current_name = f"{column}_{i+start_index}"
+                new_name = f"{column}_{order.index(i+start_index) + start_index}"
                 rename_columns[current_name] = new_name
         return rename_columns
 
-    def _flip_unlabelled_contacts(self, df: DataFrame) -> DataFrame:
+    @staticmethod
+    def _get_label_combinations(labels, order):
+        sorted_labels = sorted(labels)
+        combinations = set(tuple(sorted(i)) for i in product(sorted_labels, repeat=order))
+        return combinations
+
+    @staticmethod
+    def _get_combination_splits(combination):
+        splits = []
+        for index,(i, j) in enumerate(zip(combination[:-1], combination[1:])):
+            if i != j:
+                splits.append(index + 2)
+        return [1] + splits + [len(combination) + 1]
+
+    def _flip_unlabelled_contacts(self, df: DataFrame, start_index:Optional[int]=None, end_index:Optional[int]=None) -> DataFrame:
         """Flips contacts"""
         fragment_order = max(int(i.split("_")[1]) for i in df.columns if "start" in i)
+        if start_index is None:
+            start_index = 1
+        if end_index is None:
+            end_index = fragment_order + 1
         subsets = []
-        for perm in permutations(range(1, fragment_order+1)):
+        for perm in permutations(range(start_index, end_index)):
             query = "<=".join([f"start_{i}" for i in perm])
-            subsets.append(df.query(query).rename(columns=self._generate_rename_columns(perm)))
+            subsets.append(df.query(query).rename(columns=self._generate_rename_columns(perm, start_index)))
+        # determine which method to use for concatenation
+        if isinstance(df, pd.DataFrame):
+            result = pd.concat(subsets).sort_index()
+        else:
+            result = dd.concat(subsets).reset_index()\
+                                        .sort_values("index")\
+                                        .set_index("index")
+        return result
+
+    def _flip_labelled_contacts(self, df: DataFrame, label_values: List[str]) -> DataFrame:
+        """Flips labelled contacts"""
+        fragment_order = max(int(i.split("_")[1]) for i in df.columns if "start" in i)
+        label_combinations = self._get_label_combinations(label_values, fragment_order)
+        subsets = []
+        for combination in label_combinations:
+            splits = self._get_combination_splits(combination)
+            # separate out name constanc_columns
+            query = " and ".join([f"meta_data_{i} == '{j}'" for i, j in enumerate(combination, 1)])
+            candidate_frame = df.query(query)
+            if len(candidate_frame) == 0:
+                continue
+            constant_df, variable_df = candidate_frame[['read_name', 'read_length']], candidate_frame.drop(['read_name', 'read_length'], axis=1)
+            split_frames = [constant_df]
+            for start, end in zip(splits, splits[1:]):
+                # get all columns wiht nubmer between start and 
+                subset_columns = [i for i in variable_df.columns if start <= int(i.split("_")[-1]) < end]
+                # if only columns is present, no need for flipping
+                if start + 1 == end:
+                    split_frame = variable_df[subset_columns]
+                else:
+                    split_frame = self._flip_unlabelled_contacts(variable_df[subset_columns], start, end)
+                split_frames.append(split_frame)
+            # concatenate split frames
+            if isinstance(df, pd.DataFrame):
+                subset = pd.concat(split_frames, axis=1)
+            else:
+                subset = dd.concat(split_frames, axis=1)
+            subsets.append(subset)
         # determine which method to use for concatenation
         if isinstance(df, pd.DataFrame):
             result = pd.concat(subsets).sort_index()
@@ -166,9 +224,7 @@ class ContactManipulator:
         method equates these labels be replacing all equivalent binary labels with
         the alphabetically first label.
         For example, if we have a contact between two fragments
-        that are labelled A and B, the label is either AB or BA. For most
-        applications, there is no difference between these two contacts and this
-        method would replace both labels with AB.
+        that are labelled B and B, the label will be replaced with AA.
         """
         assert contacts.contains_meta_data, "Contacts do not contain metadata!"
         assert contacts.label_sorted, "Contacts are not label sorted!"
@@ -204,11 +260,14 @@ class ContactManipulator:
 
     def flip_symmetric_contacts(self, contacts: Contacts) -> Contacts:
         """Flips contacts based on inherent symmetry"""
-        if contacts.contains_meta_data and contacts.metadata_combi is None:
-            raise ValueError("""Flipping symmetry is only supported for pure metadata combinations.
-                             Either subset or pass to constructor.""")
         if contacts.contains_meta_data:
-            raise NotImplementedError("Flipping symmetry for labelled contacts is not yet implemented.")
+            assert contacts.label_sorted, "Contacts are not label sorted!"
+            label_values = contacts.get_label_values()
+            result = self._flip_labelled_contacts(contacts.data, label_values)
+            return Contacts(result, number_fragments=contacts.number_fragments, label_sorted=True,
+                            binary_labels_equal=contacts.binary_labels_equal,
+                            symmetry_flipped=True
+                            )
         else:
             result = self._flip_unlabelled_contacts(contacts.data)
-        return Contacts(result, number_fragments=contacts.number_fragments)
+            return Contacts(result, number_fragments=contacts.number_fragments, symmetry_flipped=True)
