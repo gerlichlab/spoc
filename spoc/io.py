@@ -49,6 +49,8 @@ class FileManager:
         """Write multiway contacts"""
         contacts.data.to_parquet(path)
 
+
+    # TODO; find a solution to hold information about symmetry flipping, label_sorting and binary_labeels equating
     def load_multiway_contacts(self, path: str, number_fragments: int) -> Contacts:
         """Load multiway contacts"""
         return Contacts(

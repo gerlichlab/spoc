@@ -73,6 +73,7 @@ class FragmentAnnotator:
         )
 
 
+# TODO: make generic such that label library can hold arbitrary information
 class FragmentExpander:
     """Expands n-way fragments over sequencing reads
     to yield contacts."""
