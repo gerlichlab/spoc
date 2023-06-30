@@ -93,7 +93,7 @@ class TripletCCTSnippingStrategy(SnippingStrategy):
                CEIL((triplets.start_1 - poi.pos) / {binsize}::float)::int AS bin_1,
                CEIL((triplets.start_2 - poi.pos) / {binsize}::float)::int AS bin_2,
                CEIL((triplets.start_3 - poi.pos) / {binsize}::float)::int AS bin_3,
-               SUM(triplets.contact_count)::int AS contacts
+               SUM(triplets.contact_count) AS contacts
         FROM {triplets} AS triplets
         INNER JOIN poi ON poi.chrom = triplets.chrom
         WHERE poi.snip_start <= triplets.start_1 AND triplets.start_1 < poi.snip_end AND
@@ -150,7 +150,7 @@ class TripletCCTSnippingStrategy(SnippingStrategy):
 
 class TripletCCT1DSnippingStrategy(TripletCCTSnippingStrategy):
     REDUCTION_QUERY = """
-        SELECT position_id, bin_1, bin_2, SUM(contacts)::int as contacts
+        SELECT position_id, bin_1, bin_2, SUM(contacts) as contacts
         FROM full_snips
         WHERE {offset_1} <= bin_3 AND  bin_3 <= {offset_2}
         GROUP BY position_id, bin_1, bin_2
@@ -265,7 +265,7 @@ class TripletCCT1DSnippingStrategy(TripletCCTSnippingStrategy):
 
 class TripletCCT2DSnippingStrategy(TripletCCTSnippingStrategy):
     REDUCTION_QUERY = """
-        SELECT position_id, bin_3, SUM(contacts)::int AS contacts
+        SELECT position_id, bin_3, SUM(contacts) AS contacts
         FROM full_snips
         WHERE {offset_11} <= bin_1 AND bin_1 <= {offset_12} AND
             {offset_21} <= bin_2 AND bin_2 <= {offset_22}
