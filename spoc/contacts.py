@@ -67,10 +67,6 @@ class Contacts:
         self._data = self._schema.validate(contact_frame)
 
 
-    def subset_on_metadata(self, metadata_combi:List[str]):
-        """Filters on metadata and sorts label states"""
-        # TODO
-
     def __repr__(self) -> str:
         return f"<Contacts | order: {self.number_fragments} | contains metadata: {self.contains_meta_data}>"
 

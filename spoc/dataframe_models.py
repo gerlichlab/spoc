@@ -102,35 +102,43 @@ class ContactSchema:
         return self._schema.validate(data_frame)
 
 
-# schemas for higher order pixels TODO: add higher order pixels or generic order
-
-
 class PixelSchema:
     """Dynamic schema for n-way pixels"""
 
-    # field groups
-
-    constant_fields = {
-        "chrom": pa.Column(str),
-        "count": pa.Column(int),
-        "corrected_count": pa.Column(float, required=False),
-    }
-
-    def __init__(self, number_fragments: int = 3) -> None:
+    def __init__(self, number_fragments: int = 3, same_chromosome: bool = True) -> None:
         self._number_fragments = number_fragments
+        self._same_chromosome = same_chromosome
         self._schema = pa.DataFrameSchema(
             dict(
-                self.constant_fields,
+                self._get_constant_fields(),
                 **self._expand_contact_fields(range(1, number_fragments + 1)),
             ),
             coerce=True,
         )
 
-    @staticmethod
-    def _get_contact_fields():
-        return {
-            "start": pa.Column(int),
-        }
+    def _get_contact_fields(self):
+        if self._same_chromosome:
+            return {
+                "start": pa.Column(int),
+            }
+        else:
+            return {
+                "chrom": pa.Column(str),
+                "start": pa.Column(int)
+            }
+
+    def _get_constant_fields(self):
+        if self._same_chromosome:
+                return {
+                        "chrom": pa.Column(str),
+                        "count": pa.Column(int),
+                        "corrected_count": pa.Column(float, required=False),
+                    }
+        else:
+                return  {
+                        "count": pa.Column(int),
+                        "corrected_count": pa.Column(float, required=False),
+                    }
 
     def _expand_contact_fields(self, expansions: Iterable = (1, 2, 3)) -> dict:
         """adds suffixes to fields"""
