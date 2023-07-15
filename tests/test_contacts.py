@@ -5,6 +5,10 @@ import numpy as np
 import dask.dataframe as dd
 
 from spoc import contacts, dataframe_models, fragments
+from .fixtures.symmetry import (
+    unlabelled_contacts_2d,
+    labelled_binary_contacts_2d_sorted
+)
 
 
 @pytest.fixture
@@ -173,6 +177,34 @@ def test_merge_fails_for_pandas_dask_mixed(
             dd.from_pandas(contacts_pandas.data, npartitions=1), number_fragments=3
         )
         contact_manipulator.merge_contacts([contacts_pandas, contacts_dask])
+
+def test_subset_metadata_fails_if_not_labelled(unlabelled_contacts_2d):
+    contact_manipulator = contacts.ContactManipulator()
+    unlab_contacts = contacts.Contacts(unlabelled_contacts_2d)
+    with pytest.raises(AssertionError):
+        contact_manipulator.subset_on_metadata(unlab_contacts, ['A', 'B'])
+
+
+def test_subset_metadata_fails_if_pattern_longer_than_number_fragments(labelled_binary_contacts_2d_sorted):
+    contact_manipulator = contacts.ContactManipulator()
+    lab_contacts = contacts.Contacts(labelled_binary_contacts_2d_sorted)
+    with pytest.raises(AssertionError):
+        contact_manipulator.subset_on_metadata(lab_contacts, ['A', 'B', 'A'])
+
+def test_subset_metadata_fails_if_pattern_contains_strings_not_in_metadata(labelled_binary_contacts_2d_sorted):
+    contact_manipulator = contacts.ContactManipulator()
+    lab_contacts = contacts.Contacts(labelled_binary_contacts_2d_sorted)
+    with pytest.raises(AssertionError):
+        contact_manipulator.subset_on_metadata(lab_contacts, ['A', 'C'])
+
+def test_subset_metadata_creates_correct_subset(labelled_binary_contacts_2d_sorted):
+    contact_manipulator = contacts.ContactManipulator()
+    lab_contacts = contacts.Contacts(labelled_binary_contacts_2d_sorted)
+    result = contact_manipulator.subset_on_metadata(lab_contacts, ['A', 'B'])
+    assert len(result.data) == 2
+    assert result.data['meta_data_1'].unique() == ['A']
+    assert result.data['meta_data_2'].unique() == ['B']
+    assert result.metadata_combi == ['A', 'B']
 
 
 # TODO: merge rejects labelled and unlabelled contacts

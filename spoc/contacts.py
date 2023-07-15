@@ -258,8 +258,23 @@ class ContactManipulator:
 
 
     def subset_on_metadata(self, contacts:Contacts, metadata_combi: List[str]) -> Contacts:
-        """Subset contacts based on metadata and sort label states."""
-        # TODO
+        """Subset contacts based on metadata"""
+        # check if metadata is present
+        assert contacts.contains_meta_data, "Contacts do not contain metadata!"
+        # check if metadata_combi has the correct length
+        assert len(metadata_combi) == contacts.number_fragments, "Metadata combination does not match number of fragments!"
+        # get label values
+        label_values = contacts.get_label_values()
+        # check if metadata_combi is compatible with label values
+        assert all([i in label_values for i in metadata_combi]), "Metadata combination is not compatible with label values!"
+        # subset contacts
+        query = " and ".join([f"meta_data_{i+1} == '{j}'" for i, j in enumerate(metadata_combi)])
+        result = contacts.data.query(query)
+        return Contacts(result, number_fragments=contacts.number_fragments,
+                        metadata_combi=metadata_combi,
+                        label_sorted=contacts.label_sorted,
+                        binary_labels_equal=contacts.binary_labels_equal,
+                        symmetry_flipped=contacts.symmetry_flipped)
 
 
     def flip_symmetric_contacts(self, contacts: Contacts) -> Contacts:
