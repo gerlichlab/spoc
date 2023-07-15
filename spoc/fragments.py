@@ -27,6 +27,7 @@ class Fragments:
         return self._contains_meta_data
 
 
+# TODO: make generic such that label library can hold arbitrary information
 class FragmentAnnotator:
     """Responsible for annotating labels and sister identity of mapped read fragments"""
 
@@ -73,7 +74,7 @@ class FragmentAnnotator:
         )
 
 
-# TODO: make generic such that label library can hold arbitrary information
+
 class FragmentExpander:
     """Expands n-way fragments over sequencing reads
     to yield contacts."""

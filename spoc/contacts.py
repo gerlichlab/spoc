@@ -177,9 +177,12 @@ class ContactManipulator:
         # determine which method to use for concatenation
         if isinstance(df, pd.DataFrame):
             result = pd.concat(subsets).sort_index()
+            # this is needed if there are reads with equal start positions
+            result = result.loc[~result.index.duplicated(keep='first')]
         else:
             result = dd.concat(subsets).reset_index()\
                                         .sort_values("index")\
+                                        .drop_duplicates(subset=['index'])\
                                         .set_index("index")
         return result
 
@@ -187,7 +190,7 @@ class ContactManipulator:
         """Sorts labels in ascending, alphabetical order"""
         if not contacts.contains_meta_data:
             raise ValueError("Sorting labels for unlabelled contacts is not implemented.")
-        # get label values. TODO: this should be a method of contacts
+        # get label values.
         label_values = contacts.get_label_values()
         # iterate over all permutations of label values
         subsets = []
@@ -227,7 +230,8 @@ class ContactManipulator:
         that are labelled B and B, the label will be replaced with AA.
         """
         assert contacts.contains_meta_data, "Contacts do not contain metadata!"
-        assert contacts.label_sorted, "Contacts are not label sorted!"
+        if not contacts.label_sorted:
+            contacts = self.sort_labels(contacts)
         # get label values
         label_values = contacts.get_label_values()
         assert len(label_values) == 2, "Equate binary labels only works for binary labels!"
@@ -261,7 +265,8 @@ class ContactManipulator:
     def flip_symmetric_contacts(self, contacts: Contacts) -> Contacts:
         """Flips contacts based on inherent symmetry"""
         if contacts.contains_meta_data:
-            assert contacts.label_sorted, "Contacts are not label sorted!"
+            if not contacts.label_sorted:
+                contacts = self.sort_labels(contacts)
             label_values = contacts.get_label_values()
             result = self._flip_labelled_contacts(contacts.data, label_values)
             return Contacts(result, number_fragments=contacts.number_fragments, label_sorted=True,

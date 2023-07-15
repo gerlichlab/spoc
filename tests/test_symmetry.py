@@ -24,7 +24,9 @@ from .fixtures.symmetry import (
             labelled_binary_contacts_2d_unflipped,
             labelled_binary_contacts_2d_flipped,
             labelled_binary_contacts_3d_unflipped,
+            labelled_binary_contacts_3d_unflipped_example2,
             labelled_binary_contacts_3d_flipped,
+            labelled_binary_contacts_3d_flipped_example2
 )
 
 
@@ -69,11 +71,6 @@ def test_labelled_contacts_are_sorted_correctly_dask(unsorted, sorted_contacts, 
     assert result.label_sorted
 
 
-def test_equate_binary_lables_raises_error_for_unsorted_contacts(labelled_binary_contacts_2d):
-    contacts = Contacts(labelled_binary_contacts_2d)
-    with pytest.raises(AssertionError):
-        ContactManipulator().equate_binary_labels(contacts)
-
 @pytest.mark.parametrize("unequated, equated",
                             [('binary_contacts_not_equated_2d', 'binary_contacts_equated_2d'),
                              ('binary_contacts_not_equated_3d', 'binary_contacts_equated_3d'),
@@ -95,24 +92,20 @@ def test_equate_binary_labels_dask(unequated, equated, request):
     pd.testing.assert_frame_equal(result.data.compute().reset_index(drop=True), equated.reset_index(drop=True))
 
 
-def test_flip_labelled_contacts_raises_error_for_unsorted_contacts(labelled_binary_contacts_2d_unflipped):
-    contacts = Contacts(labelled_binary_contacts_2d_unflipped)
-    with pytest.raises(AssertionError):
-        ContactManipulator().flip_symmetric_contacts(contacts)
-
-
 @pytest.mark.parametrize("unflipped, flipped",
                             [('labelled_binary_contacts_2d_unflipped', 'labelled_binary_contacts_2d_flipped'),
+                             ('labelled_binary_contacts_3d_unflipped_example2', 'labelled_binary_contacts_3d_flipped_example2'),
                              ('labelled_binary_contacts_3d_unflipped', 'labelled_binary_contacts_3d_flipped')])
 def test_flip_labelled_contacts(unflipped, flipped, request):
     unflipped, flipped = request.getfixturevalue(unflipped), request.getfixturevalue(flipped)
     contacts = Contacts(unflipped, label_sorted=True)
     result = ContactManipulator().flip_symmetric_contacts(contacts)
-    pd.testing.assert_frame_equal(result.data, flipped)
+    pd.testing.assert_frame_equal(result.data.reset_index(drop=True), flipped.reset_index(drop=True))
 
 
 @pytest.mark.parametrize("unflipped, flipped",
                             [('labelled_binary_contacts_2d_unflipped', 'labelled_binary_contacts_2d_flipped'),
+                             ('labelled_binary_contacts_3d_unflipped_example2', 'labelled_binary_contacts_3d_flipped_example2'),
                              ('labelled_binary_contacts_3d_unflipped', 'labelled_binary_contacts_3d_flipped')])
 def test_flip_labelled_contacts_dask(unflipped, flipped, request):
     unflipped, flipped = dd.from_pandas(request.getfixturevalue(unflipped), npartitions=1), request.getfixturevalue(flipped)

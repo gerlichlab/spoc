@@ -51,10 +51,10 @@ class FileManager:
 
 
     # TODO; find a solution to hold information about symmetry flipping, label_sorting and binary_labeels equating
-    def load_multiway_contacts(self, path: str, number_fragments: int) -> Contacts:
+    def load_contacts(self, path: str, *args, **kwargs) -> Contacts:
         """Load multiway contacts"""
         return Contacts(
-            self._parquet_reader_func(path), number_fragments=number_fragments
+            self._parquet_reader_func(path), *args, **kwargs
         )
 
     @staticmethod

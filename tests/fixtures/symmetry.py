@@ -448,6 +448,37 @@ def labelled_binary_contacts_3d_unflipped():
         }
     )
 
+@pytest.fixture
+def labelled_binary_contacts_3d_unflipped_example2():
+    return pd.DataFrame(
+        {
+            "read_name": ["read1", "read2", "read3"],
+            "read_length": [100, 100, 100],
+            "chrom_1": ["chr1", "chr1", "chr1"],
+            "start_1": [100, 5000, 800],
+            "end_1": [200, 5500, 900],
+            "mapping_quality_1": [10, 10, 10],
+            "align_score_1": [10, 10, 10],
+            "align_base_qscore_1": [10, 10, 10],
+            "meta_data_1": ["A", "A", "A"],
+            "chrom_2": ["chr1", "chr1", "chr1"],
+            "start_2": [200, 2000, 3000],
+            "end_2": [300, 3000, 3200],
+            "mapping_quality_2": [10, 10, 15],
+            "align_score_2": [10, 10, 15],
+            "align_base_qscore_2": [10, 10, 15],
+            "meta_data_2": ["A", "A", "A"],
+            "chrom_3": ["chr1", "chr1", "chr1"],
+            "start_3": [1000, 200, 3000],
+            "end_3": [2000, 300, 4000],
+            "mapping_quality_3": [10, 10, 14],
+            "align_score_3": [10, 10, 14],
+            "align_base_qscore_3": [10, 10, 14],
+            "meta_data_3": ["B", "B", "A"]
+        }
+    )
+
+
 
 
 @pytest.fixture
@@ -500,5 +531,35 @@ def labelled_binary_contacts_3d_flipped():
             "align_score_3": [10, 10, 15, 20],
             "align_base_qscore_3": [10, 10, 15, 20],
             "meta_data_3": ["B", "B", "B", "A"]
+        }
+    )
+
+@pytest.fixture
+def labelled_binary_contacts_3d_flipped_example2():
+    return pd.DataFrame(
+        {
+            "read_name": ["read1", "read2", "read3"],
+            "read_length": [100, 100, 100],
+            "chrom_1": ["chr1", "chr1", "chr1"],
+            "start_1": [100, 2000, 800],
+            "end_1": [200, 3000, 900],
+            "mapping_quality_1": [10, 10, 10],
+            "align_score_1": [10, 10, 10],
+            "align_base_qscore_1": [10, 10, 10],
+            "meta_data_1": ["A", "A", "A"],
+            "chrom_2": ["chr1", "chr1", "chr1"],
+            "start_2": [200, 5000, 3000],
+            "end_2": [300, 5500, 3200],
+            "mapping_quality_2": [10, 10, 15],
+            "align_score_2": [10, 10, 15],
+            "align_base_qscore_2": [10, 10, 15],
+            "meta_data_2": ["A", "A", "A"],
+            "chrom_3": ["chr1", "chr1", "chr1"],
+            "start_3": [1000, 200, 3000],
+            "end_3": [2000, 300, 4000],
+            "mapping_quality_3": [10, 10, 14],
+            "align_score_3": [10, 10, 14],
+            "align_base_qscore_3": [10, 10, 14],
+            "meta_data_3": ["B", "B", "A"]
         }
     )

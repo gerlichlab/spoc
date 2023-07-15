@@ -64,7 +64,7 @@ def bin_contacts(
     """Script for binning contacts"""
     # load data from disk
     file_manager = FileManager(verify_schemas_on_load=True, use_dask=True)
-    contacts = file_manager.load_multiway_contacts(contact_path, number_fragments)
+    contacts = file_manager.load_contacts(contact_path, number_fragments)
     chrom_sizes = file_manager.load_chromosome_sizes(chromosome_sizes)
     # binning
     binner = GenomicBinner(
@@ -98,7 +98,7 @@ def merge_contacts(contact_paths, n_fragments, output):
     file_manager = FileManager(verify_schemas_on_load=True, use_dask=True)
     manipulator = ContactManipulator()
     contact_files = [
-        file_manager.load_multiway_contacts(path, n_fragments) for path in contact_paths
+        file_manager.load_contacts(path, n_fragments) for path in contact_paths
     ]
     merged = manipulator.merge_contacts(contact_files)
     file_manager.write_multiway_contacts(output, merged)
