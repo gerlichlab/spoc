@@ -5,6 +5,7 @@ from typing import Dict, Union
 import pandas as pd
 import dask.dataframe as dd
 from .contacts import Contacts
+from .pixels import Pixels
 from .dataframe_models import FragmentSchema, ContactSchema
 from .fragments import Fragments
 
@@ -51,6 +52,7 @@ class FileManager:
 
 
     # TODO; find a solution to hold information about symmetry flipping, label_sorting and binary_labeels equating
+    # -> do it with metadata of parquet file
     def load_contacts(self, path: str, *args, **kwargs) -> Contacts:
         """Load multiway contacts"""
         return Contacts(
@@ -73,9 +75,10 @@ class FileManager:
     @staticmethod
     def load_pixels(path: str):
         """Loads pixels"""
+        # TODO:make this conform with new file format
         raise NotImplementedError
 
     @staticmethod
-    def write_pixels(path: str, data: Union[pd.DataFrame, dd.DataFrame]) -> None:
+    def write_pixels(path: str, pixels: Pixels) -> None:
         """Write pixels"""
-        data.to_parquet(path)
+        pixels.data.to_parquet(path)

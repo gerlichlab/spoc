@@ -22,7 +22,7 @@ def chromosome_sizes():
 def genomic_binner(chromosome_sizes):
     """genomic binner for pixels"""
     return pixels.GenomicBinner(
-        bin_size=100_000, chrom_sizes=chromosome_sizes
+        bin_size=100_000
     )
 
 

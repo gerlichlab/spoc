@@ -84,6 +84,10 @@ class Pixels:
     @property
     def metadata_combi(self):
         return self._metadata_combi
+
+    @property
+    def same_chromosome(self):
+        return self._same_chromosome
     
 
 
@@ -94,8 +98,7 @@ class GenomicBinner:
 
     def __init__(
         self,
-        bin_size: int,
-        chrom_sizes: pd.Series
+        bin_size: int
     ) -> None:
         self._bin_size = bin_size
         self._contact_order = None
