@@ -19,7 +19,7 @@ FragmentSchema = pa.DataFrameSchema(
         "mapping_quality": pa.Column(int),
         "align_score": pa.Column(int),
         "align_base_qscore": pa.Column(int),
-        "pass_filter": pa.Column(bool),
+        "pass_filter": pa.Column(bool, required=False),
         "meta_data": pa.Column(str, required=False),
     },
     coerce=True,

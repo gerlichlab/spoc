@@ -94,8 +94,7 @@ class FragmentExpander:
         """expand contacts n-ways"""
         # expand fragments
         result = []
-        keep_segments = fragments.data.query("pass_filter == True")
-        for (read_name, read_df) in keep_segments.groupby("read_name", as_index=False):
+        for (read_name, read_df) in fragments.data.groupby("read_name", as_index=False):
             if len(read_df) < self._number_fragments:
                 continue
 
