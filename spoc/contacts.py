@@ -78,14 +78,11 @@ class ContactManipulator:
     def merge_contacts(self, merge_list: List[Contacts]) -> Contacts:
         """Merge contacts"""
         # validate that merge is possible
-        assert (
-            len(set([i.number_fragments for i in merge_list])) == 1
-        ), "All contacts need to have the same order!"
-        assert (
-            len(set([i.is_dask for i in merge_list])) == 1
-        ), "Mixture of dask and pandas dataframes is not supported!"
+        if len(set([i.number_fragments for i in merge_list])) != 1:
+            raise ValueError("All contacts need to have the same order!")
+        if len(set([i.is_dask for i in merge_list])) != 1:
+            raise ValueError("Mixture of dask and pandas dataframes is not supported!")
         # TODO: assert all have same labelling state
-
         number_fragments = merge_list[0].number_fragments
         if merge_list[0].is_dask:
             return Contacts(

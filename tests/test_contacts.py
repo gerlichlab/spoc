@@ -171,7 +171,7 @@ def test_merge_works_for_good_dask_df(
 def test_merge_fails_for_pandas_dask_mixed(
     triplet_expander, contact_manipulator, labelled_fragments
 ):
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         contacts_pandas = triplet_expander.expand(labelled_fragments)
         contacts_dask = contacts.Contacts(
             dd.from_pandas(contacts_pandas.data, npartitions=1), number_fragments=3
