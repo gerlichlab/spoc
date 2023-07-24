@@ -43,12 +43,12 @@ class FileManager:
     @staticmethod
     def write_fragments(path: str, fragments: Fragments) -> None:
         """Write annotated fragments"""
-        fragments.data.to_parquet(path)
+        fragments.data.to_parquet(path, row_group_size=1024*1024)
 
     @staticmethod
     def write_multiway_contacts(path: str, contacts: Contacts) -> None:
         """Write multiway contacts"""
-        contacts.data.to_parquet(path)
+        contacts.data.to_parquet(path, row_group_size=1024*1024)
 
 
     # TODO; find a solution to hold information about symmetry flipping, label_sorting and binary_labeels equating
@@ -81,4 +81,4 @@ class FileManager:
     @staticmethod
     def write_pixels(path: str, pixels: Pixels) -> None:
         """Write pixels"""
-        pixels.data.to_parquet(path)
+        pixels.data.to_parquet(path, row_group_size=1024*1024)
