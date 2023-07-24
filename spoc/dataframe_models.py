@@ -20,7 +20,7 @@ FragmentSchema = pa.DataFrameSchema(
         "align_score": pa.Column(int),
         "align_base_qscore": pa.Column(int),
         "pass_filter": pa.Column(bool, required=False),
-        "meta_data": pa.Column(str, required=False),
+        "metadata": pa.Column(str, required=False),
     },
     coerce=True,
 )
@@ -46,42 +46,42 @@ class ContactSchema:
         "mapping_quality": pa.Column(int),
         "align_score": pa.Column(int),
         "align_base_qscore": pa.Column(int),
-        "meta_data": pa.Column(
+        "metadata": pa.Column(
             str, 
             required=False
         ), 
     }
 
-    def __init__(self, number_fragments: int = 3, contains_meta_data: bool = True) -> None:
+    def __init__(self, number_fragments: int = 3, contains_metadata: bool = True) -> None:
         self._number_fragments = number_fragments
         self._schema = pa.DataFrameSchema(
             dict(
                 self.common_fields,
                 **self._expand_contact_fields(
-                    range(1, number_fragments + 1), contains_meta_data
+                    range(1, number_fragments + 1), contains_metadata
                 ),
             ),
             coerce=True,
         )
 
     @classmethod
-    def get_contact_fields(cls, contains_meta_data: bool) -> Dict:
-        if contains_meta_data:
+    def get_contact_fields(cls, contains_metadata: bool) -> Dict:
+        if contains_metadata:
             return copy.deepcopy(cls.contact_fields)
         else:
             return {
                 key: value
                 for key, value in copy.deepcopy(cls.contact_fields).items()
-                if key not in ["meta_data"]
+                if key not in ["metadata"]
             }
 
     def _expand_contact_fields(
-        self, expansions: Iterable = (1, 2, 3), contains_meta_data: bool = True
+        self, expansions: Iterable = (1, 2, 3), contains_metadata: bool = True
     ) -> dict:
         """adds suffixes to fields"""
         output = {}
         for i in expansions:
-            for key, value in self.get_contact_fields(contains_meta_data).items():
+            for key, value in self.get_contact_fields(contains_metadata).items():
                 output[key + f"_{i}"] = value
         return output
 

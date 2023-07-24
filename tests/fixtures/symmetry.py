@@ -120,14 +120,14 @@ def labelled_binary_contacts_2d():
             "mapping_quality_1": [10, 10, 10],
             "align_score_1": [10, 10, 10],
             "align_base_qscore_1": [10, 10, 10],
-            "meta_data_1": ["A", "B", "A"],
+            "metadata_1": ["A", "B", "A"],
             "chrom_2": ["chr1", "chr1", "chr1"],
             "start_2": [1000, 2000, 3000],
             "end_2": [2000, 3000, 4000],
             "mapping_quality_2": [10, 10, 15],
             "align_score_2": [10, 10, 15],
             "align_base_qscore_2": [10, 10, 15],
-            "meta_data_2": ["B", "A", "A"]
+            "metadata_2": ["B", "A", "A"]
         }
     )
 
@@ -143,14 +143,14 @@ def labelled_binary_contacts_2d_sorted():
             "mapping_quality_1": [10, 10, 10],
             "align_score_1": [10, 10, 10],
             "align_base_qscore_1": [10, 10, 10],
-            "meta_data_1": ["A", "A", "A"],
+            "metadata_1": ["A", "A", "A"],
             "chrom_2": ["chr1", "chr1", "chr1"],
             "start_2": [1000, 200, 3000],
             "end_2": [2000, 300, 4000],
             "mapping_quality_2": [10, 10, 15],
             "align_score_2": [10, 10, 15],
             "align_base_qscore_2": [10, 10, 15],
-            "meta_data_2": ["B", "B", "A"]
+            "metadata_2": ["B", "B", "A"]
         }
     )
 
@@ -167,21 +167,21 @@ def labelled_binary_contacts_3d():
             "mapping_quality_1": [10, 10, 10],
             "align_score_1": [10, 10, 10],
             "align_base_qscore_1": [10, 10, 10],
-            "meta_data_1": ["A", "B", "A"],
+            "metadata_1": ["A", "B", "A"],
             "chrom_2": ["chr1", "chr1", "chr1"],
             "start_2": [1000, 2000, 3000],
             "end_2": [2000, 3000, 4000],
             "mapping_quality_2": [10, 10, 15],
             "align_score_2": [10, 10, 15],
             "align_base_qscore_2": [10, 10, 15],
-            "meta_data_2": ["B", "A", "A"],
+            "metadata_2": ["B", "A", "A"],
             "chrom_3": ["chr1", "chr1", "chr1"],
             "start_3": [1000, 2000, 3000],
             "end_3": [2000, 3000, 4000],
             "mapping_quality_3": [10, 10, 15],
             "align_score_3": [10, 10, 15],
             "align_base_qscore_3": [10, 10, 15],
-            "meta_data_3": ["B", "A", "A"]
+            "metadata_3": ["B", "A", "A"]
         }
     )
 
@@ -197,21 +197,21 @@ def labelled_binary_contacts_3d_sorted():
             "mapping_quality_1": [10, 10, 10],
             "align_score_1": [10, 10, 10],
             "align_base_qscore_1": [10, 10, 10],
-            "meta_data_1": ["A", "A", "A"],
+            "metadata_1": ["A", "A", "A"],
             "chrom_2": ["chr1", "chr1", "chr1"],
             "start_2": [1000, 2000, 3000],
             "end_2": [2000, 3000, 4000],
             "mapping_quality_2": [10, 10, 15],
             "align_score_2": [10, 10, 15],
             "align_base_qscore_2": [10, 10, 15],
-            "meta_data_2": ["B", "A", "A"],
+            "metadata_2": ["B", "A", "A"],
             "chrom_3": ["chr1", "chr1", "chr1"],
             "start_3": [1000, 200, 3000],
             "end_3": [2000, 300, 4000],
             "mapping_quality_3": [10, 10, 15],
             "align_score_3": [10, 10, 15],
             "align_base_qscore_3": [10, 10, 15],
-            "meta_data_3": ["B", "B", "A"]
+            "metadata_3": ["B", "B", "A"]
         }
     )
 
@@ -227,14 +227,14 @@ def binary_contacts_not_equated_2d():
                 "mapping_quality_1": [10, 10, 10],
                 "align_score_1": [10, 10, 10],
                 "align_base_qscore_1": [10, 10, 10],
-                "meta_data_1": ["B", "A", "A"],
+                "metadata_1": ["B", "A", "A"],
                 "chrom_2": ["chr1", "chr1", "chr1"],
                 "start_2": [1000, 200, 3000],
                 "end_2": [2000, 300, 4000],
                 "mapping_quality_2": [10, 10, 15],
                 "align_score_2": [10, 10, 15],
                 "align_base_qscore_2": [10, 10, 15],
-                "meta_data_2": ["B", "B", "A"]
+                "metadata_2": ["B", "B", "A"]
             }
         )
 
@@ -250,21 +250,21 @@ def binary_contacts_not_equated_3d():
             "mapping_quality_1": [10, 10, 10],
             "align_score_1": [10, 10, 10],
             "align_base_qscore_1": [10, 10, 10],
-            "meta_data_1": ["A", "A", "B"],
+            "metadata_1": ["A", "A", "B"],
             "chrom_2": ["chr1", "chr1", "chr1"],
             "start_2": [1000, 2000, 3000],
             "end_2": [2000, 3000, 4000],
             "mapping_quality_2": [10, 10, 15],
             "align_score_2": [10, 10, 15],
             "align_base_qscore_2": [10, 10, 15],
-            "meta_data_2": ["B", "A", "B"],
+            "metadata_2": ["B", "A", "B"],
             "chrom_3": ["chr1", "chr1", "chr1"],
             "start_3": [1000, 200, 3000],
             "end_3": [2000, 300, 4000],
             "mapping_quality_3": [10, 10, 15],
             "align_score_3": [10, 10, 15],
             "align_base_qscore_3": [10, 10, 15],
-            "meta_data_3": ["B", "B", "B"]
+            "metadata_3": ["B", "B", "B"]
         }
     )
 
@@ -280,28 +280,28 @@ def binary_contacts_not_equated_4d():
             "mapping_quality_1": [10, 10, 10],
             "align_score_1": [10, 10, 10],
             "align_base_qscore_1": [10, 10, 10],
-            "meta_data_1": ["A", "A", "B"],
+            "metadata_1": ["A", "A", "B"],
             "chrom_2": ["chr1", "chr1", "chr1"],
             "start_2": [1000, 2000, 3000],
             "end_2": [2000, 3000, 4000],
             "mapping_quality_2": [10, 10, 15],
             "align_score_2": [10, 10, 15],
             "align_base_qscore_2": [10, 10, 15],
-            "meta_data_2": ["B", "A", "B"],
+            "metadata_2": ["B", "A", "B"],
             "chrom_3": ["chr1", "chr1", "chr1"],
             "start_3": [1000, 200, 3000],
             "end_3": [2000, 300, 4000],
             "mapping_quality_3": [10, 10, 15],
             "align_score_3": [10, 10, 15],
             "align_base_qscore_3": [10, 10, 15],
-            "meta_data_3": ["B", "B", "B"],
+            "metadata_3": ["B", "B", "B"],
             "chrom_4": ["chr1", "chr1", "chr1"],
             "start_4": [1000, 200, 3000],
             "end_4": [2000, 300, 4000],
             "mapping_quality_4": [10, 10, 15],
             "align_score_4": [10, 10, 15],
             "align_base_qscore_4": [10, 10, 15],
-            "meta_data_4": ["B", "B", "B"]
+            "metadata_4": ["B", "B", "B"]
         }
     )
 
@@ -317,14 +317,14 @@ def binary_contacts_equated_2d():
             "mapping_quality_1": [10, 10, 10],
             "align_score_1": [10, 10, 10],
             "align_base_qscore_1": [10, 10, 10],
-            "meta_data_1": ["A", "A", "A"],
+            "metadata_1": ["A", "A", "A"],
             "chrom_2": ["chr1", "chr1", "chr1"],
             "start_2": [1000, 200, 3000],
             "end_2": [2000, 300, 4000],
             "mapping_quality_2": [10, 10, 15],
             "align_score_2": [10, 10, 15],
             "align_base_qscore_2": [10, 10, 15],
-            "meta_data_2": ["A", "B", "A"]
+            "metadata_2": ["A", "B", "A"]
         }
     )
 
@@ -340,21 +340,21 @@ def binary_contacts_equated_3d():
             "mapping_quality_1": [10, 10, 10],
             "align_score_1": [10, 10, 10],
             "align_base_qscore_1": [10, 10, 10],
-            "meta_data_1": ["A", "A", "A"],
+            "metadata_1": ["A", "A", "A"],
             "chrom_2": ["chr1", "chr1", "chr1"],
             "start_2": [1000, 2000, 3000],
             "end_2": [2000, 3000, 4000],
             "mapping_quality_2": [10, 10, 15],
             "align_score_2": [10, 10, 15],
             "align_base_qscore_2": [10, 10, 15],
-            "meta_data_2": ["A", "A", "A"],
+            "metadata_2": ["A", "A", "A"],
             "chrom_3": ["chr1", "chr1", "chr1"],
             "start_3": [1000, 200, 3000],
             "end_3": [2000, 300, 4000],
             "mapping_quality_3": [10, 10, 15],
             "align_score_3": [10, 10, 15],
             "align_base_qscore_3": [10, 10, 15],
-            "meta_data_3": ["B", "B", "A"]
+            "metadata_3": ["B", "B", "A"]
         }
     )
 
@@ -370,28 +370,28 @@ def binary_contacts_equated_4d():
             "mapping_quality_1": [10, 10, 10],
             "align_score_1": [10, 10, 10],
             "align_base_qscore_1": [10, 10, 10],
-            "meta_data_1": ["A", "A", "A"],
+            "metadata_1": ["A", "A", "A"],
             "chrom_2": ["chr1", "chr1", "chr1"],
             "start_2": [1000, 2000, 3000],
             "end_2": [2000, 3000, 4000],
             "mapping_quality_2": [10, 10, 15],
             "align_score_2": [10, 10, 15],
             "align_base_qscore_2": [10, 10, 15],
-            "meta_data_2": ["A", "A", "A"],
+            "metadata_2": ["A", "A", "A"],
             "chrom_3": ["chr1", "chr1", "chr1"],
             "start_3": [1000, 200, 3000],
             "end_3": [2000, 300, 4000],
             "mapping_quality_3": [10, 10, 15],
             "align_score_3": [10, 10, 15],
             "align_base_qscore_3": [10, 10, 15],
-            "meta_data_3": ["A", "B", "A"],
+            "metadata_3": ["A", "B", "A"],
             "chrom_4": ["chr1", "chr1", "chr1"],
             "start_4": [1000, 200, 3000],
             "end_4": [2000, 300, 4000],
             "mapping_quality_4": [10, 10, 15],
             "align_score_4": [10, 10, 15],
             "align_base_qscore_4": [10, 10, 15],
-            "meta_data_4": ["B", "B", "A"]
+            "metadata_4": ["B", "B", "A"]
         }
     )
 
@@ -407,14 +407,14 @@ def labelled_binary_contacts_2d_unflipped():
             "mapping_quality_1": [10, 10, 10],
             "align_score_1": [10, 10, 10],
             "align_base_qscore_1": [10, 10, 10],
-            "meta_data_1": ["A", "A", "A"],
+            "metadata_1": ["A", "A", "A"],
             "chrom_2": ["chr1", "chr1", "chr1"],
             "start_2": [1000, 200, 300],
             "end_2": [2000, 300, 400],
             "mapping_quality_2": [10, 10, 15],
             "align_score_2": [10, 10, 15],
             "align_base_qscore_2": [10, 10, 15],
-            "meta_data_2": ["B", "B", "A"]
+            "metadata_2": ["B", "B", "A"]
         }
     )
 
@@ -430,21 +430,21 @@ def labelled_binary_contacts_3d_unflipped():
             "mapping_quality_1": [10, 10, 10, 10],
             "align_score_1": [10, 10, 10, 10],
             "align_base_qscore_1": [10, 10, 10, 10],
-            "meta_data_1": ["A", "A", "B", "A"],
+            "metadata_1": ["A", "A", "B", "A"],
             "chrom_2": ["chr1", "chr1", "chr1", "chr1"],
             "start_2": [1000, 2000, 3000, 4000],
             "end_2": [2000, 3000, 4000, 5000],
             "mapping_quality_2": [10, 10, 15, 20],
             "align_score_2": [10, 10, 15, 20],
             "align_base_qscore_2": [10, 10, 15, 20],
-            "meta_data_2": ["B", "A", "B", "A"],
+            "metadata_2": ["B", "A", "B", "A"],
             "chrom_3": ["chr1", "chr1", "chr1", "chr1"],
             "start_3": [100, 200, 310, 400],
             "end_3": [200, 300, 410, 500],
             "mapping_quality_3": [10, 10, 15, 14],
             "align_score_3": [10, 10, 15, 14],
             "align_base_qscore_3": [10, 10, 15, 14],
-            "meta_data_3": ["B", "B", "B", "A"]
+            "metadata_3": ["B", "B", "B", "A"]
         }
     )
 
@@ -460,21 +460,21 @@ def labelled_binary_contacts_3d_unflipped_example2():
             "mapping_quality_1": [10, 10, 10],
             "align_score_1": [10, 10, 10],
             "align_base_qscore_1": [10, 10, 10],
-            "meta_data_1": ["A", "A", "A"],
+            "metadata_1": ["A", "A", "A"],
             "chrom_2": ["chr1", "chr1", "chr1"],
             "start_2": [200, 2000, 3000],
             "end_2": [300, 3000, 3200],
             "mapping_quality_2": [10, 10, 15],
             "align_score_2": [10, 10, 15],
             "align_base_qscore_2": [10, 10, 15],
-            "meta_data_2": ["A", "A", "A"],
+            "metadata_2": ["A", "A", "A"],
             "chrom_3": ["chr1", "chr1", "chr1"],
             "start_3": [1000, 200, 3000],
             "end_3": [2000, 300, 4000],
             "mapping_quality_3": [10, 10, 14],
             "align_score_3": [10, 10, 14],
             "align_base_qscore_3": [10, 10, 14],
-            "meta_data_3": ["B", "B", "A"]
+            "metadata_3": ["B", "B", "A"]
         }
     )
 
@@ -493,14 +493,14 @@ def labelled_binary_contacts_2d_flipped():
             "mapping_quality_1": [10, 10, 15],
             "align_score_1": [10, 10, 15],
             "align_base_qscore_1": [10, 10, 15],
-            "meta_data_1": ["A", "A", "A"],
+            "metadata_1": ["A", "A", "A"],
             "chrom_2": ["chr1", "chr1", "chr1"],
             "start_2": [1000, 200, 3000],
             "end_2": [2000, 300, 4000],
             "mapping_quality_2": [10, 10, 10],
             "align_score_2": [10, 10, 10],
             "align_base_qscore_2": [10, 10, 10],
-            "meta_data_2": ["B", "B", "A"]
+            "metadata_2": ["B", "B", "A"]
         }
     )
 
@@ -516,21 +516,21 @@ def labelled_binary_contacts_3d_flipped():
             "mapping_quality_1": [10, 10, 10, 14],
             "align_score_1": [10, 10, 10, 14],
             "align_base_qscore_1": [10, 10, 10, 14],
-            "meta_data_1": ["A", "A", "B", "A"],
+            "metadata_1": ["A", "A", "B", "A"],
             "chrom_2": ["chr1", "chr1", "chr1", "chr1"],
             "start_2": [100, 2000, 310, 410],
             "end_2": [200, 3000, 410, 510],
             "mapping_quality_2": [10, 10, 15, 10],
             "align_score_2": [10, 10, 15, 10],
             "align_base_qscore_2": [10, 10, 15, 10],
-            "meta_data_2": ["B", "A", "B", "A"],
+            "metadata_2": ["B", "A", "B", "A"],
             "chrom_3": ["chr1", "chr1", "chr1", "chr1"],
             "start_3": [1000, 200, 3000, 4000],
             "end_3": [2000, 300, 4000, 5000],
             "mapping_quality_3": [10, 10, 15, 20],
             "align_score_3": [10, 10, 15, 20],
             "align_base_qscore_3": [10, 10, 15, 20],
-            "meta_data_3": ["B", "B", "B", "A"]
+            "metadata_3": ["B", "B", "B", "A"]
         }
     )
 
@@ -546,20 +546,20 @@ def labelled_binary_contacts_3d_flipped_example2():
             "mapping_quality_1": [10, 10, 10],
             "align_score_1": [10, 10, 10],
             "align_base_qscore_1": [10, 10, 10],
-            "meta_data_1": ["A", "A", "A"],
+            "metadata_1": ["A", "A", "A"],
             "chrom_2": ["chr1", "chr1", "chr1"],
             "start_2": [200, 5000, 3000],
             "end_2": [300, 5500, 3200],
             "mapping_quality_2": [10, 10, 15],
             "align_score_2": [10, 10, 15],
             "align_base_qscore_2": [10, 10, 15],
-            "meta_data_2": ["A", "A", "A"],
+            "metadata_2": ["A", "A", "A"],
             "chrom_3": ["chr1", "chr1", "chr1"],
             "start_3": [1000, 200, 3000],
             "end_3": [2000, 300, 4000],
             "mapping_quality_3": [10, 10, 14],
             "align_score_3": [10, 10, 14],
             "align_base_qscore_3": [10, 10, 14],
-            "meta_data_3": ["B", "B", "A"]
+            "metadata_3": ["B", "B", "A"]
         }
     )

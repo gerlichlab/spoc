@@ -64,7 +64,7 @@ def labelled_fragments():
             "align_score": [1, 2, 3],
             "align_base_qscore": [1, 2, 3],
             "pass_filter": [True] * 3,
-            "meta_data": ["SisterA"] * 3,
+            "metadata": ["SisterA"] * 3,
         }
     )
 
@@ -76,12 +76,12 @@ def test_fragment_constructor_rejects_df_w_wrong_structure(bad_df):
 
 def test_fragments_constructor_accepts_unlabelled_fragments(unlabelled_fragments):
     frag = fragments.Fragments(unlabelled_fragments)
-    assert not frag.contains_meta_data
+    assert not frag.contains_metadata
 
 
 def test_fragments_constructor_accepts_labelled_fragments(labelled_fragments):
     frag = fragments.Fragments(labelled_fragments)
-    assert frag.contains_meta_data
+    assert frag.contains_metadata
 
 
 def test_annotator_drops_unknown_fragments(
@@ -101,7 +101,7 @@ def test_annotator_produces_correct_schema(
         fragments.Fragments(unlabelled_fragments)
     )
     # check schema (fragment constructor checks it)
-    assert labelled_fragments.contains_meta_data
+    assert labelled_fragments.contains_metadata
 
 
 def test_annotator_calls_sisters_correctly(
@@ -112,4 +112,4 @@ def test_annotator_calls_sisters_correctly(
     )
     # check values
     expected = pd.Series(["SisterB", "SisterA"])
-    np.array_equal(labelled_fragments.data.meta_data.values, expected.values)
+    np.array_equal(labelled_fragments.data.metadata.values, expected.values)

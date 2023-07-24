@@ -44,7 +44,7 @@ def labelled_df():
             "align_score": [1, 2, 3, 4, 5, 6],
             "align_base_qscore": [1, 2, 3, 4, 5, 6],
             "pass_filter": [True] * 6,
-            "meta_data": [
+            "metadata": [
                 "SisterA",
                 "SisterB",
                 "SisterA",
@@ -114,15 +114,15 @@ def test_expander_returns_correct_contacts_labelled(
     assert np.array_equal(result["start_3"].values, np.array([3, 4, 4, 4]))
     assert np.array_equal(result["end_3"].values, np.array([6, 7, 7, 7]))
     assert np.array_equal(
-        result["meta_data_1"].values,
+        result["metadata_1"].values,
         np.array(["SisterA", "SisterA", "SisterA", "SisterB"]),
     )
     assert np.array_equal(
-        result["meta_data_2"].values,
+        result["metadata_2"].values,
         np.array(["SisterB", "SisterB", "SisterA", "SisterA"]),
     )
     assert np.array_equal(
-        result["meta_data_3"].values,
+        result["metadata_3"].values,
         np.array(["SisterA", "SisterB", "SisterB", "SisterB"]),
     )
 
@@ -137,7 +137,7 @@ def test_expander_returns_correct_contacts_unlabelled(
     assert np.array_equal(result["end_2"].values, np.array([5, 5, 6, 6]))
     assert np.array_equal(result["start_3"].values, np.array([3, 4, 4, 4]))
     assert np.array_equal(result["end_3"].values, np.array([6, 7, 7, 7]))
-    assert "meta_data_1" not in result.columns
+    assert "metadata_1" not in result.columns
 
 
 def test_contacts_constructor_rejects_wrong_df(bad_df):
@@ -202,8 +202,8 @@ def test_subset_metadata_creates_correct_subset(labelled_binary_contacts_2d_sort
     lab_contacts = contacts.Contacts(labelled_binary_contacts_2d_sorted)
     result = contact_manipulator.subset_on_metadata(lab_contacts, ['A', 'B'])
     assert len(result.data) == 2
-    assert result.data['meta_data_1'].unique() == ['A']
-    assert result.data['meta_data_2'].unique() == ['B']
+    assert result.data['metadata_1'].unique() == ['A']
+    assert result.data['metadata_2'].unique() == ['B']
     assert result.metadata_combi == ['A', 'B']
 
 

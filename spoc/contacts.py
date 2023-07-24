@@ -24,13 +24,13 @@ class Contacts:
         binary_labels_equal: bool = False,
         symmetry_flipped: bool = False,
     ) -> None:
-        self.contains_meta_data = "meta_data_1" in contact_frame.columns # All contacts contain at least one fragment
+        self.contains_metadata = "metadata_1" in contact_frame.columns # All contacts contain at least one fragment
         if number_fragments is None:
             self.number_fragments = self._guess_number_fragments(contact_frame)
         else:
             self.number_fragments = number_fragments
         self._schema = ContactSchema(
-            number_fragments=self.number_fragments, contains_meta_data=self.contains_meta_data
+            number_fragments=self.number_fragments, contains_metadata=self.contains_metadata
         )
         if isinstance(contact_frame, pd.DataFrame):
             self.is_dask = False
@@ -48,14 +48,14 @@ class Contacts:
 
     def get_label_values(self) -> List[str]:
         """Returns all label values"""
-        if not self.contains_meta_data:
+        if not self.contains_metadata:
             raise ValueError("Contacts do not contain metadata!")
         output = set()
         for i in range(self.number_fragments):
             if self.is_dask:
-                output.update(self.data[f"meta_data_{i+1}"].unique().compute())
+                output.update(self.data[f"metadata_{i+1}"].unique().compute())
             else:
-                output.update(self.data[f"meta_data_{i+1}"].unique())
+                output.update(self.data[f"metadata_{i+1}"].unique())
         return output
 
     @property
@@ -68,7 +68,7 @@ class Contacts:
 
 
     def __repr__(self) -> str:
-        return f"<Contacts | order: {self.number_fragments} | contains metadata: {self.contains_meta_data}>"
+        return f"<Contacts | order: {self.number_fragments} | contains metadata: {self.contains_metadata}>"
 
 
 class ContactManipulator:
@@ -95,7 +95,7 @@ class ContactManipulator:
 
     @staticmethod
     def _generate_rename_columns(order, start_index=1):
-        columns = ["chrom", "start", "end", "mapping_quality", "align_score", "align_base_qscore", "meta_data"]
+        columns = ["chrom", "start", "end", "mapping_quality", "align_score", "align_base_qscore", "metadata"]
         rename_columns = {}
         for i in range(len(order)):
             for column in columns:
@@ -146,7 +146,7 @@ class ContactManipulator:
         for combination in label_combinations:
             splits = self._get_combination_splits(combination)
             # separate out name constanc_columns
-            query = " and ".join([f"meta_data_{i} == '{j}'" for i, j in enumerate(combination, 1)])
+            query = " and ".join([f"metadata_{i} == '{j}'" for i, j in enumerate(combination, 1)])
             candidate_frame = df.query(query)
             if len(candidate_frame) == 0:
                 continue
@@ -181,14 +181,14 @@ class ContactManipulator:
 
     def sort_labels(self, contacts:Contacts) -> Contacts:
         """Sorts labels in ascending, alphabetical order"""
-        if not contacts.contains_meta_data:
+        if not contacts.contains_metadata:
             raise ValueError("Sorting labels for unlabelled contacts is not implemented.")
         # get label values.
         label_values = contacts.get_label_values()
         # iterate over all permutations of label values
         subsets = []
         for perm in product(label_values, repeat=contacts.number_fragments):
-            query = " and ".join([f"meta_data_{i+1} == '{j}'" for i, j in enumerate(perm)])
+            query = " and ".join([f"metadata_{i+1} == '{j}'" for i, j in enumerate(perm)])
             desired_order = [i + 1 for i in np.argsort(perm)]
             subsets.append(contacts.data.query(query).rename(columns=self._generate_rename_columns(desired_order)))
         # determine which method to use for concatenation
@@ -222,7 +222,7 @@ class ContactManipulator:
         For example, if we have a contact between two fragments
         that are labelled B and B, the label will be replaced with AA.
         """
-        assert contacts.contains_meta_data, "Contacts do not contain metadata!"
+        assert contacts.contains_metadata, "Contacts do not contain metadata!"
         if not contacts.label_sorted:
             contacts = self.sort_labels(contacts)
         # get label values
@@ -232,11 +232,11 @@ class ContactManipulator:
         mapping = self._generate_binary_label_mapping(label_values, contacts.number_fragments)
         subsets = []
         for source, target in mapping.items():
-            query = " and ".join([f"meta_data_{i+1} == '{j}'" for i, j in enumerate(source)])
+            query = " and ".join([f"metadata_{i+1} == '{j}'" for i, j in enumerate(source)])
             subset = contacts.data.query(query)
             # assign target labels to dataframe
             for i, j in enumerate(target):
-                subset[f"meta_data_{i+1}"] = j
+                subset[f"metadata_{i+1}"] = j
             subsets.append(subset)
         # determine which method to use for concatenation
         if contacts.is_dask:
@@ -253,7 +253,7 @@ class ContactManipulator:
     def subset_on_metadata(self, contacts:Contacts, metadata_combi: List[str]) -> Contacts:
         """Subset contacts based on metadata"""
         # check if metadata is present
-        assert contacts.contains_meta_data, "Contacts do not contain metadata!"
+        assert contacts.contains_metadata, "Contacts do not contain metadata!"
         # check if metadata_combi has the correct length
         assert len(metadata_combi) == contacts.number_fragments, "Metadata combination does not match number of fragments!"
         # get label values
@@ -261,7 +261,7 @@ class ContactManipulator:
         # check if metadata_combi is compatible with label values
         assert all([i in label_values for i in metadata_combi]), "Metadata combination is not compatible with label values!"
         # subset contacts
-        query = " and ".join([f"meta_data_{i+1} == '{j}'" for i, j in enumerate(metadata_combi)])
+        query = " and ".join([f"metadata_{i+1} == '{j}'" for i, j in enumerate(metadata_combi)])
         result = contacts.data.query(query)
         return Contacts(result, number_fragments=contacts.number_fragments,
                         metadata_combi=metadata_combi,
@@ -272,7 +272,7 @@ class ContactManipulator:
 
     def flip_symmetric_contacts(self, contacts: Contacts) -> Contacts:
         """Flips contacts based on inherent symmetry"""
-        if contacts.contains_meta_data:
+        if contacts.contains_metadata:
             if not contacts.label_sorted:
                 contacts = self.sort_labels(contacts)
             label_values = contacts.get_label_values()

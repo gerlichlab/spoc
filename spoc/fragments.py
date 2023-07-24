@@ -16,15 +16,15 @@ class Fragments:
 
     def __init__(self, fragment_frame: Union[pd.DataFrame, dd.DataFrame]) -> None:
         self._data = FragmentSchema.validate(fragment_frame)
-        self._contains_meta_data = True if "meta_data" in fragment_frame.columns else False
+        self._contains_metadata = True if "metadata" in fragment_frame.columns else False
 
     @property
     def data(self):
         return self._data
 
     @property
-    def contains_meta_data(self):
-        return self._contains_meta_data
+    def contains_metadata(self):
+        return self._contains_metadata
 
 
 # TODO: make generic such that label library can hold arbitrary information
@@ -69,7 +69,7 @@ class FragmentAnnotator:
         return Fragments(
             fragments.data.assign(is_labelled=self._assign_label_state)
             .dropna(subset=["is_labelled"])
-            .assign(meta_data=self._assign_sister)
+            .assign(metadata=self._assign_sister)
             .drop("is_labelled", axis=1)
         )
 
@@ -110,7 +110,7 @@ class FragmentExpander:
                 # add reads
                 for index, align in enumerate(alignments, start=1):
                     contact.update(
-                        self._add_suffix(align, index, fragments.contains_meta_data)
+                        self._add_suffix(align, index, fragments.contains_metadata)
                     )
                 result.append(contact)
         return Contacts(

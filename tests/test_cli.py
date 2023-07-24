@@ -93,15 +93,15 @@ def test_expand_triplets_works(good_annotated_porec_file):
     assert np.array_equal(result["start_3"].values, np.array([3, 4, 4, 4]))
     assert np.array_equal(result["end_3"].values, np.array([6, 7, 7, 7]))
     assert np.array_equal(
-        result["meta_data_1"].values,
+        result["metadata_1"].values,
         np.array(["SisterA", "SisterA", "SisterA", "SisterB"]),
     )
     assert np.array_equal(
-        result["meta_data_2"].values,
+        result["metadata_2"].values,
         np.array(["SisterB", "SisterB", "SisterA", "SisterA"]),
     )
     assert np.array_equal(
-        result["meta_data_3"].values,
+        result["metadata_3"].values,
         np.array(["SisterA", "SisterB", "SisterB", "SisterB"]),
     )
 
@@ -118,7 +118,7 @@ def test_annotate_fragments_works(good_porec_file, label_library_path):
     assert len(labelled_fragments) == 2
     dataframe_models.FragmentSchema.validate(labelled_fragments)
     expected = pd.Series(["SisterB", "SisterA"])
-    np.array_equal(labelled_fragments.meta_data.values, expected.values)
+    np.array_equal(labelled_fragments.metadata.values, expected.values)
 
 
 def test_merge_contacts_works(good_triplet_files):
