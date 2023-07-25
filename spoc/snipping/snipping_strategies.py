@@ -5,7 +5,7 @@ from functools import partial
 from multiprocessing.pool import ThreadPool
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-import bioframe
+import bioframe as bf
 import duckdb
 import numpy as np
 import numpy.typing as npt
@@ -52,7 +52,7 @@ class SnippingStrategy(ABC):
     def _get_random_coordinates(n_coordinates: int, length: int, genome: str):
         """Number of coordinates will not be exactly returned, due to rounding
         when distributing to chromosomes."""
-        chrom_sizes = bioframe.fetch_chromsizes(genome)
+        chrom_sizes = bf.fetch_chromsizes(genome)
         chrom_fractions = chrom_sizes / chrom_sizes.sum()
         # accumulate output
         chrom_frames = []
@@ -114,10 +114,6 @@ class TripletCCTSnippingStrategy(SnippingStrategy):
     REDUCTION_QUERY = abstractproperty()
     
     @abstractmethod
-    def _create_snip_regions(self, snip_positions: pd.DataFrame) -> pd.DataFrame:
-        pass
-    
-    @abstractmethod
     def _get_snips(self, pixels: PixelsData, snip_regions: pd.DataFrame, threads: int, **kwargs) -> pd.DataFrame:
         pass
 
@@ -130,14 +126,18 @@ class TripletCCTSnippingStrategy(SnippingStrategy):
         return [f"{i * self._bin_size // 1000 - self._half_window_size // 1000} kb"
                 for i in range(output_size)]
 
-    def _create_snip_regions(self, snip_positions: pd.DataFrame, strand: Optional[str] = None) -> pd.DataFrame:
+    def _create_snip_regions(self,
+                             snip_positions: pd.DataFrame,
+                             strand: Optional[str] = None,
+                             blacklist: Optional[pd.DataFrame] = None,
+                             filterfield: str = 'pos') -> pd.DataFrame:
         if "pos" not in snip_positions.columns:
             snip_regions = snip_positions.assign(pos=lambda df_: (df_['start'] + df_['end']) // 2)
         else:
             snip_regions = snip_positions.copy()
+
         snip_regions['snip_start'] = snip_regions['pos'] - self._half_window_size - self._bin_size + 1
         snip_regions['snip_end'] = snip_regions['pos'] + self._half_window_size + 1
-        snip_regions['position_id'] = range(len(snip_regions))
 
         if strand is None:
             snip_regions['strand_sign'] = 1
@@ -145,6 +145,18 @@ class TripletCCTSnippingStrategy(SnippingStrategy):
             raise ValueError
         else:
             snip_regions['strand_sign'] = snip_regions[strand].map({"+": 1, "-": -1})
+        
+
+        if blacklist is not None:
+            if filterfield == 'pos':
+                snip_regions = snip_regions.assign(start=lambda df: df['pos'], end=lambda df: df['start'] + 1)
+                snip_regions = bf.setdiff(snip_regions, blacklist).drop(['start', 'end'], axis=1)
+            elif filterfield == 'snip':
+                snip_regions = bf.setdiff(snip_regions, blacklist, cols1=('chrom', 'snip_start', 'snip_end'))
+            else:
+                raise ValueError('filterfield value must be one of "pos", "snip"')
+
+        snip_regions['position_id'] = range(len(snip_regions))  # This is used later for averaging. After filtering by blacklist, there are less regions, which is accounted in averaging.
         return snip_regions
 
 
@@ -188,16 +200,24 @@ class TripletCCT1DSnippingStrategy(TripletCCTSnippingStrategy):
                 "snipping_value": self._snipping_value,
                 "offset": offset}
     
-    def snip(self, pixels: PixelsData, snip_positions: pd.DataFrame, strand: Optional[str] = None, threads: int = 1, symmetrize: bool = True, mem_limit: Optional[int] = None) -> pd.DataFrame:
+    def snip(self,
+             pixels: PixelsData,
+             snip_positions: pd.DataFrame,
+             strand: Optional[str] = None,
+             blacklist: Optional[pd.DataFrame] = None,
+             filterfield: str = 'pos',
+             threads: int = 1,
+             symmetrize: bool = True,
+             mem_limit: Optional[int] = None) -> pd.DataFrame:
         """Mem limit in GB"""
-        snip_regions = self._create_snip_regions(snip_positions, strand)
-        n_regions = len(snip_regions)
+        snip_regions = self._create_snip_regions(snip_positions, strand, blacklist=blacklist, filterfield=filterfield)
+        n_regions = len(snip_regions)  # This is used later for averaging. After filtering by blacklist, there are less regions, which is accounted in averaging.
         snips = self._get_snips(pixels, snip_regions, threads, mem_limit)
         avg_obs_matrix = self._aggregate_snips(snips, n_regions, symmetrize=symmetrize)
         if self._snipping_value == SnippingValues.ICCF:
             avg_matrix = avg_obs_matrix
         elif self._snipping_value == SnippingValues.OBSEXP:
-            avg_exp_matrix = self._create_expected_snips(pixels, threads)
+            avg_exp_matrix = self._create_expected_snips(pixels, threads, blacklist, filterfield)
             avg_matrix = avg_obs_matrix / avg_exp_matrix
         else:
             raise NotImplementedError
@@ -252,14 +272,15 @@ class TripletCCT1DSnippingStrategy(TripletCCTSnippingStrategy):
             avg_matrix = avg_matrix + avg_matrix.T - np.diag(np.diag(avg_matrix))
         return avg_matrix
     
-    def _create_expected_snips(self, pixels: PixelsData, threads: int) -> FloatArray:
+    def _create_expected_snips(self, pixels: PixelsData, threads: int, blacklist: Optional[pd.DataFrame] = None, filterfield: str = 'pos') -> FloatArray:
         n_random = self._n_random_regions
         len_random = 100
         genome = self._genome
         random_intervals = self._get_random_coordinates(n_random, len_random, genome)
-        random_snip_regions = self._create_snip_regions(random_intervals)
+        random_snip_regions = self._create_snip_regions(random_intervals, blacklist=blacklist, filterfield=filterfield)
+        n_random_snips = len(random_snip_regions)  # This is used later for averaging. After filtering by blacklist, there are less regions, which is accounted in averaging.
         random_snips = self._get_snips(pixels, random_snip_regions, threads)
-        avg_random_matrix = self._aggregate_snips(random_snips, n_random)
+        avg_random_matrix = self._aggregate_snips(random_snips, n_random_snips)
         return avg_random_matrix
 
 
@@ -324,16 +345,24 @@ class TripletCCT2DSnippingStrategy(TripletCCTSnippingStrategy):
                 "offsets": ((self._offsets['offset_11'], self._offsets['offset_12']),
                             (self._offsets['offset_21'], self._offsets['offset_22']))}
 
-    def snip(self, pixels: PixelsData, snip_positions: pd.DataFrame, strand: Optional[str] = None, threads: int = 1, ci: float = .95, mem_limit: Optional[int] = None) -> pd.DataFrame:
-        snip_regions = self._create_snip_regions(snip_positions, strand)
-        n_regions = len(snip_regions)
+    def snip(self,
+             pixels: PixelsData,
+             snip_positions: pd.DataFrame,
+             strand: Optional[str] = None,
+             blacklist: Optional[pd.DataFrame] = None,
+             filterfield: str = 'pos',
+             threads: int = 1,
+             ci: float = .95,
+             mem_limit: Optional[int] = None) -> pd.DataFrame:
+        snip_regions = self._create_snip_regions(snip_positions, strand, blacklist=blacklist, filterfield=filterfield)
+        n_regions = len(snip_regions)  # This is used later for averaging. After filtering by blacklist, there are less regions, which is accounted in averaging.
         snips = self._get_snips(pixels, snip_regions, threads, mem_limit)
         avg_obs_profile, var_obs_profile = self._aggregate_snips(snips, n_regions)
         if self._snipping_value == SnippingValues.ICCF:
             avg_profile = avg_obs_profile
             ci_margin = self._ci_mean_1_sample(var_obs_profile, n_regions, ci=ci)
         elif self._snipping_value == SnippingValues.OBSEXP:
-            avg_exp_profile, var_exp_profile = self._create_expected_snips(pixels, threads)
+            avg_exp_profile, var_exp_profile = self._create_expected_snips(pixels, threads, blacklist, filterfield=filterfield)
             avg_profile = avg_obs_profile / avg_exp_profile
             n_exp = self._n_random_regions
             ci_margin = self._ci_ratio_mean_sample(avg_obs_profile, var_obs_profile, n_regions, avg_exp_profile, var_exp_profile, n_exp, ci)
@@ -390,14 +419,15 @@ class TripletCCT2DSnippingStrategy(TripletCCTSnippingStrategy):
         var_profile = sparse_matrix.var(axis=0).todense() / snip_groupsize ** 2
         return avg_profile, var_profile
     
-    def _create_expected_snips(self, pixels: PixelsData, threads: int) -> Tuple[FloatArray, FloatArray]:
+    def _create_expected_snips(self, pixels: PixelsData, threads: int, blacklist: Optional[pd.DataFrame] = None, filterfield: str = 'pos') -> Tuple[FloatArray, FloatArray]:
         n_random = self._n_random_regions
         len_random = 100
         genome = self._genome
         random_intervals = self._get_random_coordinates(n_random, len_random, genome)
-        random_snip_regions = self._create_snip_regions(random_intervals)
+        random_snip_regions = self._create_snip_regions(random_intervals, blacklist=blacklist, filterfield=filterfield)
+        n_random_snips = len(random_snip_regions)  # This is used later for averaging. After filtering by blacklist, there are less regions, which is accounted in averaging.
         random_snips = self._get_snips(pixels, random_snip_regions, threads)
-        avg_random_profile, var_random_profile = self._aggregate_snips(random_snips, n_random)
+        avg_random_profile, var_random_profile = self._aggregate_snips(random_snips, n_random_snips)
         return avg_random_profile, var_random_profile
     
     @staticmethod
