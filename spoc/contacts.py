@@ -132,9 +132,12 @@ class ContactManipulator:
         # determine which method to use for concatenation
         if isinstance(df, pd.DataFrame):
             result = pd.concat(subsets).sort_index()
+            # this is needed if there are reads with equal start positions
+            result = result.loc[~result.index.duplicated(keep='first')]
         else:
             result = dd.concat(subsets).reset_index()\
                                         .sort_values("index")\
+                                        .drop_duplicates(subset=['index'])\
                                         .set_index("index")
         return result
 
