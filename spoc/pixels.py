@@ -148,7 +148,6 @@ class GenomicBinner:
         contacts_w_midpoints = self._assign_midpoints(
             contacts.data
         )
-        # assign bins TODO: map partitions will not work for pandas dataframe
         if contacts.is_dask:
             contact_bins = contacts_w_midpoints.map_partitions(
                 self._assign_bins,

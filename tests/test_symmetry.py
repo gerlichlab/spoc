@@ -26,7 +26,15 @@ from .fixtures.symmetry import (
             labelled_binary_contacts_3d_unflipped,
             labelled_binary_contacts_3d_unflipped_example2,
             labelled_binary_contacts_3d_flipped,
-            labelled_binary_contacts_3d_flipped_example2
+            labelled_binary_contacts_3d_flipped_example2,
+            unlabelled_contacts_diff_chrom_2d,
+            unlabelled_contacts_diff_chrom_3d,
+            unlabelled_contacts_diff_chrom_3d_flipped,
+            unlabelled_contacts_diff_chrom_2d_flipped,
+            labelled_binary_contacts_diff_chrom_2d,
+            labelled_binary_contacts_diff_chrom_2d_flipped,
+            labelled_binary_contacts_diff_chrom_3d,
+            labelled_binary_contacts_diff_chrom_3d_flipped
 )
 
 
@@ -112,3 +120,16 @@ def test_flip_labelled_contacts_dask(unflipped, flipped, request):
     contacts = Contacts(unflipped, label_sorted=True)
     result = ContactManipulator().flip_symmetric_contacts(contacts)
     pd.testing.assert_frame_equal(result.data.compute().reset_index(drop=True), flipped.reset_index(drop=True))
+
+@pytest.mark.parametrize("unflipped, flipped",
+                            [('unlabelled_contacts_diff_chrom_3d', 'unlabelled_contacts_diff_chrom_3d_flipped'),
+                            ('unlabelled_contacts_diff_chrom_2d', 'unlabelled_contacts_diff_chrom_2d_flipped'),
+                            ('labelled_binary_contacts_diff_chrom_2d', 'labelled_binary_contacts_diff_chrom_2d_flipped'),
+                            ('labelled_binary_contacts_diff_chrom_3d', 'labelled_binary_contacts_diff_chrom_3d_flipped'),
+                            ])
+def test_flip_unlabelled_contacts_different_chromosomes(unflipped, flipped, request):
+    unflipped, flipped = request.getfixturevalue(unflipped), request.getfixturevalue(flipped)
+    contacts = Contacts(unflipped)
+    result = ContactManipulator().flip_symmetric_contacts(contacts, sort_chromosomes=True)
+    pd.testing.assert_frame_equal(result.data.reset_index(drop=True).sort_index(axis=1),
+                                  flipped.reset_index(drop=True).sort_index(axis=1))

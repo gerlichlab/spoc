@@ -48,6 +48,7 @@ class Contacts:
 
     def get_label_values(self) -> List[str]:
         """Returns all label values"""
+        # TODO: This could be put in global metadata of parquet file
         if not self.contains_metadata:
             raise ValueError("Contacts do not contain metadata!")
         output = set()
@@ -57,6 +58,18 @@ class Contacts:
             else:
                 output.update(self.data[f"metadata_{i+1}"].unique())
         return output
+
+    def get_chromosome_values(self) -> List[str]:
+        """Returns all chromosome values"""
+        # TODO: This could be put in global metadata of parquet file
+        output = set()
+        for i in range(self.number_fragments):
+            if self.is_dask:
+                output.update(self.data[f"chrom_{i+1}"].unique().compute())
+            else:
+                output.update(self.data[f"chrom_{i+1}"].unique())
+        return output
+
 
     @property
     def data(self):
@@ -204,6 +217,30 @@ class ContactManipulator:
             result = pd.concat(subsets).sort_index()
         return Contacts(result, number_fragments=contacts.number_fragments, label_sorted=True)
 
+    def _sort_chromosomes(self, df:Union[pd.DataFrame, dd.DataFrame], number_fragments:int) -> Union[pd.DataFrame, dd.DataFrame]:
+        """Sorts chromosomes in ascending, alphabetical order"""
+        # iterate over all permutations of chromosomes that exist
+        subsets = []
+        if isinstance(df, dd.DataFrame):
+            chromosome_conbinations = df[[f"chrom_{i}" for i in range(1, number_fragments + 1)]].drop_duplicates().compute().values.tolist()
+        else:
+            chromosome_conbinations = df[[f"chrom_{i}" for i in range(1, number_fragments + 1)]].drop_duplicates().values.tolist()
+        for perm in chromosome_conbinations:
+            query = " and ".join([f"chrom_{i+1} == '{j}'" for i, j in enumerate(perm)])
+            desired_order = [i + 1 for i in np.argsort(perm)]
+            sorted_frame = df.query(query).rename(columns=self._generate_rename_columns(desired_order))
+            # ensure correct column order
+            subsets.append(sorted_frame)
+        # determine which method to use for concatenation
+        if isinstance(df, dd.DataFrame):
+            # this is a bit of a hack to get the index sorted. Dask does not support index sorting
+            result = dd.concat(subsets).reset_index()\
+                                        .sort_values("index")\
+                                        .set_index("index")
+        else:
+            result = pd.concat(subsets).sort_index()
+        return result 
+
 
     def _generate_binary_label_mapping(self, label_values:List[str], number_fragments: int) -> Dict[str, str]:
         sorted_labels = sorted(label_values)
@@ -273,17 +310,21 @@ class ContactManipulator:
                         symmetry_flipped=contacts.symmetry_flipped)
 
 
-    def flip_symmetric_contacts(self, contacts: Contacts) -> Contacts:
+    def flip_symmetric_contacts(self, contacts: Contacts, sort_chromosomes: bool = False) -> Contacts:
         """Flips contacts based on inherent symmetry"""
         if contacts.contains_metadata:
             if not contacts.label_sorted:
                 contacts = self.sort_labels(contacts)
             label_values = contacts.get_label_values()
             result = self._flip_labelled_contacts(contacts.data, label_values)
+            if sort_chromosomes:
+                result = self._sort_chromosomes(result, contacts.number_fragments)
             return Contacts(result, number_fragments=contacts.number_fragments, label_sorted=True,
                             binary_labels_equal=contacts.binary_labels_equal,
                             symmetry_flipped=True
                             )
         else:
             result = self._flip_unlabelled_contacts(contacts.data)
+            if sort_chromosomes:
+                result = self._sort_chromosomes(result, contacts.number_fragments)
             return Contacts(result, number_fragments=contacts.number_fragments, symmetry_flipped=True)
