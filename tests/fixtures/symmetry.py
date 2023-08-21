@@ -613,6 +613,75 @@ def unlabelled_contacts_diff_chrom_3d():
         }
     )
 
+
+@pytest.fixture
+def unlabelled_contacts_diff_chrom_4d():
+    return pd.DataFrame(
+        {
+            "read_name": ["read1", "read2", "read3"],
+            "read_length": [100, 100, 100],
+            "chrom_1": ["chr1", "chr1", "chr1"],
+            "start_1": [100, 2000, 100],
+            "end_1": [200, 3000, 200],
+            "mapping_quality_1": [10, 10, 10],
+            "align_score_1": [10, 10, 10],
+            "align_base_qscore_1": [10, 10, 10],
+            "chrom_2": ["chr1", "chr1", "chr1"],
+            "start_2": [1000, 200, 300],
+            "end_2": [2000, 300, 400],
+            "mapping_quality_2": [10, 10, 10],
+            "align_score_2": [10, 10, 10],
+            "align_base_qscore_2": [10, 10, 10],
+            "chrom_3": ["chr4", "chr4", "chr4"],
+            "start_3": [3000, 400, 500],
+            "end_3": [4000, 500, 600],
+            "mapping_quality_3": [10, 10, 10],
+            "align_score_3": [10, 10, 10],
+            "align_base_qscore_3": [10, 10, 10],
+            "chrom_4": ["chr4", "chr4", "chr4"],
+            "start_4": [250, 200, 300],
+            "end_4": [350, 300, 400],
+            "mapping_quality_4": [10, 10, 10],
+            "align_score_4": [10, 10, 10],
+            "align_base_qscore_4": [10, 10, 10]
+        }
+    )
+
+@pytest.fixture
+def unlabelled_contacts_diff_chrom_4d_flipped():
+    return pd.DataFrame(
+        {
+            "read_name": ["read1", "read2", "read3"],
+            "read_length": [100, 100, 100],
+            "chrom_1": ["chr1", "chr1", "chr1"],
+            "start_1": [100, 200, 100],
+            "end_1": [200, 300, 200],
+            "mapping_quality_1": [10, 10, 10],
+            "align_score_1": [10, 10, 10],
+            "align_base_qscore_1": [10, 10, 10],
+            "chrom_2": ["chr1", "chr1", "chr1"],
+            "start_2": [1000, 2000, 300],
+            "end_2": [2000, 3000, 400],
+            "mapping_quality_2": [10, 10, 10],
+            "align_score_2": [10, 10, 10],
+            "align_base_qscore_2": [10, 10, 10],
+            "chrom_3": ["chr4", "chr4", "chr4"],
+            "start_3": [250, 200, 300],
+            "end_3": [350, 300, 400],
+            "mapping_quality_3": [10, 10, 10],
+            "align_score_3": [10, 10, 10],
+            "align_base_qscore_3": [10, 10, 10],
+            "chrom_4": ["chr4", "chr4", "chr4"],
+            "start_4": [3000, 400, 500],
+            "end_4": [4000, 500, 600],
+            "mapping_quality_4": [10, 10, 10],
+            "align_score_4": [10, 10, 10],
+            "align_base_qscore_4": [10, 10, 10]
+        }
+    )
+
+
+
 @pytest.fixture
 def unlabelled_contacts_diff_chrom_3d_flipped():
     return pd.DataFrame(

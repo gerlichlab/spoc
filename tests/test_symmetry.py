@@ -29,8 +29,10 @@ from .fixtures.symmetry import (
             labelled_binary_contacts_3d_flipped_example2,
             unlabelled_contacts_diff_chrom_2d,
             unlabelled_contacts_diff_chrom_3d,
+            unlabelled_contacts_diff_chrom_4d,
             unlabelled_contacts_diff_chrom_3d_flipped,
             unlabelled_contacts_diff_chrom_2d_flipped,
+            unlabelled_contacts_diff_chrom_4d_flipped,
             labelled_binary_contacts_diff_chrom_2d,
             labelled_binary_contacts_diff_chrom_2d_flipped,
             labelled_binary_contacts_diff_chrom_3d,
@@ -124,6 +126,7 @@ def test_flip_labelled_contacts_dask(unflipped, flipped, request):
 @pytest.mark.parametrize("unflipped, flipped",
                             [('unlabelled_contacts_diff_chrom_3d', 'unlabelled_contacts_diff_chrom_3d_flipped'),
                             ('unlabelled_contacts_diff_chrom_2d', 'unlabelled_contacts_diff_chrom_2d_flipped'),
+                            ('unlabelled_contacts_diff_chrom_4d', 'unlabelled_contacts_diff_chrom_4d_flipped'),
                             ('labelled_binary_contacts_diff_chrom_2d', 'labelled_binary_contacts_diff_chrom_2d_flipped'),
                             ('labelled_binary_contacts_diff_chrom_3d', 'labelled_binary_contacts_diff_chrom_3d_flipped'),
                             ])
