@@ -227,7 +227,7 @@ class ContactManipulator:
             chromosome_conbinations = df[[f"chrom_{i}" for i in range(1, number_fragments + 1)]].drop_duplicates().values.tolist()
         for perm in chromosome_conbinations:
             query = " and ".join([f"chrom_{i+1} == '{j}'" for i, j in enumerate(perm)])
-            desired_order = [i + 1 for i in np.argsort(perm)]
+            desired_order = [i + 1 for i in np.argsort(perm, kind="stable")]
             sorted_frame = df.query(query).rename(columns=self._generate_rename_columns(desired_order))
             # ensure correct column order
             subsets.append(sorted_frame)
