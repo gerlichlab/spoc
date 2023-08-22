@@ -120,4 +120,17 @@ def test_annotator_calls_sisters_correctly(
     )
     # check values
     expected = pd.Series(["SisterB", "SisterA"])
-    np.array_equal(labelled_fragments.data.metadata.values, expected.values)
+    if isinstance(request.getfixturevalue(fragments), dd.DataFrame):
+        assert np.array_equal(labelled_fragments.data.metadata.values.compute(), expected.values)
+    else:
+        assert np.array_equal(labelled_fragments.data.metadata.values, expected)
+
+@pytest.mark.parametrize("fragments", ["unlabelled_fragments", "unlabelled_fragments_dask"])
+def test_annotator_maintains_dataframe_type(
+    annotator_with_entries, fragments, request
+):
+    labelled_fragments = annotator_with_entries.annotate_fragments(
+        request.getfixturevalue(fragments)
+    )
+    # check values
+    assert isinstance(labelled_fragments.data, type(request.getfixturevalue(fragments).data))
