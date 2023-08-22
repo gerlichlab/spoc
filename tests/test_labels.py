@@ -4,6 +4,7 @@ import pytest
 import pandas as pd
 import pandera as pa
 import numpy as np
+import dask.dataframe as dd
 
 from spoc import fragments
 
@@ -27,9 +28,8 @@ def annotator_with_entries():
 def bad_df():
     return pd.DataFrame({"be": ["bop"]})
 
-
 @pytest.fixture
-def unlabelled_fragments():
+def unlabelled_df():
     return pd.DataFrame(
         {
             "chrom": pd.Series(["chr1"] * 3, dtype="category"),
@@ -47,9 +47,17 @@ def unlabelled_fragments():
         }
     )
 
+@pytest.fixture
+def unlabelled_fragments(unlabelled_df):
+    return fragments.Fragments(unlabelled_df)
+
 
 @pytest.fixture
-def labelled_fragments():
+def unlabelled_fragments_dask(unlabelled_df):
+    return fragments.Fragments(dd.from_pandas(unlabelled_df, npartitions=1))
+
+@pytest.fixture
+def labelled_df():
     return pd.DataFrame(
         {
             "chrom": pd.Series(["chr1"] * 3, dtype="category"),
@@ -74,41 +82,41 @@ def test_fragment_constructor_rejects_df_w_wrong_structure(bad_df):
         fragments.Fragments(bad_df)
 
 
-def test_fragments_constructor_accepts_unlabelled_fragments(unlabelled_fragments):
-    frag = fragments.Fragments(unlabelled_fragments)
+def test_fragments_constructor_accepts_unlabelled_fragments(unlabelled_df):
+    frag = fragments.Fragments(unlabelled_df)
     assert not frag.contains_metadata
 
 
-def test_fragments_constructor_accepts_labelled_fragments(labelled_fragments):
-    frag = fragments.Fragments(labelled_fragments)
+def test_fragments_constructor_accepts_labelled_fragments(labelled_df):
+    frag = fragments.Fragments(labelled_df)
     assert frag.contains_metadata
 
-
+@pytest.mark.parametrize("fragments", ["unlabelled_fragments", "unlabelled_fragments_dask"])
 def test_annotator_drops_unknown_fragments(
-    annotator_with_entries, unlabelled_fragments
+    annotator_with_entries, fragments, request
 ):
     labelled_fragments = annotator_with_entries.annotate_fragments(
-        fragments.Fragments(unlabelled_fragments)
+        request.getfixturevalue(fragments)
     )
     # check length
     assert len(labelled_fragments.data) == 2
 
-
+@pytest.mark.parametrize("fragments", ["unlabelled_fragments", "unlabelled_fragments_dask"])
 def test_annotator_produces_correct_schema(
-    annotator_with_entries, unlabelled_fragments
+    annotator_with_entries, fragments, request
 ):
     labelled_fragments = annotator_with_entries.annotate_fragments(
-        fragments.Fragments(unlabelled_fragments)
+        request.getfixturevalue(fragments)
     )
     # check schema (fragment constructor checks it)
     assert labelled_fragments.contains_metadata
 
-
+@pytest.mark.parametrize("fragments", ["unlabelled_fragments", "unlabelled_fragments_dask"])
 def test_annotator_calls_sisters_correctly(
-    annotator_with_entries, unlabelled_fragments
+    annotator_with_entries, fragments, request
 ):
     labelled_fragments = annotator_with_entries.annotate_fragments(
-        fragments.Fragments(unlabelled_fragments)
+        request.getfixturevalue(fragments)
     )
     # check values
     expected = pd.Series(["SisterB", "SisterA"])
