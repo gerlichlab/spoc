@@ -7,14 +7,14 @@ import pandas as pd
 import dask.dataframe as dd
 import numpy as np
 from itertools import combinations
-from .dataframe_models import FragmentSchema, ContactSchema
+from .dataframe_models import FragmentSchema, ContactSchema, DataFrame
 from .contacts import Contacts
 
 
 class Fragments:
     """Genomic fragments that can be labelled or not"""
 
-    def __init__(self, fragment_frame: Union[pd.DataFrame, dd.DataFrame]) -> None:
+    def __init__(self, fragment_frame: DataFrame) -> None:
         self._data = FragmentSchema.validate(fragment_frame)
         self._contains_metadata = True if "metadata" in fragment_frame.columns else False
 

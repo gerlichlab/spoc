@@ -6,6 +6,10 @@ import pandera as pa
 import pandas as pd
 import dask.dataframe as dd
 
+# Define dataframe type
+
+DataFrame = Union[pd.DataFrame, dd.DataFrame]
+
 FragmentSchema = pa.DataFrameSchema(
     {
         "chrom": pa.Column(str),
@@ -85,7 +89,7 @@ class ContactSchema:
                 output[key + f"_{i}"] = value
         return output
 
-    def validate_header(self, data_frame: Union[pd.DataFrame, dd.DataFrame]) -> None:
+    def validate_header(self, data_frame: DataFrame) -> None:
         """Validates only header, needed to validate that dask taskgraph can be built before
         evaluation"""
         for column in data_frame.columns:
@@ -95,8 +99,8 @@ class ContactSchema:
                 )
 
     def validate(
-        self, data_frame: Union[pd.DataFrame, dd.DataFrame]
-    ) -> Union[pd.DataFrame, dd.DataFrame]:
+        self, data_frame: DataFrame
+    ) -> DataFrame:
         """Validate multiway contact dataframe"""
         self.validate_header(data_frame)
         return self._schema.validate(data_frame)
@@ -148,7 +152,7 @@ class PixelSchema:
                 output[key + f"_{i}"] = value
         return output
 
-    def validate_header(self, data_frame: Union[pd.DataFrame, dd.DataFrame]) -> None:
+    def validate_header(self, data_frame: DataFrame) -> None:
         """Validates only header, needed to validate that dask taskgraph can be built before
         evaluation"""
         for column in data_frame.columns:
@@ -158,7 +162,7 @@ class PixelSchema:
                 )
 
     def validate(
-        self, data_frame: Union[pd.DataFrame, dd.DataFrame]
-    ) -> Union[pd.DataFrame, dd.DataFrame]:
+        self, data_frame: DataFrame
+    ) -> DataFrame:
         """Validate multiway contact dataframe"""
         return self._schema.validate(data_frame)

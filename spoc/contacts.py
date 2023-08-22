@@ -6,10 +6,8 @@ import pandas as pd
 import dask.dataframe as dd
 from typing import Union, Optional, Dict
 from itertools import permutations, product
-from spoc.dataframe_models import ContactSchema
+from spoc.dataframe_models import ContactSchema, DataFrame
 import numpy as np
-
-DataFrame = Union[pd.DataFrame, dd.DataFrame]
 
 
 class Contacts:
@@ -217,7 +215,7 @@ class ContactManipulator:
             result = pd.concat(subsets).sort_index()
         return Contacts(result, number_fragments=contacts.number_fragments, label_sorted=True)
 
-    def _sort_chromosomes(self, df:Union[pd.DataFrame, dd.DataFrame], number_fragments:int) -> Union[pd.DataFrame, dd.DataFrame]:
+    def _sort_chromosomes(self, df:DataFrame, number_fragments:int) -> DataFrame:
         """Sorts chromosomes in ascending, alphabetical order"""
         # iterate over all permutations of chromosomes that exist
         subsets = []
