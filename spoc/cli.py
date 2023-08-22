@@ -1,8 +1,8 @@
 """Console script for spoc."""
 import sys
 import click
-from spoc.contacts import ContactExpander, ContactManipulator
-from spoc.labels import FragmentAnnotator
+from spoc.contacts import ContactManipulator
+from spoc.fragments import FragmentAnnotator, FragmentExpander
 from spoc.io import FileManager
 from spoc.pixels import GenomicBinner
 
@@ -23,9 +23,9 @@ def main():
 )
 def expand(fragments_path, expanded_contacts_path, n_fragments):
     """Script for expanding labelled fragments to contacts"""
-    expander = ContactExpander(number_fragments=n_fragments)
+    expander = FragmentExpander(number_fragments=n_fragments)
     file_manager = FileManager(verify_schemas_on_load=True)
-    input_fragments = file_manager.load_annotated_fragments(fragments_path)
+    input_fragments = file_manager.load_fragments(fragments_path)
     expanded = expander.expand(input_fragments)
     file_manager.write_multiway_contacts(expanded_contacts_path, expanded)
 
@@ -39,42 +39,31 @@ def annotate(fragments_path, label_library_path, labelled_fragments_path):
     file_manager = FileManager(verify_schemas_on_load=True)
     label_library = file_manager.load_label_library(label_library_path)
     annotator = FragmentAnnotator(label_library)
-    input_fragments = file_manager.load_porec_fragments(fragments_path)
+    input_fragments = file_manager.load_fragments(fragments_path)
     result = annotator.annotate_fragments(input_fragments)
-    file_manager.write_annotated_fragments(labelled_fragments_path, result)
+    file_manager.write_fragments(labelled_fragments_path, result)
 
 
 @click.command()
 @click.argument("contact_path")
-@click.argument("chromosome_sizes")
 @click.argument("pixel_path")
-@click.option("-n", "--number_fragments", default=3, type=int)
 @click.option("-b", "--bin_size", default=10_000, type=int)
-@click.option("-s", "--sort_sisters", is_flag=True)
 @click.option("-c", "--same_chromosome", is_flag=True)
 def bin_contacts(
     contact_path,
-    chromosome_sizes,
     pixel_path,
-    number_fragments,
     bin_size,
-    sort_sisters,
     same_chromosome,
 ):
     """Script for binning contacts"""
     # load data from disk
     file_manager = FileManager(verify_schemas_on_load=True, use_dask=True)
-    contacts = file_manager.load_multiway_contacts(contact_path, number_fragments)
-    chrom_sizes = file_manager.load_chromosome_sizes(chromosome_sizes)
+    contacts = file_manager.load_contacts(contact_path)
     # binning
     binner = GenomicBinner(
-        bin_size=bin_size,
-        chrom_sizes=chrom_sizes,
-        same_chromosome=same_chromosome,
-        contact_order=number_fragments,
-        sort_sisters=sort_sisters,
+        bin_size=bin_size
     )
-    pixels = binner.bin_contacts(contacts)
+    pixels = binner.bin_contacts(contacts, same_chromosome=same_chromosome)
     # persisting
     file_manager.write_pixels(pixel_path, pixels)
 
@@ -96,9 +85,9 @@ def merge():
 def merge_contacts(contact_paths, n_fragments, output):
     """Functionality to merge annotated fragments"""
     file_manager = FileManager(verify_schemas_on_load=True, use_dask=True)
-    manipulator = ContactManipulator(n_fragments, use_dask=True)
+    manipulator = ContactManipulator()
     contact_files = [
-        file_manager.load_multiway_contacts(path, n_fragments) for path in contact_paths
+        file_manager.load_contacts(path, number_fragments=n_fragments) for path in contact_paths
     ]
     merged = manipulator.merge_contacts(contact_files)
     file_manager.write_multiway_contacts(output, merged)

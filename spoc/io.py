@@ -4,7 +4,10 @@ import pickle
 from typing import Dict, Union
 import pandas as pd
 import dask.dataframe as dd
-from .models import FragmentSchema, AnnotatedFragmentSchema, HigherOrderContactSchema
+from .contacts import Contacts
+from .pixels import Pixels
+from .dataframe_models import FragmentSchema, ContactSchema
+from .fragments import Fragments
 
 
 class FileManager:
@@ -32,50 +35,29 @@ class FileManager:
             label_library = pickle.load(handle)
         return label_library
 
-    def load_porec_fragments(self, path: str):
-        """Load porec fragments"""
-        data = self._parquet_reader_func(path)
-        if self._verify_schemas:
-            return FragmentSchema.validate(data)
-        return data
-
-    def load_annotated_fragments(self, path: str):
+    def load_fragments(self, path: str):
         """Load annotated fragments"""
         data = self._parquet_reader_func(path)
-        if self._verify_schemas:
-            return AnnotatedFragmentSchema.validate(data)
-        return data
+        return Fragments(data)
 
     @staticmethod
-    def write_annotated_fragments(
-        path: str, data: Union[pd.DataFrame, dd.DataFrame]
-    ) -> None:
+    def write_fragments(path: str, fragments: Fragments) -> None:
         """Write annotated fragments"""
-        data.to_parquet(path)
+        fragments.data.to_parquet(path, row_group_size=1024*1024)
 
     @staticmethod
-    def write_multiway_contacts(
-        path: str, data: Union[pd.DataFrame, dd.DataFrame]
-    ) -> None:
+    def write_multiway_contacts(path: str, contacts: Contacts) -> None:
         """Write multiway contacts"""
-        data.to_parquet(path)
+        contacts.data.to_parquet(path, row_group_size=1024*1024)
 
-    def load_multiway_contacts(
-        self, path: str, number_fragments: Union[int, None] = None
-    ) -> Union[pd.DataFrame, dd.DataFrame]:
+
+    # TODO; find a solution to hold information about symmetry flipping, label_sorting and binary_labeels equating
+    # -> do it with metadata of parquet file
+    def load_contacts(self, path: str, *args, **kwargs) -> Contacts:
         """Load multiway contacts"""
-        data = self._parquet_reader_func(path)
-        if self._verify_schemas:
-            if number_fragments is None:
-                raise ValueError(
-                    "Number of fragments needs to be specified if schema is validated!"
-                )
-            schema = HigherOrderContactSchema(number_fragments)
-            schema.validate_header(
-                data
-            )  # this is needed to catch problems that cause task graph construction failures
-            return schema.validate(data)
-        return data
+        return Contacts(
+            self._parquet_reader_func(path), *args, **kwargs
+        )
 
     @staticmethod
     def load_chromosome_sizes(path: str):
@@ -93,9 +75,10 @@ class FileManager:
     @staticmethod
     def load_pixels(path: str):
         """Loads pixels"""
+        # TODO:make this conform with new file format
         raise NotImplementedError
 
     @staticmethod
-    def write_pixels(path: str, data: Union[pd.DataFrame, dd.DataFrame]) -> None:
+    def write_pixels(path: str, pixels: Pixels) -> None:
         """Write pixels"""
-        data.to_parquet(path)
+        pixels.data.to_parquet(path, row_group_size=1024*1024)
