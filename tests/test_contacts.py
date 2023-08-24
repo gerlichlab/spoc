@@ -100,6 +100,8 @@ def test_expander_drops_reads_w_too_little_fragments(
     triplet_expander, fragments, request
 ):
     result = triplet_expander.expand(request.getfixturevalue(fragments)).data
+    if isinstance(result, dd.DataFrame):
+        result = result.compute()
     assert len(set(result.read_name)) == 1
     assert result.read_name[0] == "dummy"
 

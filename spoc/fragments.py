@@ -25,6 +25,10 @@ class Fragments:
     @property
     def contains_metadata(self):
         return self._contains_metadata
+    
+    @property
+    def is_dask(self):
+        return isinstance(self._data, dd.DataFrame)
 
 
 # TODO: make generic such that label library can hold arbitrary information
@@ -79,41 +83,58 @@ class FragmentExpander:
     """Expands n-way fragments over sequencing reads
     to yield contacts."""
 
-    def __init__(self, number_fragments: int) -> None:
+    def __init__(self, number_fragments: int, contains_metadata: bool = True) -> None:
         self._number_fragments = number_fragments
+        self._contains_metadata = contains_metadata
+        self._schema = ContactSchema(number_fragments, contains_metadata)
 
     @staticmethod
-    def _add_suffix(row, suffix, is_labelled):
+    def _add_suffix(row, suffix:int, contains_metadata:bool) -> Dict:
         """expands contact fields"""
         output = {}
-        for key in ContactSchema.get_contact_fields(is_labelled):
+        for key in ContactSchema.get_contact_fields(contains_metadata):
             output[key + f"_{suffix}"] = getattr(row, key)
         return output
+
+    def _get_expansion_output_structure(self) -> pd.DataFrame:
+        """returns expansion output dataframe structure for dask"""
+        return pd.DataFrame(columns=list(self._schema._schema.columns.keys()) + ['level_2']).set_index(["read_name", 'read_length', 'level_2'])
+
+    def _expand_single_read(self, read_df: pd.DataFrame, contains_metadata:bool) -> pd.DataFrame:
+        """Expands a single read"""
+        if len(read_df) < self._number_fragments:
+            return pd.DataFrame()
+
+        rows = list(
+            read_df.sort_values(["read_start"], ascending=True)
+            .assign(pos_on_read=lambda x: np.arange(len(x)))
+            .itertuples()
+        )
+
+        result = []
+        for alignments in combinations(rows, self._number_fragments):
+            contact = {}
+            # add reads
+            for index, align in enumerate(alignments, start=1):
+                contact.update(
+                    self._add_suffix(align, index, contains_metadata)
+                )
+            result.append(contact)
+        return pd.DataFrame(result)
 
     def expand(self, fragments: Fragments) -> Contacts:
         """expand contacts n-ways"""
         # expand fragments
-        result = []
-        for (read_name, read_df) in fragments.data.groupby("read_name", as_index=False):
-            if len(read_df) < self._number_fragments:
-                continue
-
-            rows = list(
-                read_df.sort_values(["read_start"], ascending=True)
-                .assign(pos_on_read=lambda x: np.arange(len(x)))
-                .itertuples()
-            )
-
-            read_length = rows[0].read_length
-            for alignments in combinations(rows, self._number_fragments):
-                contact = {"read_name": read_name, "read_length": read_length}
-                # add reads
-                for index, align in enumerate(alignments, start=1):
-                    contact.update(
-                        self._add_suffix(align, index, fragments.contains_metadata)
-                    )
-                result.append(contact)
+        if fragments.is_dask:
+            contact_df = fragments.data.groupby(["read_name", "read_length"]).apply(
+                self._expand_single_read, contains_metadata=fragments.contains_metadata, meta=self._get_expansion_output_structure()
+            ).reset_index().drop("level_2", axis=1)
+        else:
+            contact_df = fragments.data.groupby(["read_name", "read_length"]).apply(
+                self._expand_single_read, contains_metadata=fragments.contains_metadata
+            ).reset_index().drop("level_2", axis=1)
+        #return contact_df
         return Contacts(
-            pd.DataFrame(result),
+            contact_df,
             number_fragments=self._number_fragments
         )
