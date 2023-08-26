@@ -4,9 +4,13 @@ import pickle
 from typing import Dict, Union
 import pandas as pd
 import dask.dataframe as dd
+import pyarrow as pa
+import pyarrow.parquet as pq
+import json
+from pydantic import BaseModel
 from .contacts import Contacts
 from .pixels import Pixels
-from .dataframe_models import FragmentSchema, ContactSchema
+from .dataframe_models import FragmentSchema, ContactSchema, DataFrame
 from .fragments import Fragments
 
 
@@ -14,13 +18,21 @@ class FileManager:
     """Is responsible for loading and writing files"""
 
     def __init__(
-        self, verify_schemas_on_load: bool = True, use_dask: bool = False
+        self, use_dask: bool = False
     ) -> None:
-        self._verify_schemas = verify_schemas_on_load
         if use_dask:
             self._parquet_reader_func = dd.read_parquet
         else:
             self._parquet_reader_func = pd.read_parquet
+
+    @staticmethod
+    def _update_parquet_metadata(path:str, update_metadata: BaseModel):
+        """Update parquet metadata"""
+        md = pa.parquet.read_metadata(path)
+        metadata_dict = md.to_dict()
+        metadata_dict.update(update_metadata.dict())
+        md.set_metadata(metadata_dict)
+        pq.write_metadata(md, path)
 
     @staticmethod
     def write_label_library(path: str, data: Dict[str, bool]) -> None:
@@ -43,12 +55,16 @@ class FileManager:
     @staticmethod
     def write_fragments(path: str, fragments: Fragments) -> None:
         """Write annotated fragments"""
+        # Write fragments
         fragments.data.to_parquet(path, row_group_size=1024*1024)
 
-    @staticmethod
-    def write_multiway_contacts(path: str, contacts: Contacts) -> None:
+    def write_multiway_contacts(self, path: str, contacts: Contacts) -> None:
         """Write multiway contacts"""
+        # Write contacts
         contacts.data.to_parquet(path, row_group_size=1024*1024)
+        # Write metadata
+        self._update_parquet_metadata(path, contacts.get_global_parameters())
+        
 
 
     # TODO; find a solution to hold information about symmetry flipping, label_sorting and binary_labeels equating

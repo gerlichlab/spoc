@@ -7,6 +7,7 @@ import dask.dataframe as dd
 from typing import Union, Optional, Dict
 from itertools import permutations, product
 from spoc.dataframe_models import ContactSchema, DataFrame
+from spoc.file_parameter_models import ContactsParameters
 import numpy as np
 
 
@@ -39,6 +40,16 @@ class Contacts:
         self.label_sorted = label_sorted
         self.binary_labels_equal = binary_labels_equal
         self.symmetry_flipped = symmetry_flipped
+
+    def get_global_parameters(self) -> ContactsParameters:
+        """Returns global parameters"""
+        return ContactsParameters(
+            number_fragments=self.number_fragments,
+            metadata_combi=self.metadata_combi,
+            label_sorted=self.label_sorted,
+            binary_labels_equal=self.binary_labels_equal,
+            symmetry_flipped=self.symmetry_flipped,
+        )
 
     def _guess_number_fragments(self, contact_frame: DataFrame) -> int:
         """Guesses the number of fragments from the contact frame"""

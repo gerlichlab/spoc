@@ -24,7 +24,7 @@ def main():
 def expand(fragments_path, expanded_contacts_path, n_fragments):
     """Script for expanding labelled fragments to contacts"""
     expander = FragmentExpander(number_fragments=n_fragments)
-    file_manager = FileManager(verify_schemas_on_load=True)
+    file_manager = FileManager()
     input_fragments = file_manager.load_fragments(fragments_path)
     expanded = expander.expand(input_fragments)
     file_manager.write_multiway_contacts(expanded_contacts_path, expanded)
@@ -36,7 +36,7 @@ def expand(fragments_path, expanded_contacts_path, n_fragments):
 @click.argument("labelled_fragments_path")
 def annotate(fragments_path, label_library_path, labelled_fragments_path):
     """Script for annotating porec fragments"""
-    file_manager = FileManager(verify_schemas_on_load=True)
+    file_manager = FileManager()
     label_library = file_manager.load_label_library(label_library_path)
     annotator = FragmentAnnotator(label_library)
     input_fragments = file_manager.load_fragments(fragments_path)
@@ -57,7 +57,7 @@ def bin_contacts(
 ):
     """Script for binning contacts"""
     # load data from disk
-    file_manager = FileManager(verify_schemas_on_load=True, use_dask=True)
+    file_manager = FileManager(use_dask=True)
     contacts = file_manager.load_contacts(contact_path)
     # binning
     binner = GenomicBinner(
@@ -84,7 +84,7 @@ def merge():
 )
 def merge_contacts(contact_paths, n_fragments, output):
     """Functionality to merge annotated fragments"""
-    file_manager = FileManager(verify_schemas_on_load=True, use_dask=True)
+    file_manager = FileManager(use_dask=True)
     manipulator = ContactManipulator()
     contact_files = [
         file_manager.load_contacts(path, number_fragments=n_fragments) for path in contact_paths
