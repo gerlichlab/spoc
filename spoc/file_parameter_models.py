@@ -6,7 +6,6 @@ from typing import Optional, List
 class ContactsParameters(BaseModel):
     """Parameters for multiway contacts"""
     number_fragments: Optional[int] = None
-    number_fragments: Optional[int] = None
     metadata_combi: Optional[List[str]] = None
     label_sorted: bool = False
     binary_labels_equal: bool = False
