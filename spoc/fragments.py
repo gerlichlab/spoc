@@ -124,15 +124,19 @@ class FragmentExpander:
 
     def expand(self, fragments: Fragments) -> Contacts:
         """expand contacts n-ways"""
-        # expand fragments
+        # construct dataframe type specific kwargs
         if fragments.is_dask:
-            contact_df = fragments.data.groupby(["read_name", "read_length"]).apply(
-                self._expand_single_read, contains_metadata=fragments.contains_metadata, meta=self._get_expansion_output_structure()
-            ).reset_index().drop("level_2", axis=1)
+            kwargs = dict(meta=self._get_expansion_output_structure())
         else:
-            contact_df = fragments.data.groupby(["read_name", "read_length"]).apply(
-                self._expand_single_read, contains_metadata=fragments.contains_metadata
-            ).reset_index().drop("level_2", axis=1)
+            kwargs = dict()
+        # expand
+        contact_df = fragments.data\
+                            .groupby(["read_name", "read_length"])\
+                            .apply(self._expand_single_read, 
+                                    contains_metadata=fragments.contains_metadata,
+                                    **kwargs)\
+                            .reset_index()\
+                            .drop("level_2", axis=1)
         #return contact_df
         return Contacts(
             contact_df,
