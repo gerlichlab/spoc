@@ -27,15 +27,6 @@ class FileManager:
         else:
             self._parquet_reader_func = pd.read_parquet
 
-    @staticmethod
-    def _update_parquet_metadata(path:str, update_metadata: BaseModel):
-        """Update parquet metadata"""
-        md = pa.parquet.read_metadata(path)
-        metadata_dict = md.to_dict()
-        metadata_dict.update(update_metadata.dict())
-        md.set_metadata(metadata_dict)
-        pq.write_metadata(md, path)
-
     def _write_parquet_dask(self, path: str, df: dd.DataFrame, global_parameters: BaseModel) -> None:
         """Write parquet file using dask"""
         custom_meta_data = {
