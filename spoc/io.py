@@ -53,6 +53,19 @@ class FileManager:
         # write table
         pq.write_table(table, path)
 
+    @staticmethod
+    def _load_parquet_global_parameters(path: str) -> BaseModel:
+        """Load global parameters from parquet file"""
+        # check if path is a directory, if so, we need to read the schema from one of the partitioned files
+        if os.path.isdir(path):
+            path = path + '/' + os.listdir(path)[0]
+        global_parameters = pa.parquet.read_schema(path).metadata.get("spoc".encode())
+        if global_parameters is not None:
+            global_parameters = json.loads(global_parameters.decode())
+        else:
+            # use default parameters
+            global_parameters = ContactsParameters().dict()
+        return global_parameters
 
     @staticmethod
     def write_label_library(path: str, data: Dict[str, bool]) -> None:
@@ -89,14 +102,7 @@ class FileManager:
     def load_contacts(self, path: str, global_parameters: Optional[ContactsParameters] = None) -> Contacts:
         """Load multiway contacts"""
         if global_parameters is None:
-            # check if path is a directory, if so, we need to read the schema from one of the partitioned files
-            if os.path.isdir(path):
-                path = path + '/' + os.listdir(path)[0]
-            global_parameters = pa.parquet.read_schema(path).metadata.get("spoc".encode())
-            if global_parameters is not None:
-                global_parameters = json.loads(global_parameters.decode())
-            else:
-                global_parameters = ContactsParameters()
+            global_parameters = self._load_parquet_global_parameters(path)
         else:
             global_parameters = global_parameters.dict()
         return Contacts(

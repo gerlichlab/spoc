@@ -5,6 +5,7 @@ from spoc.contacts import ContactManipulator
 from spoc.fragments import FragmentAnnotator, FragmentExpander
 from spoc.io import FileManager
 from spoc.pixels import GenomicBinner
+from spoc.file_parameter_models import ContactsParameters
 
 
 @click.group()
@@ -76,18 +77,12 @@ def merge():
 @click.command(name="contacts")
 @click.argument("contact_paths", nargs=-1)
 @click.option("-o", "--output", help="output path")
-@click.option(
-    "-n",
-    "--n_fragments",
-    default=3,
-    help="Order of contacts",
-)
-def merge_contacts(contact_paths, n_fragments, output):
+def merge_contacts(contact_paths, output):
     """Functionality to merge annotated fragments"""
     file_manager = FileManager(use_dask=True)
     manipulator = ContactManipulator()
     contact_files = [
-        file_manager.load_contacts(path, number_fragments=n_fragments) for path in contact_paths
+        file_manager.load_contacts(path) for path in contact_paths
     ]
     merged = manipulator.merge_contacts(contact_files)
     file_manager.write_multiway_contacts(output, merged)
