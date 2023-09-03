@@ -14,8 +14,12 @@ from .fixtures.symmetry import (
 @pytest.fixture
 def triplet_expander():
     """expander for triplets"""
-    return fragments.FragmentExpander(number_fragments=3)
+    return fragments.FragmentExpander(number_fragments=3, contains_metadata=False)
 
+@pytest.fixture
+def triplet_expander_labelled():
+    """expander for triplets"""
+    return fragments.FragmentExpander(number_fragments=3, contains_metadata=True)
 
 @pytest.fixture
 def contact_manipulator():
@@ -80,33 +84,51 @@ def unlabelled_df():
 def labelled_fragments(labelled_df):
     return fragments.Fragments(labelled_df)
 
+@pytest.fixture
+def labelled_fragments_dask(labelled_df):
+    return fragments.Fragments(dd.from_pandas(labelled_df, npartitions=1))
+
 
 @pytest.fixture
 def unlabelled_fragments(unlabelled_df):
     return fragments.Fragments(unlabelled_df)
 
+@pytest.fixture
+def unlabelled_fragments_dask(unlabelled_df):
+    return fragments.Fragments(dd.from_pandas(unlabelled_df, npartitions=1))
 
-@pytest.mark.parametrize("fragments", ["labelled_fragments", "unlabelled_fragments"])
+@pytest.mark.parametrize("fragments, expander", 
+                            [("labelled_fragments", "triplet_expander_labelled"), ("labelled_fragments_dask", "triplet_expander_labelled"),
+                             ("unlabelled_fragments", "triplet_expander"), ("unlabelled_fragments_dask", "triplet_expander")])
 def test_expander_drops_reads_w_too_little_fragments(
-    triplet_expander, fragments, request
+    expander, fragments, request
 ):
+    triplet_expander = request.getfixturevalue(expander)
     result = triplet_expander.expand(request.getfixturevalue(fragments)).data
+    if isinstance(result, dd.DataFrame):
+        result = result.compute()
     assert len(set(result.read_name)) == 1
     assert result.read_name[0] == "dummy"
 
 
-@pytest.mark.parametrize("fragments", ["labelled_fragments", "unlabelled_fragments"])
+@pytest.mark.parametrize("fragments, expander", 
+                            [("labelled_fragments", "triplet_expander_labelled"), ("labelled_fragments_dask", "triplet_expander_labelled"),
+                             ("unlabelled_fragments", "triplet_expander"), ("unlabelled_fragments_dask", "triplet_expander")])
 def test_expander_returns_correct_number_of_contacts(
-    triplet_expander, fragments, request
+    expander, fragments, request
 ):
+    triplet_expander = request.getfixturevalue(expander)
     result = triplet_expander.expand(request.getfixturevalue(fragments)).data
     assert len(result) == 4
 
-
+@pytest.mark.parametrize("fragments", ["labelled_fragments", "labelled_fragments_dask"])
 def test_expander_returns_correct_contacts_labelled(
-    triplet_expander, labelled_fragments
+    triplet_expander_labelled, fragments, request
 ):
-    result = triplet_expander.expand(labelled_fragments).data
+    df = request.getfixturevalue(fragments)
+    result = triplet_expander_labelled.expand(df).data
+    if isinstance(result, dd.DataFrame):
+        result = result.compute()
     assert np.array_equal(result["start_1"].values, np.array([1, 1, 1, 2]))
     assert np.array_equal(result["end_1"].values, np.array([4, 4, 4, 5]))
     assert np.array_equal(result["start_2"].values, np.array([2, 2, 3, 3]))
@@ -126,11 +148,14 @@ def test_expander_returns_correct_contacts_labelled(
         np.array(["SisterA", "SisterB", "SisterB", "SisterB"]),
     )
 
-
+@pytest.mark.parametrize("fragments", ["unlabelled_fragments", "unlabelled_fragments_dask"])
 def test_expander_returns_correct_contacts_unlabelled(
-    triplet_expander, unlabelled_fragments
+    triplet_expander, fragments, request
 ):
-    result = triplet_expander.expand(unlabelled_fragments).data
+    df = request.getfixturevalue(fragments)
+    result = triplet_expander.expand(df).data
+    if isinstance(result, dd.DataFrame):
+        result = result.compute()
     assert np.array_equal(result["start_1"].values, np.array([1, 1, 1, 2]))
     assert np.array_equal(result["end_1"].values, np.array([4, 4, 4, 5]))
     assert np.array_equal(result["start_2"].values, np.array([2, 2, 3, 3]))
