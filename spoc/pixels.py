@@ -7,6 +7,7 @@ import bioframe as bf
 import pyranges as pr
 from typing import Union, Optional, List
 from .dataframe_models import ContactSchema, PixelSchema
+from .file_parameter_models import PixelParameters
 from .contacts import Contacts
 
 
@@ -58,6 +59,19 @@ class Pixels:
                 raise ValueError(f"Path: {pixel_source} does not exist!")
             self._path = Path(pixel_source)
             self._data = None
+
+
+    def get_global_parameters(self):
+        """Returns global parameters of pixels"""
+        return PixelParameters(
+            number_fragments=self._number_fragments,
+            binsize=self._binsize,
+            metadata_combi=self._metadata_combi,
+            label_sorted=self._label_sorted,
+            binary_labels_equal=self._binary_labels_equal,
+            symmetry_flipped=self._symmetry_flipped,
+            same_chromosome=self._same_chromosome
+        )
 
     @property
     def path(self):

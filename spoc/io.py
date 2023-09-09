@@ -123,14 +123,22 @@ class FileManager:
             squeeze=True,
         )
 
-
-    def list_pixels(self, path: str):
-        """List available pixels"""
-        # read metadata.json
+    @staticmethod
+    def _load_pixel_metadata(path: str):
+        """Load metadata"""
         metadata_path = Path(path) / "metadata.json"
         if metadata_path.exists():
             with open(metadata_path, "r") as f:
                 metadata = json.load(f)
+        else:
+            raise ValueError(f"Metadata file not found at {metadata_path}")
+        return metadata
+    
+    @staticmethod
+    def list_pixels(path: str):
+        """List available pixels"""
+        # read metadata.json
+        metadata = FileManager._load_pixel_metadata(path)
         # instantiate pixel parameters
         pixels = [
             PixelParameters(**params) for params in metadata.values()
@@ -138,11 +146,26 @@ class FileManager:
         return pixels
 
 
-    @staticmethod
-    def load_pixels(path: str):
-        """Loads pixels"""
-        # TODO:make this conform with new file format
-        raise NotImplementedError
+    def load_pixels(self, path: str, global_parameters: PixelParameters, load_dataframe:bool = True) -> Pixels:
+        """Loads specific pixels instance based on global parameters.
+        load_dataframe specifies whether the dataframe should be loaded, or whether pixels
+         should be instantiated based on the path alone. """
+        metadata = self._load_pixel_metadata(path)
+        # find matching pixels
+        for pixel_path, value in metadata.items():
+            param_value = PixelParameters(**value)
+            if param_value == global_parameters:
+                selected_value = param_value
+                break
+        else:
+            raise ValueError(f"No matching pixels found for {global_parameters}")
+        # rewrite path to contain parent folder
+        pixel_path = Path(path) / pixel_path
+        if load_dataframe:
+            df = self._parquet_reader_func(pixel_path)
+        else:
+            df = pixel_path
+        return Pixels(df, **selected_value.dict())
 
     @staticmethod
     def write_pixels(path: str, pixels: Pixels) -> None:
