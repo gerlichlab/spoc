@@ -10,6 +10,7 @@ import pandas as pd
 from spoc.contacts import Contacts
 from spoc.io import FileManager
 from spoc.file_parameter_models import PixelParameters
+from spoc.pixels import Pixels
 import dask.dataframe as dd
 from .fixtures.symmetry import (
         unlabelled_contacts_2d
@@ -196,3 +197,78 @@ def test_read_pixels_as_dask_df(example_pixels_w_metadata):
         pixels = FileManager(use_dask=True).load_pixels(pixels_dir, expected, load_dataframe=True)
         assert pixels.get_global_parameters() == expected
         assert pixels.data.compute().equals(df)
+
+@pytest.mark.parametrize('df, params',
+                         [
+                          ('df_order_2', PixelParameters(number_fragments=2, binsize=1000)),
+                          ('df_order_3', PixelParameters(number_fragments=3, binsize=10_000, metadata_combi=['A', 'B', 'B'])),
+                          ('df_order_2', PixelParameters(number_fragments=2, binsize=100_000))
+                         ]                        
+                         )
+def test_write_pandas_pixels_to_new_file(df, params, request):
+    df = request.getfixturevalue(df)
+    pixels = Pixels(df, **params.dict())
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        file_name = tmpdirname + '/' + 'test.parquet'
+        FileManager().write_pixels(file_name, pixels)
+        # check metadata
+        metadata = FileManager().list_pixels(file_name)
+        assert len(metadata) == 1
+        assert metadata[0] == pixels.get_global_parameters()
+        # read pixels
+        pixels_read = FileManager().load_pixels(file_name, metadata[0])
+        # check whether parameters are equal
+        assert pixels.get_global_parameters() == pixels_read.get_global_parameters()
+        assert pixels.data.equals(pixels_read.data)
+
+@pytest.mark.parametrize('df, params',
+                         [
+                          ('df_order_2', PixelParameters(number_fragments=2, binsize=1000)),
+                          ('df_order_3', PixelParameters(number_fragments=3, binsize=10_000, metadata_combi=['A', 'B', 'B'])),
+                          ('df_order_2', PixelParameters(number_fragments=2, binsize=100_000))
+                         ]                        
+                         )
+def test_write_dask_pixels_to_new_file(df, params, request):
+    df = request.getfixturevalue(df)
+    dask_df = dd.from_pandas(df, npartitions=2)
+    pixels = Pixels(dask_df, **params.dict())
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        file_name = tmpdirname + '/' + 'test.parquet'
+        FileManager().write_pixels(file_name, pixels)
+        # check metadata
+        metadata = FileManager().list_pixels(file_name)
+        assert len(metadata) == 1
+        # read pixels
+        pixels_read = FileManager().load_pixels(file_name, metadata[0])
+        # check whether parameters are equal
+        assert pixels.get_global_parameters() == pixels_read.get_global_parameters()
+        assert pixels.data.compute().equals(pixels_read.data)
+
+@pytest.mark.parametrize('df1,df2,params',
+                         [
+                          ('df_order_2','df_order_3',
+                            [PixelParameters(number_fragments=2, binsize=1000), PixelParameters(number_fragments=3, binsize=10_000)]),
+                          ('df_order_3','df_order_2',
+                            [PixelParameters(number_fragments=3, binsize=10_000, metadata_combi=['A', 'B', 'B']), PixelParameters(number_fragments=2, binsize=100)]),
+                          ('df_order_2','df_order_3',
+                            [PixelParameters(number_fragments=2, binsize=100_000), PixelParameters(number_fragments=3, binsize=10_000, metadata_combi=['A', 'B', 'B'])])
+                         ]                        
+                         )
+def test_add_pandas_pixels_to_existing_file(df1, df2, params, request):
+    df1, df2 = request.getfixturevalue(df1), request.getfixturevalue(df2)
+    params_1, params_2 = params
+    pixels1 = Pixels(df1, **params_1.dict())
+    pixels2 = Pixels(df2, **params_2.dict())
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        file_name = tmpdirname + '/' + 'test.parquet'
+        FileManager().write_pixels(file_name, pixels1)
+        FileManager().write_pixels(file_name, pixels2)
+        # check metadata
+        metadata = FileManager().list_pixels(file_name)
+        assert len(metadata) == 2
+        # read pixels
+        for pixels in [pixels1, pixels2]:
+            pixels_read = FileManager().load_pixels(file_name, pixels.get_global_parameters())
+            # check whether parameters are equal
+            assert pixels.get_global_parameters() == pixels_read.get_global_parameters()
+            assert pixels.data.equals(pixels_read.data)

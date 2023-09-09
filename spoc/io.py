@@ -2,7 +2,7 @@
 
 import pickle
 from typing import Dict, Optional
-from hashlig import md5
+from hashlib import md5
 import os
 import json
 from pathlib import Path
@@ -173,7 +173,7 @@ class FileManager:
         hash_string = path + json.dumps(pixels.get_global_parameters().dict())
         return md5(hash_string.encode()).hexdigest() + ".parquet"
 
-    def write_pixels(path: str, pixels: Pixels) -> None:
+    def write_pixels(self, path: str, pixels: Pixels) -> None:
         """Write pixels"""
         # check whether path exists
         metadata_path = Path(path) / "metadata.json"
@@ -182,7 +182,7 @@ class FileManager:
             os.mkdir(path)
             current_metadata = {}
         else:
-            current_metadata = FileManager._load_pixel_metadata(metadata_path)
+            current_metadata = FileManager._load_pixel_metadata(path)
         # create new file path -> hash of directory path and parameters
         write_path = Path(path) / self._get_pixel_hash_path(path, pixels)
         # write pixels
