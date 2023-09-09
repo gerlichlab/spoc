@@ -2,6 +2,7 @@
 
 import pickle
 from typing import Dict, Optional
+from hashlig import md5
 import os
 import json
 from pathlib import Path
@@ -168,6 +169,27 @@ class FileManager:
         return Pixels(df, **selected_value.dict())
 
     @staticmethod
+    def _get_pixel_hash_path(path: str, pixels: Pixels) -> str:
+        hash_string = path + json.dumps(pixels.get_global_parameters().dict())
+        return md5(hash_string.encode()).hexdigest() + ".parquet"
+
     def write_pixels(path: str, pixels: Pixels) -> None:
         """Write pixels"""
-        pixels.data.to_parquet(path, row_group_size=1024*1024)
+        # check whether path exists
+        metadata_path = Path(path) / "metadata.json"
+        if not Path(path).exists():
+            # we need to create the directory first
+            os.mkdir(path)
+            current_metadata = {}
+        else:
+            current_metadata = FileManager._load_pixel_metadata(metadata_path)
+        # create new file path -> hash of directory path and parameters
+        write_path = Path(path) / self._get_pixel_hash_path(path, pixels)
+        # write pixels
+        if pixels.data is None:
+            raise ValueError("Writing pixels only suppported for pixels hodling dataframes!")
+        pixels.data.to_parquet(write_path, row_group_size=1024*1024)
+        # write metadata
+        current_metadata[write_path.name] = pixels.get_global_parameters().dict()
+        with open(metadata_path, "w") as f:
+            json.dump(current_metadata, f)

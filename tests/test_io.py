@@ -33,7 +33,7 @@ def _create_tmp_dir():
         os.mkdir("tmp")
 
 @pytest.fixture
-def pixels_order_2():
+def df_order_2():
     return pd.DataFrame(
         {
             "chrom": ["chr1"] * 6,
@@ -44,7 +44,7 @@ def pixels_order_2():
     )
 
 @pytest.fixture
-def pixels_order_3():
+def df_order_3():
     return pd.DataFrame(
         {
             "chrom": ["chr1"] * 6,
@@ -56,7 +56,7 @@ def pixels_order_3():
     )
 
 @pytest.fixture
-def example_pixels_w_metadata(pixels_order_2, pixels_order_3):
+def example_pixels_w_metadata(df_order_2, df_order_3):
     # setup
     _create_tmp_dir()
     # create pixels directory
@@ -74,9 +74,9 @@ def example_pixels_w_metadata(pixels_order_2, pixels_order_3):
         Path("tmp/pixels_test.parquet/test3.parquet"),
     ]
     dataframes = [
-        pixels_order_2,
-        pixels_order_3,
-        pixels_order_2
+        df_order_2,
+        df_order_3,
+        df_order_2
     ]
     # create pixels files
     for path, df in zip(paths, dataframes):
