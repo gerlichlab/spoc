@@ -9,6 +9,7 @@ from typing import Union, Optional, List
 from .dataframe_models import ContactSchema, PixelSchema
 from .file_parameter_models import PixelParameters
 from .contacts import Contacts
+from .io import FileManager
 
 
 class Pixels:
@@ -59,6 +60,57 @@ class Pixels:
                 raise ValueError(f"Path: {pixel_source} does not exist!")
             self._path = Path(pixel_source)
             self._data = None
+
+    def from_uri(uri, mode="path"):
+        """Construct pixels from uri.
+        Will match parameters based on the following order:
+
+        PATH::number_fragments::binsize::metadata_combi::binary_labels_equal::symmetry_flipped::label_sorted::same_chromosome
+
+        PAth, number_fragments and binsize are required. The rest is optional
+        and will be tried to match to the available pixels. If no match is found, or there is no
+         uniue match, an error is raised.
+        Mode can be one of pandas|dask|path, which corresponds to the type of the pixel source.
+        """
+        PARAMETERS = ['number_fragments', 'binsize', 'metadata_combi', 'binary_labels_equal', 'symmetry_flipped', 'label_sorted', 'same_chromosome']
+        # parse uri
+        uri = uri.split("::")
+        params = {
+            key:value for key, value in zip(PARAMETERS, uri[1:])
+        }
+        # read mode
+        if mode == "path":
+            load_dataframe = False
+            use_dask = False
+        elif mode == "pandas":
+            laod_dataframe = True
+            use_dask = False
+        else:
+            load_dataframe = True
+            use_dask = True
+        # validate uri
+        if len(params.keys()) < 3:
+            raise ValueError(
+                f"Uri: {uri} is not valid. Must contain at least Path, number_fragments and binsize"
+            )
+        # get availabe pixels
+        available_pixels = FileManager().list_pixels(uri[0])
+        # filter pixels
+        matched_pixels = [
+            pixel for pixel in available_pixels 
+                    if all( params[key] == pixel.dict()[key] for key in params.keys())
+        ]
+        # check whether there is a unique match
+        if len(matched_pixels) == 0:
+            raise ValueError(
+                f"No pixels found for uri: {uri}"
+            )
+        elif len(matched_pixels) > 1:
+            raise ValueError(
+                f"Multiple pixels found for uri: {uri}"
+            )
+        return FileManager(use_dask=use_dask).load_pixels(uri[0], matched_pixels, load_dataframe=load_dataframe)
+
 
 
     def get_global_parameters(self):
