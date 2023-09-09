@@ -4,6 +4,7 @@ import pickle
 from typing import Dict, Optional
 import os
 import json
+from pathlib import Path
 import pandas as pd
 import dask.dataframe as dd
 import pyarrow as pa
@@ -12,7 +13,7 @@ from pydantic import BaseModel
 from .contacts import Contacts
 from .pixels import Pixels
 from .dataframe_models import FragmentSchema, ContactSchema, DataFrame
-from .file_parameter_models import ContactsParameters
+from .file_parameter_models import ContactsParameters, PixelParameters
 from .fragments import Fragments
 
 
@@ -121,6 +122,21 @@ class FileManager:
             index_col=["chrom"],
             squeeze=True,
         )
+
+
+    def list_pixels(self, path: str):
+        """List available pixels"""
+        # read metadata.json
+        metadata_path = Path(path) / "metadata.json"
+        if metadata_path.exists():
+            with open(metadata_path, "r") as f:
+                metadata = json.load(f)
+        # instantiate pixel parameters
+        pixels = [
+            PixelParameters(**params) for params in metadata.values()
+        ]
+        return pixels
+
 
     @staticmethod
     def load_pixels(path: str):

@@ -30,9 +30,10 @@ class Pixels:
         pixel_source: Union[pd.DataFrame, dd.DataFrame, str],
         number_fragments: Optional[int] = None,
         binsize: Optional[int] = None,
+        metadata_combi: Optional[List[str]] = None,
+        label_sorted: bool = False,
         binary_labels_equal: bool = False,
         symmetry_flipped:bool = False,
-        metadata_combi: Optional[List[str]] = None,
         same_chromosome: bool = True
     ):
         """Constructor for genomic pixels. pixel_source
@@ -45,6 +46,7 @@ class Pixels:
         self._binary_labels_equal = binary_labels_equal
         self._symmetry_flipped = symmetry_flipped
         self._metadata_combi = metadata_combi
+        self._label_sorted = label_sorted
         if isinstance(pixel_source, pd.DataFrame) or isinstance(
             pixel_source, dd.DataFrame
         ):
