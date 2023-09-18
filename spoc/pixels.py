@@ -77,6 +77,11 @@ class Pixels:
         PARAMETERS = ['number_fragments', 'binsize', 'metadata_combi', 'binary_labels_equal', 'symmetry_flipped', 'label_sorted', 'same_chromosome']
         # parse uri
         uri = uri.split("::")
+        # validate uri
+        if len(uri) < 3:
+            raise ValueError(
+                f"Uri: {uri} is not valid. Must contain at least Path, number_fragments and binsize"
+            )
         params = {
             key:value for key, value in zip(PARAMETERS, uri[1:])
         }
@@ -93,11 +98,6 @@ class Pixels:
         else:
             load_dataframe = True
             use_dask = True
-        # validate uri
-        if len(params.keys()) < 3:
-            raise ValueError(
-                f"Uri: {uri} is not valid. Must contain at least Path, number_fragments and binsize"
-            )
         # get availabe pixels
         available_pixels = FileManager().list_pixels(uri[0])
         # filter pixels
