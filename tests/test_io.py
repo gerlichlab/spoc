@@ -272,3 +272,105 @@ def test_add_pandas_pixels_to_existing_file(df1, df2, params, request):
             # check whether parameters are equal
             assert pixels.get_global_parameters() == pixels_read.get_global_parameters()
             assert pixels.data.equals(pixels_read.data)
+
+
+@pytest.mark.parametrize('df, params',
+                         [
+                          ('df_order_2', PixelParameters(number_fragments=2, binsize=1000)),
+                         ]                        
+                         )
+def test_load_pixels_from_uri_fails_without_required_parameters(df, params, request):
+    """Test loading pixels from uri fails without required parameters"""
+    df = request.getfixturevalue(df)
+    pixels = Pixels(df, **params.dict())
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        file_name = tmpdirname + '/' + 'test.parquet'
+        FileManager().write_pixels(file_name, pixels)
+        # try loading without required parameters
+        with pytest.raises(ValueError) as e:
+            Pixels.from_uri(file_name)
+
+@pytest.mark.parametrize('df, params',
+                         [
+                          ('df_order_2', PixelParameters(number_fragments=2, binsize=1000)),
+                          ('df_order_2', PixelParameters(number_fragments=2, binsize=1000, metadata_combi=['A', 'B'])),
+                          ('df_order_2', PixelParameters(number_fragments=2, binsize=1000, metadata_combi=['A', 'B'], label_sorted=True)),
+                         ]                     
+                         )
+def test_load_pixels_from_uri_succeeds_exact_match(df, params, request):
+    """Test loading pixels from uri succeeds with all required parameters"""
+    df = request.getfixturevalue(df)
+    pixels = Pixels(df, **params.dict())
+    # get meata data parameter
+    if params.dict()['metadata_combi'] is None:
+        params.metadata_combi = 'None'
+    else:
+        params.metadata_combi = str("".join(params.dict()['metadata_combi']))
+    uri = (
+            str(params.dict()['number_fragments']) + '::' +
+            str(params.dict()['binsize']) + '::' +
+            str(params.dict()['metadata_combi']) + '::' +
+            str(params.dict()['binary_labels_equal']) + '::' +
+            str(params.dict()['symmetry_flipped']) + '::' +
+            str(params.dict()['label_sorted']) + '::' + str(params.dict()['same_chromosome'])
+    )
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        file_name = tmpdirname + '/' + 'test.parquet'
+        FileManager().write_pixels(file_name, pixels)
+        # load pixels
+        pixels_read = Pixels.from_uri(file_name + "::" + uri)
+        assert pixels.get_global_parameters() == pixels_read.get_global_parameters()
+
+
+@pytest.mark.parametrize('df, params',
+                         [
+                          ('df_order_2', PixelParameters(number_fragments=2, binsize=1000)),
+                          ('df_order_2', PixelParameters(number_fragments=2, binsize=1000, metadata_combi=['A', 'B'])),
+                          ('df_order_2', PixelParameters(number_fragments=2, binsize=1000, metadata_combi=['A', 'B'], label_sorted=True)),
+                         ]                     
+                         )
+def test_load_pixels_from_uri_succeeds_partial_match(df, params, request):
+    """Test loading pixels from uri succeeds with sufficient required parameters"""
+    df = request.getfixturevalue(df)
+    pixels = Pixels(df, **params.dict())
+    # get meata data parameter
+    if params.dict()['metadata_combi'] is None:
+        params.metadata_combi = 'None'
+    else:
+        params.metadata_combi = str("".join(params.dict()['metadata_combi']))
+    uri = (
+            str(params.dict()['number_fragments']) + '::' +
+            str(params.dict()['binsize']) + '::' +
+            str(params.dict()['metadata_combi'])
+    )
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        file_name = tmpdirname + '/' + 'test.parquet'
+        FileManager().write_pixels(file_name, pixels)
+        # load pixels
+        pixels_read = Pixels.from_uri(file_name + "::" + uri)
+        assert pixels.get_global_parameters() == pixels_read.get_global_parameters()
+
+
+@pytest.mark.parametrize('df, params',
+                         [
+                          ('df_order_2', [PixelParameters(number_fragments=2, binsize=1000, metadata_combi=['A', 'B']), 
+                                        PixelParameters(number_fragments=2, binsize=1000, metadata_combi=['A', 'B'], label_sorted=True)]
+                          )
+                         ]                     
+                         )
+def test_load_pixels_from_uri_fails_with_ambiguous_specification(df, params, request):
+    """Test loading pixels from uri fails with uri is ambiguous"""
+    df = request.getfixturevalue(df)
+    pixels = Pixels(df, **params[0].dict())
+    pixels2 = Pixels(df, **params[1].dict())
+    uri = (
+            str(params[0].dict()['number_fragments']) + '::' +
+            str(params[0].dict()['binsize'])
+    )
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        file_name = tmpdirname + '/' + 'test.parquet'
+        FileManager().write_pixels(file_name, pixels)
+        FileManager().write_pixels(file_name, pixels2)
+        # load pixels
+        with pytest.raises(ValueError) as e:
+            Pixels.from_uri(file_name + "::" + uri)

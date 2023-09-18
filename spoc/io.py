@@ -11,11 +11,11 @@ import dask.dataframe as dd
 import pyarrow as pa
 import pyarrow.parquet as pq
 from pydantic import BaseModel
-from .contacts import Contacts
-from .pixels import Pixels
-from .dataframe_models import FragmentSchema, ContactSchema, DataFrame
-from .file_parameter_models import ContactsParameters, PixelParameters
-from .fragments import Fragments
+from spoc.contacts import Contacts
+from spoc.pixels import Pixels
+from spoc.dataframe_models import FragmentSchema, ContactSchema, DataFrame
+from spoc.file_parameter_models import ContactsParameters, PixelParameters
+from spoc.fragments import Fragments
 
 
 class FileManager:

@@ -6,10 +6,9 @@ import dask.dataframe as dd
 import bioframe as bf
 import pyranges as pr
 from typing import Union, Optional, List
-from .dataframe_models import ContactSchema, PixelSchema
-from .file_parameter_models import PixelParameters
-from .contacts import Contacts
-from .io import FileManager
+from spoc.dataframe_models import ContactSchema, PixelSchema
+from spoc.file_parameter_models import PixelParameters
+from spoc.contacts import Contacts
 
 
 class Pixels:
@@ -72,12 +71,18 @@ class Pixels:
          uniue match, an error is raised.
         Mode can be one of pandas|dask|path, which corresponds to the type of the pixel source.
         """
+        # import here to avoid circular imports
+        from spoc.io import FileManager
+        # Define uir parameters
         PARAMETERS = ['number_fragments', 'binsize', 'metadata_combi', 'binary_labels_equal', 'symmetry_flipped', 'label_sorted', 'same_chromosome']
         # parse uri
         uri = uri.split("::")
         params = {
             key:value for key, value in zip(PARAMETERS, uri[1:])
         }
+        # rewrite metadata_combi parameter
+        if 'metadata_combi' in params.keys() and params['metadata_combi'] != 'None':
+            params['metadata_combi'] = str(list(params['metadata_combi']))
         # read mode
         if mode == "path":
             load_dataframe = False
@@ -98,7 +103,7 @@ class Pixels:
         # filter pixels
         matched_pixels = [
             pixel for pixel in available_pixels 
-                    if all( params[key] == pixel.dict()[key] for key in params.keys())
+                    if all( params[key] == str(pixel.dict()[key]) for key in params.keys())
         ]
         # check whether there is a unique match
         if len(matched_pixels) == 0:
@@ -109,7 +114,7 @@ class Pixels:
             raise ValueError(
                 f"Multiple pixels found for uri: {uri}"
             )
-        return FileManager(use_dask=use_dask).load_pixels(uri[0], matched_pixels, load_dataframe=load_dataframe)
+        return FileManager(use_dask=use_dask).load_pixels(uri[0], matched_pixels[0], load_dataframe=load_dataframe)
 
 
 
