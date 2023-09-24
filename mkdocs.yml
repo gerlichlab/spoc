@@ -1,0 +1,19 @@
+site_name: Spoc
+theme:
+  name: material
+dev_addr: 127.0.0.1:8000
+nav:
+  - Home: index.md
+  - Getting Started: getting_started.md
+  - Data Structures: data_structures.md
+  - Snipping: snipping.md
+  - Contributing: contributing.md
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - tables
