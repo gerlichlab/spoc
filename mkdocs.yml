@@ -1,10 +1,21 @@
 site_name: Spoc
+repo_url: https://github.com/gerlichlab/spoc
+repo_name: gerlichlab/spoc
+dev_addr: 127.0.0.1:8000
 theme:
   name: material
-dev_addr: 127.0.0.1:8000
+  features:
+    - navigation.instant
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.top
 nav:
-  - Home: index.md
-  - Getting Started: getting_started.md
+  - Getting Started: 
+    - Welcomde to spoc: index.md
+    - Installation: installation.md
+    - Load example dataset: load_example_dataset.md
+    - Transformation pipeline: transformation_pipeline.md
   - Data Structures: data_structures.md
   - Snipping: snipping.md
   - Contributing: contributing.md
