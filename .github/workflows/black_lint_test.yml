@@ -20,8 +20,8 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       # You can test your matrix by printing the current Python version
-      - name: Install spoc, black and pylint
-        run: pip install . && pip install black==23.9.1 && pip install pylint==2.15.5
+      - name: Install spoc, black, pylint and pytest
+        run: pip install . && pip install black==23.9.1 && pip install pylint==2.15.5 && pip install pytest==6.2.4
       - name: Run black
         run: black --check .
       - name: Run pylint
