@@ -16,7 +16,9 @@ class Fragments:
 
     def __init__(self, fragment_frame: DataFrame) -> None:
         self._data = FragmentSchema.validate(fragment_frame)
-        self._contains_metadata = True if "metadata" in fragment_frame.columns else False
+        self._contains_metadata = (
+            True if "metadata" in fragment_frame.columns else False
+        )
 
     @property
     def data(self):
@@ -25,7 +27,7 @@ class Fragments:
     @property
     def contains_metadata(self):
         return self._contains_metadata
-    
+
     @property
     def is_dask(self):
         return isinstance(self._data, dd.DataFrame)
@@ -78,7 +80,6 @@ class FragmentAnnotator:
         )
 
 
-
 class FragmentExpander:
     """Expands n-way fragments over sequencing reads
     to yield contacts."""
@@ -89,7 +90,7 @@ class FragmentExpander:
         self._schema = ContactSchema(number_fragments, contains_metadata)
 
     @staticmethod
-    def _add_suffix(row, suffix:int, contains_metadata:bool) -> Dict:
+    def _add_suffix(row, suffix: int, contains_metadata: bool) -> Dict:
         """expands contact fields"""
         output = {}
         for key in ContactSchema.get_contact_fields(contains_metadata):
@@ -98,9 +99,13 @@ class FragmentExpander:
 
     def _get_expansion_output_structure(self) -> pd.DataFrame:
         """returns expansion output dataframe structure for dask"""
-        return pd.DataFrame(columns=list(self._schema._schema.columns.keys()) + ['level_2']).set_index(["read_name", 'read_length', 'level_2'])
+        return pd.DataFrame(
+            columns=list(self._schema._schema.columns.keys()) + ["level_2"]
+        ).set_index(["read_name", "read_length", "level_2"])
 
-    def _expand_single_read(self, read_df: pd.DataFrame, contains_metadata:bool) -> pd.DataFrame:
+    def _expand_single_read(
+        self, read_df: pd.DataFrame, contains_metadata: bool
+    ) -> pd.DataFrame:
         """Expands a single read"""
         if len(read_df) < self._number_fragments:
             return pd.DataFrame()
@@ -116,9 +121,7 @@ class FragmentExpander:
             contact = {}
             # add reads
             for index, align in enumerate(alignments, start=1):
-                contact.update(
-                    self._add_suffix(align, index, contains_metadata)
-                )
+                contact.update(self._add_suffix(align, index, contains_metadata))
             result.append(contact)
         return pd.DataFrame(result)
 
@@ -130,15 +133,15 @@ class FragmentExpander:
         else:
             kwargs = dict()
         # expand
-        contact_df = fragments.data\
-                            .groupby(["read_name", "read_length"])\
-                            .apply(self._expand_single_read, 
-                                    contains_metadata=fragments.contains_metadata,
-                                    **kwargs)\
-                            .reset_index()\
-                            .drop("level_2", axis=1)
-        #return contact_df
-        return Contacts(
-            contact_df,
-            number_fragments=self._number_fragments
+        contact_df = (
+            fragments.data.groupby(["read_name", "read_length"])
+            .apply(
+                self._expand_single_read,
+                contains_metadata=fragments.contains_metadata,
+                **kwargs,
+            )
+            .reset_index()
+            .drop("level_2", axis=1)
         )
+        # return contact_df
+        return Contacts(contact_df, number_fragments=self._number_fragments)

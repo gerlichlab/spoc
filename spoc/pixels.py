@@ -19,7 +19,7 @@ class Pixels:
         - Order
         - Metadata combination (Whether the pixels represent a certain combination of metadata)
         - Whether binary labels are equal (e.g. whether AB pixles also represent BA pixels)
-    
+
     Pixels can contain different data sources such as:
         - pandas dataframe
         - dask dataframe
@@ -34,13 +34,15 @@ class Pixels:
         metadata_combi: Optional[List[str]] = None,
         label_sorted: bool = False,
         binary_labels_equal: bool = False,
-        symmetry_flipped:bool = False,
-        same_chromosome: bool = True
+        symmetry_flipped: bool = False,
+        same_chromosome: bool = True,
     ):
         """Constructor for genomic pixels. pixel_source
         can be a pandas or dask dataframe or a path. Caveate is that
         if pixels are a path, source data is not validated."""
-        self._schema = PixelSchema(number_fragments=number_fragments, same_chromosome=same_chromosome)
+        self._schema = PixelSchema(
+            number_fragments=number_fragments, same_chromosome=same_chromosome
+        )
         self._same_chromosome = same_chromosome
         self._number_fragments = number_fragments
         self._binsize = binsize
@@ -73,8 +75,17 @@ class Pixels:
         """
         # import here to avoid circular imports
         from spoc.io import FileManager
+
         # Define uir parameters
-        PARAMETERS = ['number_fragments', 'binsize', 'metadata_combi', 'binary_labels_equal', 'symmetry_flipped', 'label_sorted', 'same_chromosome']
+        PARAMETERS = [
+            "number_fragments",
+            "binsize",
+            "metadata_combi",
+            "binary_labels_equal",
+            "symmetry_flipped",
+            "label_sorted",
+            "same_chromosome",
+        ]
         # parse uri
         uri = uri.split("::")
         # validate uri
@@ -82,12 +93,10 @@ class Pixels:
             raise ValueError(
                 f"Uri: {uri} is not valid. Must contain at least Path, number_fragments and binsize"
             )
-        params = {
-            key:value for key, value in zip(PARAMETERS, uri[1:])
-        }
+        params = {key: value for key, value in zip(PARAMETERS, uri[1:])}
         # rewrite metadata_combi parameter
-        if 'metadata_combi' in params.keys() and params['metadata_combi'] != 'None':
-            params['metadata_combi'] = str(list(params['metadata_combi']))
+        if "metadata_combi" in params.keys() and params["metadata_combi"] != "None":
+            params["metadata_combi"] = str(list(params["metadata_combi"]))
         # read mode
         if mode == "path":
             load_dataframe = False
@@ -102,21 +111,18 @@ class Pixels:
         available_pixels = FileManager().list_pixels(uri[0])
         # filter pixels
         matched_pixels = [
-            pixel for pixel in available_pixels 
-                    if all( params[key] == str(pixel.dict()[key]) for key in params.keys())
+            pixel
+            for pixel in available_pixels
+            if all(params[key] == str(pixel.dict()[key]) for key in params.keys())
         ]
         # check whether there is a unique match
         if len(matched_pixels) == 0:
-            raise ValueError(
-                f"No pixels found for uri: {uri}"
-            )
+            raise ValueError(f"No pixels found for uri: {uri}")
         elif len(matched_pixels) > 1:
-            raise ValueError(
-                f"Multiple pixels found for uri: {uri}"
-            )
-        return FileManager(use_dask=use_dask).load_pixels(uri[0], matched_pixels[0], load_dataframe=load_dataframe)
-
-
+            raise ValueError(f"Multiple pixels found for uri: {uri}")
+        return FileManager(use_dask=use_dask).load_pixels(
+            uri[0], matched_pixels[0], load_dataframe=load_dataframe
+        )
 
     def get_global_parameters(self):
         """Returns global parameters of pixels"""
@@ -127,7 +133,7 @@ class Pixels:
             label_sorted=self._label_sorted,
             binary_labels_equal=self._binary_labels_equal,
             symmetry_flipped=self._symmetry_flipped,
-            same_chromosome=self._same_chromosome
+            same_chromosome=self._same_chromosome,
         )
 
     @property
@@ -149,7 +155,7 @@ class Pixels:
     @property
     def binary_labels_equal(self):
         return self._binary_labels_equal
-    
+
     @property
     def symmetry_flipped(self):
         return self._symmetry_flipped
@@ -161,7 +167,6 @@ class Pixels:
     @property
     def same_chromosome(self):
         return self._same_chromosome
-    
 
 
 class GenomicBinner:
@@ -169,22 +174,14 @@ class GenomicBinner:
     Is capable of sorting genomic bins along columns based on sister chromatid
     identity"""
 
-    def __init__(
-        self,
-        bin_size: int
-    ) -> None:
+    def __init__(self, bin_size: int) -> None:
         self._bin_size = bin_size
         self._contact_order = None
 
     def _get_assigned_bin_output_structure(self):
-        columns = (
-            [
-                    f'chrom_{index}' for index in range(1 , self._contact_order + 1)
-            ] +
-            [
-                    f'start_{index}' for index in range(1 , self._contact_order + 1)
-            ]
-        )
+        columns = [f"chrom_{index}" for index in range(1, self._contact_order + 1)] + [
+            f"start_{index}" for index in range(1, self._contact_order + 1)
+        ]
         return pd.DataFrame(columns=columns).astype(int)
 
     def _assign_bins(self, data_frame: pd.DataFrame) -> pd.DataFrame:
@@ -193,46 +190,47 @@ class GenomicBinner:
             return self._get_assigned_bin_output_structure()
         return data_frame.assign(
             **{
-                f"start_{index}": (data_frame[f"pos_{index}"] // self._bin_size) * self._bin_size
-                    for index in range(1, self._contact_order + 1)
+                f"start_{index}": (data_frame[f"pos_{index}"] // self._bin_size)
+                * self._bin_size
+                for index in range(1, self._contact_order + 1)
             }
-        ).filter(regex='(chrom|start)')
+        ).filter(regex="(chrom|start)")
 
     def _assign_midpoints(self, contacts: dd.DataFrame) -> dd.DataFrame:
         """Collapses start-end to a middle position"""
-        return (
-            contacts
-                .assign(
-                    **{
-                        f"pos_{index}": (contacts[f'start_{index}'] + contacts[f'end_{index}'])//2
-                            for index in range(1, self._contact_order + 1)
-                    }
-                )
-                .drop(
-                    [
-                        c for index in range(1, self._contact_order + 1) for c in [f'start_{index}', f'end_{index}']
-                    ], axis=1
-                )
+        return contacts.assign(
+            **{
+                f"pos_{index}": (contacts[f"start_{index}"] + contacts[f"end_{index}"])
+                // 2
+                for index in range(1, self._contact_order + 1)
+            }
+        ).drop(
+            [
+                c
+                for index in range(1, self._contact_order + 1)
+                for c in [f"start_{index}", f"end_{index}"]
+            ],
+            axis=1,
         )
 
-    def bin_contacts(self, contacts: Contacts, same_chromosome: bool =True) -> dd.DataFrame:
+    def bin_contacts(
+        self, contacts: Contacts, same_chromosome: bool = True
+    ) -> dd.DataFrame:
         """Bins genomic contacts"""
         self._contact_order = contacts.number_fragments
-        contacts_w_midpoints = self._assign_midpoints(
-            contacts.data
-        )
+        contacts_w_midpoints = self._assign_midpoints(contacts.data)
         if contacts.is_dask:
             contact_bins = contacts_w_midpoints.map_partitions(
-                self._assign_bins,
-                meta=self._get_assigned_bin_output_structure()
+                self._assign_bins, meta=self._get_assigned_bin_output_structure()
             )
         else:
             contact_bins = self._assign_bins(contacts_w_midpoints)
         pixels = (
             contact_bins.groupby(
                 [
-                    c for index in range(1, self._contact_order + 1)
-                        for c in [f'chrom_{index}', f'start_{index}']
+                    c
+                    for index in range(1, self._contact_order + 1)
+                    for c in [f"chrom_{index}", f"start_{index}"]
                 ],
                 observed=True,
             )
@@ -247,17 +245,21 @@ class GenomicBinner:
                     (pixels.chrom_1.astype(str) == pixels.chrom_2.astype(str))
                     & (pixels.chrom_2.astype(str) == pixels.chrom_3.astype(str))
                 ]
-                .drop([f'chrom_{index}' for index in range(2, self._contact_order + 1)], axis=1)
+                .drop(
+                    [f"chrom_{index}" for index in range(2, self._contact_order + 1)],
+                    axis=1,
+                )
                 .rename(columns={"chrom_1": "chrom"})
             )
             # sort pixels
             pixels_sorted = pixels.sort_values(
-                ['chrom'] + [f'start_{index}' for index in range(1, self._contact_order + 1)]
+                ["chrom"]
+                + [f"start_{index}" for index in range(1, self._contact_order + 1)]
             ).reset_index(drop=True)
         else:
             pixels_sorted = pixels.sort_values(
-                [f'chrom_{index}' for index in range(1, self._contact_order + 1)] +
-                [f'start_{index}' for index in range(1, self._contact_order + 1)]
+                [f"chrom_{index}" for index in range(1, self._contact_order + 1)]
+                + [f"start_{index}" for index in range(1, self._contact_order + 1)]
             ).reset_index(drop=True)
         # construct pixels and return
         return Pixels(
@@ -267,7 +269,7 @@ class GenomicBinner:
             binsize=self._bin_size,
             binary_labels_equal=contacts.binary_labels_equal,
             symmetry_flipped=contacts.symmetry_flipped,
-            metadata_combi=contacts.metadata_combi
+            metadata_combi=contacts.metadata_combi,
         )
 
 

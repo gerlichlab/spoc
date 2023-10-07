@@ -50,13 +50,12 @@ class ContactSchema:
         "mapping_quality": pa.Column(int),
         "align_score": pa.Column(int),
         "align_base_qscore": pa.Column(int),
-        "metadata": pa.Column(
-            str, 
-            required=False
-        ), 
+        "metadata": pa.Column(str, required=False),
     }
 
-    def __init__(self, number_fragments: int = 3, contains_metadata: bool = True) -> None:
+    def __init__(
+        self, number_fragments: int = 3, contains_metadata: bool = True
+    ) -> None:
         self._number_fragments = number_fragments
         self._schema = pa.DataFrameSchema(
             dict(
@@ -98,9 +97,7 @@ class ContactSchema:
                     self._schema, data_frame, "Header is invalid!"
                 )
 
-    def validate(
-        self, data_frame: DataFrame
-    ) -> DataFrame:
+    def validate(self, data_frame: DataFrame) -> DataFrame:
         """Validate multiway contact dataframe"""
         self.validate_header(data_frame)
         return self._schema.validate(data_frame)
@@ -126,23 +123,20 @@ class PixelSchema:
                 "start": pa.Column(int),
             }
         else:
-            return {
-                "chrom": pa.Column(str),
-                "start": pa.Column(int)
-            }
+            return {"chrom": pa.Column(str), "start": pa.Column(int)}
 
     def _get_constant_fields(self):
         if self._same_chromosome:
-                return {
-                        "chrom": pa.Column(str),
-                        "count": pa.Column(int),
-                        "corrected_count": pa.Column(float, required=False),
-                    }
+            return {
+                "chrom": pa.Column(str),
+                "count": pa.Column(int),
+                "corrected_count": pa.Column(float, required=False),
+            }
         else:
-                return  {
-                        "count": pa.Column(int),
-                        "corrected_count": pa.Column(float, required=False),
-                    }
+            return {
+                "count": pa.Column(int),
+                "corrected_count": pa.Column(float, required=False),
+            }
 
     def _expand_contact_fields(self, expansions: Iterable = (1, 2, 3)) -> dict:
         """adds suffixes to fields"""
@@ -161,8 +155,6 @@ class PixelSchema:
                     self._schema, data_frame, "Header is invalid!"
                 )
 
-    def validate(
-        self, data_frame: DataFrame
-    ) -> DataFrame:
+    def validate(self, data_frame: DataFrame) -> DataFrame:
         """Validate multiway contact dataframe"""
         return self._schema.validate(data_frame)

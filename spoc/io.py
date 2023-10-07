@@ -21,26 +21,24 @@ from spoc.fragments import Fragments
 class FileManager:
     """Is responsible for loading and writing files"""
 
-    def __init__(
-        self, use_dask: bool = False
-    ) -> None:
+    def __init__(self, use_dask: bool = False) -> None:
         if use_dask:
             self._parquet_reader_func = dd.read_parquet
         else:
             self._parquet_reader_func = pd.read_parquet
 
-    def _write_parquet_dask(self, path: str, df: dd.DataFrame, global_parameters: BaseModel) -> None:
+    def _write_parquet_dask(
+        self, path: str, df: dd.DataFrame, global_parameters: BaseModel
+    ) -> None:
         """Write parquet file using dask"""
         custom_meta_data = {
-            'spoc'.encode(): json.dumps(global_parameters.dict()).encode()
+            "spoc".encode(): json.dumps(global_parameters.dict()).encode()
         }
-        dd.to_parquet(
-            df,
-            path,
-            custom_metadata=custom_meta_data
-        )
-    
-    def _write_parquet_pandas(self, path: str, df: pd.DataFrame ,global_parameters: BaseModel) -> None:
+        dd.to_parquet(df, path, custom_metadata=custom_meta_data)
+
+    def _write_parquet_pandas(
+        self, path: str, df: pd.DataFrame, global_parameters: BaseModel
+    ) -> None:
         """Write parquet file using pandas. Pyarrow is needed because
         the pandas .to_parquet method does not support writing custom metadata."""
         table = pa.Table.from_pandas(df)
@@ -48,8 +46,8 @@ class FileManager:
         custom_meta_key = "spoc"
         existing_meta = table.schema.metadata
         combined_meta = {
-            custom_meta_key.encode() : json.dumps(global_parameters.dict()).encode(),
-            **existing_meta
+            custom_meta_key.encode(): json.dumps(global_parameters.dict()).encode(),
+            **existing_meta,
         }
         table = table.replace_schema_metadata(combined_meta)
         # write table
@@ -60,7 +58,7 @@ class FileManager:
         """Load global parameters from parquet file"""
         # check if path is a directory, if so, we need to read the schema from one of the partitioned files
         if os.path.isdir(path):
-            path = path + '/' + os.listdir(path)[0]
+            path = path + "/" + os.listdir(path)[0]
         global_parameters = pa.parquet.read_schema(path).metadata.get("spoc".encode())
         if global_parameters is not None:
             global_parameters = json.loads(global_parameters.decode())
@@ -91,25 +89,28 @@ class FileManager:
     def write_fragments(path: str, fragments: Fragments) -> None:
         """Write annotated fragments"""
         # Write fragments
-        fragments.data.to_parquet(path, row_group_size=1024*1024)
+        fragments.data.to_parquet(path, row_group_size=1024 * 1024)
 
     def write_multiway_contacts(self, path: str, contacts: Contacts) -> None:
         """Write multiway contacts"""
         if contacts.is_dask:
-            self._write_parquet_dask(path, contacts.data, contacts.get_global_parameters())
+            self._write_parquet_dask(
+                path, contacts.data, contacts.get_global_parameters()
+            )
         else:
-            self._write_parquet_pandas(path, contacts.data, contacts.get_global_parameters())
-        
+            self._write_parquet_pandas(
+                path, contacts.data, contacts.get_global_parameters()
+            )
 
-    def load_contacts(self, path: str, global_parameters: Optional[ContactsParameters] = None) -> Contacts:
+    def load_contacts(
+        self, path: str, global_parameters: Optional[ContactsParameters] = None
+    ) -> Contacts:
         """Load multiway contacts"""
         if global_parameters is None:
             global_parameters = self._load_parquet_global_parameters(path)
         else:
             global_parameters = global_parameters.dict()
-        return Contacts(
-            self._parquet_reader_func(path), **global_parameters
-        )
+        return Contacts(self._parquet_reader_func(path), **global_parameters)
 
     @staticmethod
     def load_chromosome_sizes(path: str):
@@ -134,23 +135,22 @@ class FileManager:
         else:
             raise ValueError(f"Metadata file not found at {metadata_path}")
         return metadata
-    
+
     @staticmethod
     def list_pixels(path: str):
         """List available pixels"""
         # read metadata.json
         metadata = FileManager._load_pixel_metadata(path)
         # instantiate pixel parameters
-        pixels = [
-            PixelParameters(**params) for params in metadata.values()
-        ]
+        pixels = [PixelParameters(**params) for params in metadata.values()]
         return pixels
 
-
-    def load_pixels(self, path: str, global_parameters: PixelParameters, load_dataframe:bool = True) -> Pixels:
+    def load_pixels(
+        self, path: str, global_parameters: PixelParameters, load_dataframe: bool = True
+    ) -> Pixels:
         """Loads specific pixels instance based on global parameters.
         load_dataframe specifies whether the dataframe should be loaded, or whether pixels
-         should be instantiated based on the path alone. """
+         should be instantiated based on the path alone."""
         metadata = self._load_pixel_metadata(path)
         # find matching pixels
         for pixel_path, value in metadata.items():
@@ -187,8 +187,10 @@ class FileManager:
         write_path = Path(path) / self._get_pixel_hash_path(path, pixels)
         # write pixels
         if pixels.data is None:
-            raise ValueError("Writing pixels only suppported for pixels hodling dataframes!")
-        pixels.data.to_parquet(write_path, row_group_size=1024*1024)
+            raise ValueError(
+                "Writing pixels only suppported for pixels hodling dataframes!"
+            )
+        pixels.data.to_parquet(write_path, row_group_size=1024 * 1024)
         # write metadata
         current_metadata[write_path.name] = pixels.get_global_parameters().dict()
         with open(metadata_path, "w") as f:

@@ -26,7 +26,7 @@ requirements = [
     "bioframe==0.3.3",
     "sparse==0.13.0",
     "multiprocess>=0.70.13",
-    "numba>=0.57.0"
+    "numba>=0.57.0",
 ]
 
 test_requirements = [

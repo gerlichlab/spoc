@@ -10,6 +10,7 @@ from click.testing import CliRunner
 
 from spoc import cli, dataframe_models
 
+
 def _create_tmp_dir():
     # check if tmp dir exists
     if not os.path.exists("tmp"):
@@ -18,6 +19,7 @@ def _create_tmp_dir():
         # if it does, clear it
         shutil.rmtree("tmp")
         os.mkdir("tmp")
+
 
 @pytest.fixture
 def good_annotated_porec_file():
@@ -52,6 +54,7 @@ def good_triplet_file_for_pixels():
     yield "tests/test_files/good_contacts3.triplets.parquet"
     # teardown
     shutil.rmtree("tmp")
+
 
 @pytest.fixture
 def good_porec_file():
@@ -137,10 +140,7 @@ def test_merge_contacts_works(good_triplet_files):
     assert_frame_equal(first_half, second_half)
 
 
-
-def test_bin_contacts(
-    good_triplet_file_for_pixels, expected_pixels
-):
+def test_bin_contacts(good_triplet_file_for_pixels, expected_pixels):
     """happy path for binning contacts without sister sorting"""
     runner = CliRunner()
     output_path = "tmp/test_output5.parquet"

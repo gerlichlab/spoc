@@ -61,9 +61,7 @@ def bin_contacts(
     file_manager = FileManager(use_dask=True)
     contacts = file_manager.load_contacts(contact_path)
     # binning
-    binner = GenomicBinner(
-        bin_size=bin_size
-    )
+    binner = GenomicBinner(bin_size=bin_size)
     pixels = binner.bin_contacts(contacts, same_chromosome=same_chromosome)
     # persisting
     file_manager.write_pixels(pixel_path, pixels)
@@ -81,9 +79,7 @@ def merge_contacts(contact_paths, output):
     """Functionality to merge annotated fragments"""
     file_manager = FileManager(use_dask=True)
     manipulator = ContactManipulator()
-    contact_files = [
-        file_manager.load_contacts(path) for path in contact_paths
-    ]
+    contact_files = [file_manager.load_contacts(path) for path in contact_paths]
     merged = manipulator.merge_contacts(contact_files)
     file_manager.write_multiway_contacts(output, merged)
 

@@ -28,6 +28,7 @@ def annotator_with_entries():
 def bad_df():
     return pd.DataFrame({"be": ["bop"]})
 
+
 @pytest.fixture
 def unlabelled_df():
     return pd.DataFrame(
@@ -47,6 +48,7 @@ def unlabelled_df():
         }
     )
 
+
 @pytest.fixture
 def unlabelled_fragments(unlabelled_df):
     return fragments.Fragments(unlabelled_df)
@@ -55,6 +57,7 @@ def unlabelled_fragments(unlabelled_df):
 @pytest.fixture
 def unlabelled_fragments_dask(unlabelled_df):
     return fragments.Fragments(dd.from_pandas(unlabelled_df, npartitions=1))
+
 
 @pytest.fixture
 def labelled_df():
@@ -91,46 +94,54 @@ def test_fragments_constructor_accepts_labelled_fragments(labelled_df):
     frag = fragments.Fragments(labelled_df)
     assert frag.contains_metadata
 
-@pytest.mark.parametrize("fragments", ["unlabelled_fragments", "unlabelled_fragments_dask"])
-def test_annotator_drops_unknown_fragments(
-    annotator_with_entries, fragments, request
-):
+
+@pytest.mark.parametrize(
+    "fragments", ["unlabelled_fragments", "unlabelled_fragments_dask"]
+)
+def test_annotator_drops_unknown_fragments(annotator_with_entries, fragments, request):
     labelled_fragments = annotator_with_entries.annotate_fragments(
         request.getfixturevalue(fragments)
     )
     # check length
     assert len(labelled_fragments.data) == 2
 
-@pytest.mark.parametrize("fragments", ["unlabelled_fragments", "unlabelled_fragments_dask"])
-def test_annotator_produces_correct_schema(
-    annotator_with_entries, fragments, request
-):
+
+@pytest.mark.parametrize(
+    "fragments", ["unlabelled_fragments", "unlabelled_fragments_dask"]
+)
+def test_annotator_produces_correct_schema(annotator_with_entries, fragments, request):
     labelled_fragments = annotator_with_entries.annotate_fragments(
         request.getfixturevalue(fragments)
     )
     # check schema (fragment constructor checks it)
     assert labelled_fragments.contains_metadata
 
-@pytest.mark.parametrize("fragments", ["unlabelled_fragments", "unlabelled_fragments_dask"])
-def test_annotator_calls_sisters_correctly(
-    annotator_with_entries, fragments, request
-):
+
+@pytest.mark.parametrize(
+    "fragments", ["unlabelled_fragments", "unlabelled_fragments_dask"]
+)
+def test_annotator_calls_sisters_correctly(annotator_with_entries, fragments, request):
     labelled_fragments = annotator_with_entries.annotate_fragments(
         request.getfixturevalue(fragments)
     )
     # check values
     expected = pd.Series(["SisterB", "SisterA"])
     if isinstance(request.getfixturevalue(fragments), dd.DataFrame):
-        assert np.array_equal(labelled_fragments.data.metadata.values.compute(), expected.values)
+        assert np.array_equal(
+            labelled_fragments.data.metadata.values.compute(), expected.values
+        )
     else:
         assert np.array_equal(labelled_fragments.data.metadata.values, expected)
 
-@pytest.mark.parametrize("fragments", ["unlabelled_fragments", "unlabelled_fragments_dask"])
-def test_annotator_maintains_dataframe_type(
-    annotator_with_entries, fragments, request
-):
+
+@pytest.mark.parametrize(
+    "fragments", ["unlabelled_fragments", "unlabelled_fragments_dask"]
+)
+def test_annotator_maintains_dataframe_type(annotator_with_entries, fragments, request):
     labelled_fragments = annotator_with_entries.annotate_fragments(
         request.getfixturevalue(fragments)
     )
     # check values
-    assert isinstance(labelled_fragments.data, type(request.getfixturevalue(fragments).data))
+    assert isinstance(
+        labelled_fragments.data, type(request.getfixturevalue(fragments).data)
+    )
