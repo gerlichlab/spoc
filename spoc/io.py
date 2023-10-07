@@ -20,7 +20,7 @@ from spoc.fragments import Fragments
 
 class FileManager:
     """Is responsible for loading and writing files
-    
+
     Args:
         use_dask (bool, optional): Whether to use Dask for reading Parquet files. Defaults to False.
     """
@@ -74,7 +74,7 @@ class FileManager:
     @staticmethod
     def write_label_library(path: str, data: Dict[str, bool]) -> None:
         """Writes label library to file
-        
+
         Args:
             path (str): Path to write the file to.
             data (Dict[str, bool]): Label library data.
@@ -88,7 +88,7 @@ class FileManager:
     @staticmethod
     def load_label_library(path: str) -> Dict:
         """Load label library
-        
+
         Args:
             path (str): Path to the label library file.
 
@@ -107,7 +107,7 @@ class FileManager:
 
         Returns:
             Fragments: Fragments object containing the fragment data.
-        
+
         """
         data = self._parquet_reader_func(path)
         return Fragments(data)
@@ -115,7 +115,7 @@ class FileManager:
     @staticmethod
     def write_fragments(path: str, fragments: Fragments) -> None:
         """Write annotated fragments
-        
+
         Args:
             path (str): Path to write the file to.
             fragments (Fragments): Fragments object containing the fragment data.
@@ -129,14 +129,14 @@ class FileManager:
 
     def write_multiway_contacts(self, path: str, contacts: Contacts) -> None:
         """Write multiway contacts
-        
+
         Args:
             path (str): Path to write the file to.
             contacts (Contacts): Contacts object containing the contact data.
 
         Returns:
             None
-        
+
         """
         if contacts.is_dask:
             self._write_parquet_dask(
@@ -151,7 +151,7 @@ class FileManager:
         self, path: str, global_parameters: Optional[ContactsParameters] = None
     ) -> Contacts:
         """Load multiway contacts
-        
+
         Args:
             path (str): Path to the contacts file.
             global_parameters (Optional[ContactsParameters], optional): Global parameters. Defaults to None.
@@ -169,7 +169,7 @@ class FileManager:
     @staticmethod
     def load_chromosome_sizes(path: str):
         """Load chromosome sizes
-        
+
         Args:
             path (str): Path to the chromosome sizes file.
 
@@ -200,7 +200,7 @@ class FileManager:
     @staticmethod
     def list_pixels(path: str):
         """List available pixels
-        
+
         Args:
             path (str): Path to the pixel data.
 
@@ -219,7 +219,7 @@ class FileManager:
         """Loads specific pixels instance based on global parameters.
         load_dataframe specifies whether the dataframe should be loaded, or whether pixels
          should be instantiated based on the path alone.
-         
+
         Args:
             path (str): Path to the pixel data.
             global_parameters (PixelParameters): Global parameters.
@@ -227,8 +227,8 @@ class FileManager:
 
         Returns:
             Pixels: Pixels object containing the pixel data.
-         
-         """
+
+        """
         metadata = self._load_pixel_metadata(path)
         # find matching pixels
         for pixel_path, value in metadata.items():
@@ -253,14 +253,14 @@ class FileManager:
 
     def write_pixels(self, path: str, pixels: Pixels) -> None:
         """Write pixels
-        
+
         Args:
             path (str): Path to write the pixel data to.
             pixels (Pixels): Pixels object containing the pixel data.
 
         Returns:
             None
-        
+
         """
         # check whether path exists
         metadata_path = Path(path) / "metadata.json"

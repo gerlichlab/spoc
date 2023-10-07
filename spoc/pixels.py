@@ -144,7 +144,7 @@ class Pixels:
 
     def get_global_parameters(self):
         """Returns global parameters of pixels
-        
+
         Returns:
             PixelParameters: The global parameters of the pixels.
         """
@@ -161,7 +161,7 @@ class Pixels:
     @property
     def path(self) -> str:
         """Returns path of pixels
-        
+
         Returns:
             str: The path of the pixels.
         """
@@ -170,17 +170,17 @@ class Pixels:
     @property
     def data(self) -> DataFrame:
         """Returns pixels as dataframe
-        
+
         Returns:
             DataFrame: The pixels as a dataframe.
-        
+
         """
         return self._data
 
     @property
     def number_fragments(self) -> int:
         """Returns number of fragments in pixels
-        
+
         Returns:
             int: The number of fragments in the pixels.
         """
@@ -189,7 +189,7 @@ class Pixels:
     @property
     def binsize(self) -> int:
         """Returns binsize of pixels
-        
+
         Returns:
             int: The binsize of the pixels.
         """
@@ -198,7 +198,7 @@ class Pixels:
     @property
     def binary_labels_equal(self) -> bool:
         """Returns whether binary labels are equal
-        
+
         Returns:
             bool: Whether binary labels are equal.
         """
@@ -207,7 +207,7 @@ class Pixels:
     @property
     def symmetry_flipped(self) -> bool:
         """Returns whether pixels are symmetry flipped
-        
+
         Returns:
             bool: Whether pixels are symmetry flipped.
         """
@@ -216,7 +216,7 @@ class Pixels:
     @property
     def metadata_combi(self) -> Optional[List[str]]:
         """Returns metadata combination of pixels
-        
+
         Returns:
             Optional[List[str]]: The metadata combination of the pixels.
         """
@@ -225,11 +225,11 @@ class Pixels:
     @property
     def same_chromosome(self) -> bool:
         """Returns whether pixels are on same chromosome
-        
-        
+
+
         Returns:
             bool: Whether pixels are on same chromosome.
-        
+
         """
         return self._same_chromosome
 
@@ -238,10 +238,10 @@ class GenomicBinner:
     """Bins higher order contacts into genomic bins of fixed size.
     Is capable of sorting genomic bins along columns based on sister chromatid
     identity
-    
+
     Args:
         bin_size (int): The size of the genomic bins.
-    
+
     """
 
     def __init__(self, bin_size: int) -> None:
@@ -283,18 +283,16 @@ class GenomicBinner:
             axis=1,
         )
 
-    def bin_contacts(
-        self, contacts: Contacts, same_chromosome: bool = True
-    ) -> Pixels:
+    def bin_contacts(self, contacts: Contacts, same_chromosome: bool = True) -> Pixels:
         """Bins genomic contacts
-    
+
         Args:
             contacts (Contacts): The genomic contacts to bin.
             same_chromosome (bool, optional): Whether to only retain pixels on the same chromosome. Defaults to True.
 
         Returns:
             Pixels: The binned genomic pixels.
-        
+
         """
         self._contact_order = contacts.number_fragments
         contacts_w_midpoints = self._assign_midpoints(contacts.data)

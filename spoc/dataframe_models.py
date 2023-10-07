@@ -35,7 +35,7 @@ FragmentSchema = pa.DataFrameSchema(
 
 class ContactSchema:
     """Dynamic schema for N-way contacts
-    
+
     Args:
         number_fragments (int, optional): Number of fragments. Defaults to 3.
         contains_metadata (bool, optional): Whether the contact data contains metadata. Defaults to True.
@@ -103,7 +103,7 @@ class ContactSchema:
     def validate_header(self, data_frame: DataFrame) -> None:
         """Validates only header, needed to validate that dask taskgraph can be built before
         evaluation.
-        
+
         Args:
             data_frame (DataFrame): The DataFrame to validate.
         """
@@ -115,7 +115,7 @@ class ContactSchema:
 
     def validate(self, data_frame: DataFrame) -> DataFrame:
         """Validate multiway contact dataframe
-        
+
         Args:
             data_frame (DataFrame): The DataFrame to validate.
         """
@@ -125,7 +125,7 @@ class ContactSchema:
 
 class PixelSchema:
     """Dynamic schema for N-way pixels
-    
+
     Args:
         number_fragments (int, optional): Number of fragments. Defaults to 3.
         same_chromosome (bool, optional): Whether the fragments are on the same chromosome. Defaults to True.
@@ -172,7 +172,7 @@ class PixelSchema:
     def validate_header(self, data_frame: DataFrame) -> None:
         """Validates only header, needed to validate that dask taskgraph can be built before
         evaluation
-        
+
         Args:
             data_frame (DataFrame): The DataFrame to validate.
         """
@@ -184,9 +184,9 @@ class PixelSchema:
 
     def validate(self, data_frame: DataFrame) -> DataFrame:
         """Validate multiway contact dataframe
-        
+
         Args:
             data_frame (DataFrame): The DataFrame to validate.
-        
+
         """
         return self._schema.validate(data_frame)

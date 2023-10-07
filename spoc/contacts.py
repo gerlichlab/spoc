@@ -12,7 +12,7 @@ from spoc.file_parameter_models import ContactsParameters
 
 class Contacts:
     """N-way genomic contacts
-    
+
     Args:
         contact_frame (DataFrame): DataFrame containing the contact data.
         number_fragments (int, optional): Number of fragments. Defaults to None.
@@ -20,7 +20,7 @@ class Contacts:
         label_sorted (bool, optional): Whether the labels are sorted. Defaults to False.
         binary_labels_equal (bool, optional): Whether the binary labels are equal. Defaults to False.
         symmetry_flipped (bool, optional): Whether the symmetry is flipped. Defaults to False.
-    
+
     Attributes:
         contains_metadata (bool): Whether the contact data contains metadata.
         number_fragments (int): Number of fragments.
@@ -107,7 +107,7 @@ class Contacts:
     @data.setter
     def data(self, contact_frame):
         """Sets the contact data
-        
+
         Args:
             contact_frame (DataFrame): DataFrame containing the contact data.
         """
@@ -123,7 +123,7 @@ class ContactManipulator:
 
     def merge_contacts(self, merge_list: List[Contacts]) -> Contacts:
         """Merge contacts
-        
+
         Args:
             merge_list (List[Contacts]): List of Contacts objects to merge.
 
@@ -274,7 +274,7 @@ class ContactManipulator:
 
     def sort_labels(self, contacts: Contacts) -> Contacts:
         """Sorts labels in ascending, alphabetical order
-        
+
         Args:
             contacts (Contacts): Contacts object to sort.
 
@@ -367,7 +367,7 @@ class ContactManipulator:
     def equate_binary_labels(self, contacts: Contacts) -> Contacts:
         """
         Equate binary labels.
-        
+
         Binary labels often only carry information about whether
         they happen between the same or different fragments. This
         method equates these labels be replacing all equivalent binary labels with
@@ -423,14 +423,14 @@ class ContactManipulator:
         self, contacts: Contacts, metadata_combi: List[str]
     ) -> Contacts:
         """Subset contacts based on metadata
-        
+
         Args:
             contacts (Contacts): Contacts object to subset.
             metadata_combi (List[str]): List of metadata combinations to subset on.
 
         Returns:
             Contacts: Subsetted Contacts object.
-        
+
         """
         # check if metadata is present
         assert contacts.contains_metadata, "Contacts do not contain metadata!"
@@ -462,14 +462,14 @@ class ContactManipulator:
         self, contacts: Contacts, sort_chromosomes: bool = False
     ) -> Contacts:
         """Flips contacts based on inherent symmetry
-        
+
         Args:
             contacts (Contacts): Contacts object to flip symmetric contacts.
             sort_chromosomes (bool, optional): Whether to sort chromosomes. Defaults to False.
 
         Returns:
             Contacts: Contacts object with flipped symmetric contacts.
-        
+
         """
         if contacts.contains_metadata:
             if not contacts.label_sorted:

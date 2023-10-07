@@ -13,7 +13,7 @@ from .contacts import Contacts
 
 class Fragments:
     """Genomic fragments that can be labelled or not.
-    
+
     Args:
         fragment_frame (DataFrame): DataFrame containing the fragment data.
     """
@@ -25,7 +25,7 @@ class Fragments:
     @property
     def data(self) -> DataFrame:
         """Returns the underlying dataframe.
-        
+
         Returns:
             DataFrame: Fragment data.
         """
@@ -34,7 +34,7 @@ class Fragments:
     @property
     def contains_metadata(self) -> bool:
         """Returns whether the dataframe contains metadata.
-        
+
         Returns:
             bool: Whether the fragment data contains metadata.
         """
@@ -43,7 +43,7 @@ class Fragments:
     @property
     def is_dask(self) -> bool:
         """Returns whether the underlying dataframe is dask.
-        
+
         Returns:
             bool: Whether the underlying dataframe is a dask dataframe.
         """
@@ -53,7 +53,7 @@ class Fragments:
 # TODO: make generic such that label library can hold arbitrary information
 class FragmentAnnotator:
     """Responsible for annotating labels and sister identity of mapped read fragments.
-    
+
     Args:
         label_library (Dict[str, bool]): Dictionary containing the label library.
     """
@@ -93,13 +93,13 @@ class FragmentAnnotator:
         """Takes fragment dataframe and returns a copy of it with its labelling state in a separate
         column with name `is_labelled`. If drop_uninformative is true, drops fragments that
         are not in label library.
-        
+
         Args:
             fragments (Fragments): Fragments object containing the fragment data.
 
         Returns:
             Fragments: Fragments object with annotated fragment data.
-        
+
         """
         return Fragments(
             fragments.data.assign(is_labelled=self._assign_label_state)
@@ -112,11 +112,11 @@ class FragmentAnnotator:
 class FragmentExpander:
     """Expands n-way fragments over sequencing reads
     to yield contacts.
-    
+
     Args:
         number_fragments (int): Number of fragments.
         contains_metadata (bool, optional): Whether the fragment data contains metadata. Defaults to True.
-    
+
     """
 
     def __init__(self, number_fragments: int, contains_metadata: bool = True) -> None:
@@ -162,7 +162,7 @@ class FragmentExpander:
 
     def expand(self, fragments: Fragments) -> Contacts:
         """expand contacts n-ways
-        
+
         Args:
             fragments (Fragments): Fragments object containing the fragment data.
 
