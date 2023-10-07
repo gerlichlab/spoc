@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Union, Optional, List
 import pandas as pd
 import dask.dataframe as dd
-from spoc.dataframe_models import PixelSchema
+from spoc.dataframe_models import PixelSchema, DataFrame
 from spoc.file_parameter_models import PixelParameters
 from spoc.contacts import Contacts
 
@@ -22,6 +22,17 @@ class Pixels:
         - pandas dataframe
         - dask dataframe
         - path to a parquet file
+
+
+    Args:
+        pixel_source (Union[pd.DataFrame, dd.DataFrame, str]): The source of the pixel data.
+        number_fragments (Optional[int], optional): The number of fragments. Defaults to None.
+        binsize (Optional[int], optional): The bin size. Defaults to None.
+        metadata_combi (Optional[List[str]], optional): The metadata combination. Defaults to None.
+        label_sorted (bool, optional): Whether the labels are sorted. Defaults to False.
+        binary_labels_equal (bool, optional): Whether binary labels are equal. Defaults to False.
+        symmetry_flipped (bool, optional): Whether the pixels are symmetry flipped. Defaults to False.
+        same_chromosome (bool, optional): Whether the pixels are on the same chromosome. Defaults to True.
     """
 
     def __init__(
@@ -69,6 +80,15 @@ class Pixels:
         and will be tried to match to the available pixels. If no match is found, or there is no
          uniue match, an error is raised.
         Mode can be one of pandas|dask|path, which corresponds to the type of the pixel source.
+
+
+        Args:
+            uri (str): The URI to construct the pixels from.
+            mode (str, optional): The mode to use. Defaults to "path".
+
+        Returns:
+            Pixels: The constructed pixels.
+
         """
         # import here to avoid circular imports
         # pylint: disable=import-outside-toplevel
@@ -123,7 +143,11 @@ class Pixels:
         )
 
     def get_global_parameters(self):
-        """Returns global parameters of pixels"""
+        """Returns global parameters of pixels
+        
+        Returns:
+            PixelParameters: The global parameters of the pixels.
+        """
         return PixelParameters(
             number_fragments=self._number_fragments,
             binsize=self._binsize,
@@ -135,50 +159,90 @@ class Pixels:
         )
 
     @property
-    def path(self):
-        """Returns path of pixels"""
+    def path(self) -> str:
+        """Returns path of pixels
+        
+        Returns:
+            str: The path of the pixels.
+        """
         return self._path
 
     @property
-    def data(self):
-        """Returns pixels as dataframe"""
+    def data(self) -> DataFrame:
+        """Returns pixels as dataframe
+        
+        Returns:
+            DataFrame: The pixels as a dataframe.
+        
+        """
         return self._data
 
     @property
-    def number_fragments(self):
-        """Returns number of fragments in pixels"""
+    def number_fragments(self) -> int:
+        """Returns number of fragments in pixels
+        
+        Returns:
+            int: The number of fragments in the pixels.
+        """
         return self._number_fragments
 
     @property
-    def binsize(self):
-        """Returns binsize of pixels"""
+    def binsize(self) -> int:
+        """Returns binsize of pixels
+        
+        Returns:
+            int: The binsize of the pixels.
+        """
         return self._binsize
 
     @property
-    def binary_labels_equal(self):
-        """Returns whether binary labels are equal"""
+    def binary_labels_equal(self) -> bool:
+        """Returns whether binary labels are equal
+        
+        Returns:
+            bool: Whether binary labels are equal.
+        """
         return self._binary_labels_equal
 
     @property
-    def symmetry_flipped(self):
-        """Returns whether pixels are symmetry flipped"""
+    def symmetry_flipped(self) -> bool:
+        """Returns whether pixels are symmetry flipped
+        
+        Returns:
+            bool: Whether pixels are symmetry flipped.
+        """
         return self._symmetry_flipped
 
     @property
-    def metadata_combi(self):
-        """Returns metadata combination of pixels"""
+    def metadata_combi(self) -> Optional[List[str]]:
+        """Returns metadata combination of pixels
+        
+        Returns:
+            Optional[List[str]]: The metadata combination of the pixels.
+        """
         return self._metadata_combi
 
     @property
-    def same_chromosome(self):
-        """Returns whether pixels are on same chromosome"""
+    def same_chromosome(self) -> bool:
+        """Returns whether pixels are on same chromosome
+        
+        
+        Returns:
+            bool: Whether pixels are on same chromosome.
+        
+        """
         return self._same_chromosome
 
 
 class GenomicBinner:
     """Bins higher order contacts into genomic bins of fixed size.
     Is capable of sorting genomic bins along columns based on sister chromatid
-    identity"""
+    identity
+    
+    Args:
+        bin_size (int): The size of the genomic bins.
+    
+    """
 
     def __init__(self, bin_size: int) -> None:
         self._bin_size = bin_size
@@ -221,8 +285,17 @@ class GenomicBinner:
 
     def bin_contacts(
         self, contacts: Contacts, same_chromosome: bool = True
-    ) -> dd.DataFrame:
-        """Bins genomic contacts"""
+    ) -> Pixels:
+        """Bins genomic contacts
+    
+        Args:
+            contacts (Contacts): The genomic contacts to bin.
+            same_chromosome (bool, optional): Whether to only retain pixels on the same chromosome. Defaults to True.
+
+        Returns:
+            Pixels: The binned genomic pixels.
+        
+        """
         self._contact_order = contacts.number_fragments
         contacts_w_midpoints = self._assign_midpoints(contacts.data)
         if contacts.is_dask:

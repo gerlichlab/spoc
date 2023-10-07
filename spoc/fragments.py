@@ -12,31 +12,51 @@ from .contacts import Contacts
 
 
 class Fragments:
-    """Genomic fragments that can be labelled or not"""
+    """Genomic fragments that can be labelled or not.
+    
+    Args:
+        fragment_frame (DataFrame): DataFrame containing the fragment data.
+    """
 
     def __init__(self, fragment_frame: DataFrame) -> None:
         self._data = FragmentSchema.validate(fragment_frame)
         self._contains_metadata = "metadata" in fragment_frame.columns
 
     @property
-    def data(self):
-        """Returns the underlying dataframe"""
+    def data(self) -> DataFrame:
+        """Returns the underlying dataframe.
+        
+        Returns:
+            DataFrame: Fragment data.
+        """
         return self._data
 
     @property
-    def contains_metadata(self):
-        """Returns whether the dataframe contains metadata"""
+    def contains_metadata(self) -> bool:
+        """Returns whether the dataframe contains metadata.
+        
+        Returns:
+            bool: Whether the fragment data contains metadata.
+        """
         return self._contains_metadata
 
     @property
-    def is_dask(self):
-        """Returns whether the underlying dataframe is dask"""
+    def is_dask(self) -> bool:
+        """Returns whether the underlying dataframe is dask.
+        
+        Returns:
+            bool: Whether the underlying dataframe is a dask dataframe.
+        """
         return isinstance(self._data, dd.DataFrame)
 
 
 # TODO: make generic such that label library can hold arbitrary information
 class FragmentAnnotator:
-    """Responsible for annotating labels and sister identity of mapped read fragments"""
+    """Responsible for annotating labels and sister identity of mapped read fragments.
+    
+    Args:
+        label_library (Dict[str, bool]): Dictionary containing the label library.
+    """
 
     def __init__(self, label_library: Dict[str, bool]) -> None:
         self._label_library = label_library
@@ -72,7 +92,15 @@ class FragmentAnnotator:
     def annotate_fragments(self, fragments: Fragments) -> Fragments:
         """Takes fragment dataframe and returns a copy of it with its labelling state in a separate
         column with name `is_labelled`. If drop_uninformative is true, drops fragments that
-        are not in label library."""
+        are not in label library.
+        
+        Args:
+            fragments (Fragments): Fragments object containing the fragment data.
+
+        Returns:
+            Fragments: Fragments object with annotated fragment data.
+        
+        """
         return Fragments(
             fragments.data.assign(is_labelled=self._assign_label_state)
             .dropna(subset=["is_labelled"])
@@ -83,7 +111,13 @@ class FragmentAnnotator:
 
 class FragmentExpander:
     """Expands n-way fragments over sequencing reads
-    to yield contacts."""
+    to yield contacts.
+    
+    Args:
+        number_fragments (int): Number of fragments.
+        contains_metadata (bool, optional): Whether the fragment data contains metadata. Defaults to True.
+    
+    """
 
     def __init__(self, number_fragments: int, contains_metadata: bool = True) -> None:
         self._number_fragments = number_fragments
@@ -127,7 +161,14 @@ class FragmentExpander:
         return pd.DataFrame(result)
 
     def expand(self, fragments: Fragments) -> Contacts:
-        """expand contacts n-ways"""
+        """expand contacts n-ways
+        
+        Args:
+            fragments (Fragments): Fragments object containing the fragment data.
+
+        Returns:
+            Contacts: Contacts object containing the expanded contact data.
+        """
         # construct dataframe type specific kwargs
         if fragments.is_dask:
             kwargs = dict(meta=self._get_expansion_output_structure())

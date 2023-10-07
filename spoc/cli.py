@@ -22,7 +22,15 @@ def main():
     help="Number of fragments per read to expand",
 )
 def expand(fragments_path, expanded_contacts_path, n_fragments):
-    """Script for expanding labelled fragments to contacts"""
+    """
+    Script for expanding labelled fragments to contacts
+
+    Args:
+        fragments_path (str): Path to the labelled fragments file.
+        expanded_contacts_path (str): Path to the output contacts file.
+        n_fragments (int, optional): Number of fragments per read to expand. Defaults to 3.
+    
+    """
     expander = FragmentExpander(number_fragments=n_fragments)
     file_manager = FileManager()
     input_fragments = file_manager.load_fragments(fragments_path)
@@ -35,7 +43,14 @@ def expand(fragments_path, expanded_contacts_path, n_fragments):
 @click.argument("label_library_path")
 @click.argument("labelled_fragments_path")
 def annotate(fragments_path, label_library_path, labelled_fragments_path):
-    """Script for annotating porec fragments"""
+    """Script for annotating porec fragments
+
+    Args:
+        fragments_path (str): Path to the input fragments file.
+        label_library_path (str): Path to the label library file.
+        labelled_fragments_path (str): Path to the output labelled fragments file.
+    
+    """
     file_manager = FileManager()
     label_library = file_manager.load_label_library(label_library_path)
     annotator = FragmentAnnotator(label_library)
@@ -55,7 +70,15 @@ def bin_contacts(
     bin_size,
     same_chromosome,
 ):
-    """Script for binning contacts"""
+    """Script for binning contacts
+    
+    Args:
+        contact_path (str): Path to the input contact file.
+        pixel_path (str): Path to the output pixel file.
+        bin_size (int, optional): Size of the bins. Defaults to 10000.
+        same_chromosome (bool, optional): Only bin contacts on the same chromosome. Defaults to False.
+    
+    """
     # load data from disk
     file_manager = FileManager(use_dask=True)
     contacts = file_manager.load_contacts(contact_path)
@@ -75,7 +98,12 @@ def merge():
 @click.argument("contact_paths", nargs=-1)
 @click.option("-o", "--output", help="output path")
 def merge_contacts(contact_paths, output):
-    """Functionality to merge annotated fragments"""
+    """Functionality to merge annotated fragments
+    
+    Args:
+        contact_paths (tuple): Paths to the input contact files.
+        output (str, optional): Path to the output merged contact file.
+    """
     file_manager = FileManager(use_dask=True)
     manipulator = ContactManipulator()
     contact_files = [file_manager.load_contacts(path) for path in contact_paths]

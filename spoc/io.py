@@ -14,11 +14,16 @@ from pydantic import BaseModel
 from spoc.contacts import Contacts
 from spoc.pixels import Pixels
 from spoc.file_parameter_models import ContactsParameters, PixelParameters
+from spoc.dataframe_models import DataFrame
 from spoc.fragments import Fragments
 
 
 class FileManager:
-    """Is responsible for loading and writing files"""
+    """Is responsible for loading and writing files
+    
+    Args:
+        use_dask (bool, optional): Whether to use Dask for reading Parquet files. Defaults to False.
+    """
 
     def __init__(self, use_dask: bool = False) -> None:
         if use_dask:
@@ -68,30 +73,71 @@ class FileManager:
 
     @staticmethod
     def write_label_library(path: str, data: Dict[str, bool]) -> None:
-        """Writes label library to file"""
+        """Writes label library to file
+        
+        Args:
+            path (str): Path to write the file to.
+            data (Dict[str, bool]): Label library data.
+
+        Returns:
+            None
+        """
         with open(path, "wb") as handle:
             pickle.dump(data, handle)
 
     @staticmethod
-    def load_label_library(path: str):
-        """Load label library"""
+    def load_label_library(path: str) -> Dict:
+        """Load label library
+        
+        Args:
+            path (str): Path to the label library file.
+
+        Returns:
+            Dict: Label library data.
+        """
         with open(path, "rb") as handle:
             label_library = pickle.load(handle)
         return label_library
 
-    def load_fragments(self, path: str):
-        """Load annotated fragments"""
+    def load_fragments(self, path: str) -> Fragments:
+        """Load annotated fragments
+
+        Args:
+            path (str): Path to the fragments file.
+
+        Returns:
+            Fragments: Fragments object containing the fragment data.
+        
+        """
         data = self._parquet_reader_func(path)
         return Fragments(data)
 
     @staticmethod
     def write_fragments(path: str, fragments: Fragments) -> None:
-        """Write annotated fragments"""
+        """Write annotated fragments
+        
+        Args:
+            path (str): Path to write the file to.
+            fragments (Fragments): Fragments object containing the fragment data.
+
+        Returns:
+            None
+
+        """
         # Write fragments
         fragments.data.to_parquet(path, row_group_size=1024 * 1024)
 
     def write_multiway_contacts(self, path: str, contacts: Contacts) -> None:
-        """Write multiway contacts"""
+        """Write multiway contacts
+        
+        Args:
+            path (str): Path to write the file to.
+            contacts (Contacts): Contacts object containing the contact data.
+
+        Returns:
+            None
+        
+        """
         if contacts.is_dask:
             self._write_parquet_dask(
                 path, contacts.data, contacts.get_global_parameters()
@@ -104,7 +150,16 @@ class FileManager:
     def load_contacts(
         self, path: str, global_parameters: Optional[ContactsParameters] = None
     ) -> Contacts:
-        """Load multiway contacts"""
+        """Load multiway contacts
+        
+        Args:
+            path (str): Path to the contacts file.
+            global_parameters (Optional[ContactsParameters], optional): Global parameters. Defaults to None.
+
+        Returns:
+            Contacts: Contacts object containing the contact data.
+
+        """
         if global_parameters is None:
             global_parameters = self._load_parquet_global_parameters(path)
         else:
@@ -113,7 +168,14 @@ class FileManager:
 
     @staticmethod
     def load_chromosome_sizes(path: str):
-        """Load chromosome sizes"""
+        """Load chromosome sizes
+        
+        Args:
+            path (str): Path to the chromosome sizes file.
+
+        Returns:
+            pd.DataFrame: DataFrame containing the chromosome sizes.
+        """
         # TODO: validate schema for this
         return pd.read_csv(
             path,
@@ -137,7 +199,14 @@ class FileManager:
 
     @staticmethod
     def list_pixels(path: str):
-        """List available pixels"""
+        """List available pixels
+        
+        Args:
+            path (str): Path to the pixel data.
+
+        Returns:
+            List[PixelParameters]: List of PixelParameters objects.
+        """
         # read metadata.json
         metadata = FileManager._load_pixel_metadata(path)
         # instantiate pixel parameters
@@ -149,7 +218,17 @@ class FileManager:
     ) -> Pixels:
         """Loads specific pixels instance based on global parameters.
         load_dataframe specifies whether the dataframe should be loaded, or whether pixels
-         should be instantiated based on the path alone."""
+         should be instantiated based on the path alone.
+         
+        Args:
+            path (str): Path to the pixel data.
+            global_parameters (PixelParameters): Global parameters.
+            load_dataframe (bool, optional): Whether to load the dataframe. Defaults to True.
+
+        Returns:
+            Pixels: Pixels object containing the pixel data.
+         
+         """
         metadata = self._load_pixel_metadata(path)
         # find matching pixels
         for pixel_path, value in metadata.items():
@@ -173,7 +252,16 @@ class FileManager:
         return md5(hash_string.encode()).hexdigest() + ".parquet"
 
     def write_pixels(self, path: str, pixels: Pixels) -> None:
-        """Write pixels"""
+        """Write pixels
+        
+        Args:
+            path (str): Path to write the pixel data to.
+            pixels (Pixels): Pixels object containing the pixel data.
+
+        Returns:
+            None
+        
+        """
         # check whether path exists
         metadata_path = Path(path) / "metadata.json"
         if not Path(path).exists():

@@ -11,7 +11,25 @@ from spoc.file_parameter_models import ContactsParameters
 
 
 class Contacts:
-    """N-way genomic contacts"""
+    """N-way genomic contacts
+    
+    Args:
+        contact_frame (DataFrame): DataFrame containing the contact data.
+        number_fragments (int, optional): Number of fragments. Defaults to None.
+        metadata_combi (List[str], optional): List of metadata combinations. Defaults to None.
+        label_sorted (bool, optional): Whether the labels are sorted. Defaults to False.
+        binary_labels_equal (bool, optional): Whether the binary labels are equal. Defaults to False.
+        symmetry_flipped (bool, optional): Whether the symmetry is flipped. Defaults to False.
+    
+    Attributes:
+        contains_metadata (bool): Whether the contact data contains metadata.
+        number_fragments (int): Number of fragments.
+        is_dask (bool): Whether the contact data is a Dask DataFrame.
+        metadata_combi (List[str]): List of metadata combinations.
+        label_sorted (bool): Whether the labels are sorted.
+        binary_labels_equal (bool): Whether the binary labels are equal.
+        symmetry_flipped (bool): Whether the symmetry is flipped.
+    """
 
     def __init__(
         self,
@@ -88,7 +106,11 @@ class Contacts:
 
     @data.setter
     def data(self, contact_frame):
-        """Sets the contact data"""
+        """Sets the contact data
+        
+        Args:
+            contact_frame (DataFrame): DataFrame containing the contact data.
+        """
         self._data = self._schema.validate(contact_frame)
 
     def __repr__(self) -> str:
@@ -100,7 +122,14 @@ class ContactManipulator:
     contact data such as merging, splitting and subsetting."""
 
     def merge_contacts(self, merge_list: List[Contacts]) -> Contacts:
-        """Merge contacts"""
+        """Merge contacts
+        
+        Args:
+            merge_list (List[Contacts]): List of Contacts objects to merge.
+
+        Returns:
+            Contacts: Merged Contacts object.
+        """
         # validate that merge is possible
         if len({i.number_fragments for i in merge_list}) != 1:
             raise ValueError("All contacts need to have the same order!")
@@ -244,7 +273,14 @@ class ContactManipulator:
         return result
 
     def sort_labels(self, contacts: Contacts) -> Contacts:
-        """Sorts labels in ascending, alphabetical order"""
+        """Sorts labels in ascending, alphabetical order
+        
+        Args:
+            contacts (Contacts): Contacts object to sort.
+
+        Returns:
+            Contacts: Sorted Contacts object.
+        """
         if not contacts.contains_metadata:
             raise ValueError(
                 "Sorting labels for unlabelled contacts is not implemented."
@@ -329,12 +365,22 @@ class ContactManipulator:
         return mapping
 
     def equate_binary_labels(self, contacts: Contacts) -> Contacts:
-        """Binary labels often only carry information about whether
+        """
+        Equate binary labels.
+        
+        Binary labels often only carry information about whether
         they happen between the same or different fragments. This
         method equates these labels be replacing all equivalent binary labels with
         the alphabetically first label.
         For example, if we have a contact between two fragments
         that are labelled B and B, the label will be replaced with AA.
+
+        Args:
+            contacts (Contacts): Contacts object to equate binary labels.
+
+        Returns:
+            Contacts: Contacts object with equated binary labels.
+
         """
         assert contacts.contains_metadata, "Contacts do not contain metadata!"
         if not contacts.label_sorted:
@@ -376,7 +422,16 @@ class ContactManipulator:
     def subset_on_metadata(
         self, contacts: Contacts, metadata_combi: List[str]
     ) -> Contacts:
-        """Subset contacts based on metadata"""
+        """Subset contacts based on metadata
+        
+        Args:
+            contacts (Contacts): Contacts object to subset.
+            metadata_combi (List[str]): List of metadata combinations to subset on.
+
+        Returns:
+            Contacts: Subsetted Contacts object.
+        
+        """
         # check if metadata is present
         assert contacts.contains_metadata, "Contacts do not contain metadata!"
         # check if metadata_combi has the correct length
@@ -406,7 +461,16 @@ class ContactManipulator:
     def flip_symmetric_contacts(
         self, contacts: Contacts, sort_chromosomes: bool = False
     ) -> Contacts:
-        """Flips contacts based on inherent symmetry"""
+        """Flips contacts based on inherent symmetry
+        
+        Args:
+            contacts (Contacts): Contacts object to flip symmetric contacts.
+            sort_chromosomes (bool, optional): Whether to sort chromosomes. Defaults to False.
+
+        Returns:
+            Contacts: Contacts object with flipped symmetric contacts.
+        
+        """
         if contacts.contains_metadata:
             if not contacts.label_sorted:
                 contacts = self.sort_labels(contacts)
