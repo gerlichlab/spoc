@@ -1,3 +1,6 @@
+[![Python code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black "Black: The Uncompromising Code Formatter")
+![Docs](https://github.com/gerlichlab/spoc/actions/workflows/build_pages.yml/badge.svg)
+![Code style](https://github.com/gerlichlab/spoc/actions/workflows/black_lint_test.yml/badge.svg)
 
 # Spoc
 
