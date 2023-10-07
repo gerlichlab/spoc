@@ -1,8 +1,9 @@
 name: Black, lint and test
 
-push:
-  branches:
-    - docs
+on:
+  push:
+    branches:
+      - docs
 
 jobs:
   build:
