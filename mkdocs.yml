@@ -19,6 +19,16 @@ nav:
   - Data Structures: data_structures.md
   - Snipping: snipping.md
   - Contributing: contributing.md
+  - API:
+    - CLI: cli.md
+    - IO: io.md
+    - Contacts: contacts.md
+    - Fragments: fragments.md
+    - Pixels: pixels.md
+    - Dataframe models: dataframe_models.md
+    - File parameters models: file_parameters_models.md
+plugins:
+  - mkdocstrings
 markdown_extensions:
   - pymdownx.highlight:
       anchor_linenums: true
