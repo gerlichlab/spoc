@@ -129,7 +129,7 @@ class FileManager:
         """Load metadata"""
         metadata_path = Path(path) / "metadata.json"
         if metadata_path.exists():
-            with open(metadata_path, "r", encoding='UTF-8') as f:
+            with open(metadata_path, "r", encoding="UTF-8") as f:
                 metadata = json.load(f)
         else:
             raise ValueError(f"Metadata file not found at {metadata_path}")
@@ -192,5 +192,5 @@ class FileManager:
         pixels.data.to_parquet(write_path, row_group_size=1024 * 1024)
         # write metadata
         current_metadata[write_path.name] = pixels.get_global_parameters().dict()
-        with open(metadata_path, "w", encoding='UTF-8') as f:
+        with open(metadata_path, "w", encoding="UTF-8") as f:
             json.dump(current_metadata, f)

@@ -1,11 +1,12 @@
 """Tests for CLI of spoc"""
+# pylint: disable=redefined-outer-name
 
+import shutil
+import os
 import pytest
 import pandas as pd
 from pandas.testing import assert_frame_equal
 import numpy as np
-import shutil
-import os
 from click.testing import CliRunner
 
 from spoc import cli, dataframe_models
@@ -23,6 +24,7 @@ def _create_tmp_dir():
 
 @pytest.fixture
 def good_annotated_porec_file():
+    """Fixture for a good porec file with annotations"""
     # setup
     _create_tmp_dir()
     yield "tests/test_files/good_porec.lab.parquet"
@@ -32,11 +34,13 @@ def good_annotated_porec_file():
 
 @pytest.fixture
 def label_library_path():
+    """Fixture for a label library file"""
     return "tests/test_files/ll1.pickle"
 
 
 @pytest.fixture
 def good_triplet_files():
+    """Fixture for two triplet contact files used to merge contacts"""
     # setup
     _create_tmp_dir()
     yield [
@@ -49,6 +53,7 @@ def good_triplet_files():
 
 @pytest.fixture
 def good_triplet_file_for_pixels():
+    """Fixture for a good triplet file used to instantiate pixels"""
     # setup
     _create_tmp_dir()
     yield "tests/test_files/good_contacts3.triplets.parquet"
@@ -58,6 +63,7 @@ def good_triplet_file_for_pixels():
 
 @pytest.fixture
 def good_porec_file():
+    """Fixture for a good fragment file"""
     # setup
     _create_tmp_dir()
     yield "tests/test_files/good_porec.parquet"
@@ -67,6 +73,7 @@ def good_porec_file():
 
 @pytest.fixture
 def expected_pixels():
+    """Fixture for expected pixels from binning contacts"""
     return pd.DataFrame(
         {
             "chrom_1": ["chr1"] * 3,
@@ -144,9 +151,7 @@ def test_bin_contacts(good_triplet_file_for_pixels, expected_pixels):
     """happy path for binning contacts without sister sorting"""
     runner = CliRunner()
     output_path = "tmp/test_output5.parquet"
-    result = runner.invoke(
-        cli.bin_contacts, [good_triplet_file_for_pixels, output_path]
-    )
+    runner.invoke(cli.bin_contacts, [good_triplet_file_for_pixels, output_path])
     # check content of file
     pixels = pd.read_parquet(output_path)
     np.array_equal(pixels.values, expected_pixels.values)

@@ -1,17 +1,22 @@
 """This file tests the io module"""
-import tempfile
-import pytest
-from itertools import product
-import os
+# pylint: disable=redefined-outer-name
 import json
+import os
 import shutil
+import tempfile
+from itertools import product
 from pathlib import Path
-import pandas as pd
-from spoc.contacts import Contacts
-from spoc.io import FileManager
-from spoc.file_parameter_models import PixelParameters
-from spoc.pixels import Pixels
+
 import dask.dataframe as dd
+import pandas as pd
+import pytest
+
+from spoc.contacts import Contacts
+from spoc.file_parameter_models import PixelParameters
+from spoc.io import FileManager
+from spoc.pixels import Pixels
+
+# pytlint: disable=unused-import
 from .fixtures.symmetry import unlabelled_contacts_2d
 
 CONTACT_PARAMETERS = (
@@ -35,6 +40,7 @@ def _create_tmp_dir():
 
 @pytest.fixture
 def df_order_2():
+    """Fixture for dataframe of pixels with order 2"""
     return pd.DataFrame(
         {
             "chrom": ["chr1"] * 6,
@@ -47,6 +53,7 @@ def df_order_2():
 
 @pytest.fixture
 def df_order_3():
+    """Fixture for dataframe of pixels with order 3"""
     return pd.DataFrame(
         {
             "chrom": ["chr1"] * 6,
@@ -60,6 +67,7 @@ def df_order_3():
 
 @pytest.fixture
 def example_pixels_w_metadata(df_order_2, df_order_3):
+    """Fixture for example pixels with metadata"""
     # setup
     _create_tmp_dir()
     # create pixels directory
@@ -92,7 +100,7 @@ def example_pixels_w_metadata(df_order_2, df_order_3):
         "test2.parquet": expected_parameters[1].dict(),
         "test3.parquet": expected_parameters[2].dict(),
     }
-    with open(pixels_dir + "/metadata.json", "w") as f:
+    with open(pixels_dir + "/metadata.json", "w", encoding="utf-8") as f:
         json.dump(metadata, f)
     yield pixels_dir, expected_parameters, paths, dataframes
     # teardown
@@ -198,7 +206,7 @@ def test_read_pixels_as_pandas_df(example_pixels_w_metadata):
     """Test reading pixels metadata json file"""
     pixels_dir, expected_parameters, paths, dataframes = example_pixels_w_metadata
     # read metadata
-    for path, expected, df in zip(paths, expected_parameters, dataframes):
+    for _, expected, df in zip(paths, expected_parameters, dataframes):
         pixels = FileManager(use_dask=False).load_pixels(
             pixels_dir, expected, load_dataframe=True
         )
@@ -210,7 +218,7 @@ def test_read_pixels_as_dask_df(example_pixels_w_metadata):
     """Test reading pixels metadata json file"""
     pixels_dir, expected_parameters, paths, dataframes = example_pixels_w_metadata
     # read metadata
-    for path, expected, df in zip(paths, expected_parameters, dataframes):
+    for _, expected, df in zip(paths, expected_parameters, dataframes):
         pixels = FileManager(use_dask=True).load_pixels(
             pixels_dir, expected, load_dataframe=True
         )
@@ -232,6 +240,7 @@ def test_read_pixels_as_dask_df(example_pixels_w_metadata):
     ],
 )
 def test_write_pandas_pixels_to_new_file(df, params, request):
+    """Test writing pixels to new file"""
     df = request.getfixturevalue(df)
     pixels = Pixels(df, **params.dict())
     with tempfile.TemporaryDirectory() as tmpdirname:
@@ -262,6 +271,7 @@ def test_write_pandas_pixels_to_new_file(df, params, request):
     ],
 )
 def test_write_dask_pixels_to_new_file(df, params, request):
+    """Test writing pixels to new file"""
     df = request.getfixturevalue(df)
     dask_df = dd.from_pandas(df, npartitions=2)
     pixels = Pixels(dask_df, **params.dict())
@@ -312,6 +322,7 @@ def test_write_dask_pixels_to_new_file(df, params, request):
     ],
 )
 def test_add_pandas_pixels_to_existing_file(df1, df2, params, request):
+    """Test adding pixels to existing file"""
     df1, df2 = request.getfixturevalue(df1), request.getfixturevalue(df2)
     params_1, params_2 = params
     pixels1 = Pixels(df1, **params_1.dict())
@@ -347,7 +358,7 @@ def test_load_pixels_from_uri_fails_without_required_parameters(df, params, requ
         file_name = tmpdirname + "/" + "test.parquet"
         FileManager().write_pixels(file_name, pixels)
         # try loading without required parameters
-        with pytest.raises(ValueError) as e:
+        with pytest.raises(ValueError):
             Pixels.from_uri(file_name)
 
 
@@ -483,5 +494,5 @@ def test_load_pixels_from_uri_fails_with_ambiguous_specification(df, params, req
         FileManager().write_pixels(file_name, pixels)
         FileManager().write_pixels(file_name, pixels2)
         # load pixels
-        with pytest.raises(ValueError) as e:
+        with pytest.raises(ValueError):
             Pixels.from_uri(file_name + "::" + uri)

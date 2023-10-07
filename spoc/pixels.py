@@ -71,7 +71,7 @@ class Pixels:
         Mode can be one of pandas|dask|path, which corresponds to the type of the pixel source.
         """
         # import here to avoid circular imports
-        #pylint: disable=import-outside-toplevel
+        # pylint: disable=import-outside-toplevel
         from spoc.io import FileManager
 
         # Define uri parameters

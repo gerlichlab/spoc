@@ -1,4 +1,6 @@
 """Tests for dealing with symmetry flipping for labelled and unlabelled contacts."""
+# pylint: disable=redefined-outer-name
+# pylint: disable=unused-import
 
 import pytest
 import pandas as pd
@@ -48,6 +50,7 @@ from .fixtures.symmetry import (
     ],
 )
 def test_unlabelled_contacts_flipped_correctly(unflipped, flipped, request):
+    """Test that unlabelled contacts are flipped correctly."""
     unflipped, flipped = request.getfixturevalue(unflipped), request.getfixturevalue(
         flipped
     )
@@ -64,6 +67,7 @@ def test_unlabelled_contacts_flipped_correctly(unflipped, flipped, request):
     ],
 )
 def test_unlabelled_contacts_flipped_correctly_dask(unflipped, flipped, request):
+    """Test that unlabelled contacts are flipped correctly."""
     unflipped, flipped = dd.from_pandas(
         request.getfixturevalue(unflipped), npartitions=1
     ), request.getfixturevalue(flipped)
@@ -83,6 +87,7 @@ def test_unlabelled_contacts_flipped_correctly_dask(unflipped, flipped, request)
     ],
 )
 def test_labelled_contacts_are_sorted_correctly(unsorted, sorted_contacts, request):
+    """Test that labelled contacts are sorted correctly."""
     unsorted, sorted_contacts = request.getfixturevalue(
         unsorted
     ), request.getfixturevalue(sorted_contacts)
@@ -102,6 +107,8 @@ def test_labelled_contacts_are_sorted_correctly(unsorted, sorted_contacts, reque
 def test_labelled_contacts_are_sorted_correctly_dask(
     unsorted, sorted_contacts, request
 ):
+    """Test that labelled contacts are sorted correctly with
+    underlying dask dataframe."""
     unsorted, sorted_contacts = dd.from_pandas(
         request.getfixturevalue(unsorted), npartitions=1
     ), request.getfixturevalue(sorted_contacts)
@@ -123,6 +130,7 @@ def test_labelled_contacts_are_sorted_correctly_dask(
     ],
 )
 def test_equate_binary_labels(unequated, equated, request):
+    """Test that binary labels are equated correctly."""
     unequated, equated = request.getfixturevalue(unequated), request.getfixturevalue(
         equated
     )
@@ -140,6 +148,8 @@ def test_equate_binary_labels(unequated, equated, request):
     ],
 )
 def test_equate_binary_labels_dask(unequated, equated, request):
+    """Test that binary labels are equated correctly with
+    underlying dask dataframe."""
     unequated, equated = dd.from_pandas(
         request.getfixturevalue(unequated), npartitions=1
     ), request.getfixturevalue(equated)
@@ -168,6 +178,7 @@ def test_equate_binary_labels_dask(unequated, equated, request):
     ],
 )
 def test_flip_labelled_contacts(unflipped, flipped, request):
+    """Test that labelled contacts are flipped correctly."""
     unflipped, flipped = request.getfixturevalue(unflipped), request.getfixturevalue(
         flipped
     )
@@ -196,6 +207,8 @@ def test_flip_labelled_contacts(unflipped, flipped, request):
     ],
 )
 def test_flip_labelled_contacts_dask(unflipped, flipped, request):
+    """Test that labelled contacts are flipped correctly with
+    underlying dask dataframe."""
     unflipped, flipped = dd.from_pandas(
         request.getfixturevalue(unflipped), npartitions=1
     ), request.getfixturevalue(flipped)
@@ -232,6 +245,7 @@ def test_flip_labelled_contacts_dask(unflipped, flipped, request):
     ],
 )
 def test_flip_unlabelled_contacts_different_chromosomes(unflipped, flipped, request):
+    """Test that unlabelled contacts are flipped correctly with different chromosomes."""
     unflipped, flipped = request.getfixturevalue(unflipped), request.getfixturevalue(
         flipped
     )
