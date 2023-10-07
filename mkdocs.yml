@@ -29,6 +29,7 @@ nav:
     - File parameters models: file_parameters_models.md
 plugins:
   - mkdocstrings
+  - search
 markdown_extensions:
   - pymdownx.highlight:
       anchor_linenums: true

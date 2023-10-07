@@ -1,9 +1,9 @@
-name: ci 
+name: Docs
 on:
   push:
     branches:
-      - master 
-      - main
+      - master
+      - docs
 permissions:
   contents: write
 jobs:

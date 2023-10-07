@@ -3,7 +3,9 @@ name: Unittests
 on:
   push:
     branches:
-      - docs
+      - master
+  pull_request:
+    types: [opened, reopened, review_requested]
 
 jobs:
   build:
