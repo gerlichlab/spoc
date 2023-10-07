@@ -5,7 +5,6 @@ from spoc.contacts import ContactManipulator
 from spoc.fragments import FragmentAnnotator, FragmentExpander
 from spoc.io import FileManager
 from spoc.pixels import GenomicBinner
-from spoc.file_parameter_models import ContactsParameters
 
 
 @click.group()

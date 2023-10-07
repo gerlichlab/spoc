@@ -1,12 +1,10 @@
 """This part of spoc is responsible for binned,
 higher order contacts in the form of 'genomic pixels'"""
 from pathlib import Path
+from typing import Union, Optional, List
 import pandas as pd
 import dask.dataframe as dd
-import bioframe as bf
-import pyranges as pr
-from typing import Union, Optional, List
-from spoc.dataframe_models import ContactSchema, PixelSchema
+from spoc.dataframe_models import PixelSchema
 from spoc.file_parameter_models import PixelParameters
 from spoc.contacts import Contacts
 
@@ -50,9 +48,7 @@ class Pixels:
         self._symmetry_flipped = symmetry_flipped
         self._metadata_combi = metadata_combi
         self._label_sorted = label_sorted
-        if isinstance(pixel_source, pd.DataFrame) or isinstance(
-            pixel_source, dd.DataFrame
-        ):
+        if isinstance(pixel_source, (pd.DataFrame, dd.DataFrame)):
             self._data = self._schema.validate(pixel_source)
             self._path = None
         else:
@@ -62,6 +58,7 @@ class Pixels:
             self._path = Path(pixel_source)
             self._data = None
 
+    @staticmethod
     def from_uri(uri, mode="path"):
         """Construct pixels from uri.
         Will match parameters based on the following order:
@@ -74,10 +71,11 @@ class Pixels:
         Mode can be one of pandas|dask|path, which corresponds to the type of the pixel source.
         """
         # import here to avoid circular imports
+        #pylint: disable=import-outside-toplevel
         from spoc.io import FileManager
 
-        # Define uir parameters
-        PARAMETERS = [
+        # Define uri parameters
+        uri_parameters = [
             "number_fragments",
             "binsize",
             "metadata_combi",
@@ -93,7 +91,7 @@ class Pixels:
             raise ValueError(
                 f"Uri: {uri} is not valid. Must contain at least Path, number_fragments and binsize"
             )
-        params = {key: value for key, value in zip(PARAMETERS, uri[1:])}
+        params = dict(zip(uri_parameters, uri[1:]))
         # rewrite metadata_combi parameter
         if "metadata_combi" in params.keys() and params["metadata_combi"] != "None":
             params["metadata_combi"] = str(list(params["metadata_combi"]))
@@ -102,7 +100,7 @@ class Pixels:
             load_dataframe = False
             use_dask = False
         elif mode == "pandas":
-            laod_dataframe = True
+            load_dataframe = True
             use_dask = False
         else:
             load_dataframe = True
@@ -113,12 +111,12 @@ class Pixels:
         matched_pixels = [
             pixel
             for pixel in available_pixels
-            if all(params[key] == str(pixel.dict()[key]) for key in params.keys())
+            if all(value == str(pixel.dict()[key]) for key, value in params.items())
         ]
         # check whether there is a unique match
         if len(matched_pixels) == 0:
             raise ValueError(f"No pixels found for uri: {uri}")
-        elif len(matched_pixels) > 1:
+        if len(matched_pixels) > 1:
             raise ValueError(f"Multiple pixels found for uri: {uri}")
         return FileManager(use_dask=use_dask).load_pixels(
             uri[0], matched_pixels[0], load_dataframe=load_dataframe
@@ -138,34 +136,42 @@ class Pixels:
 
     @property
     def path(self):
+        """Returns path of pixels"""
         return self._path
 
     @property
     def data(self):
+        """Returns pixels as dataframe"""
         return self._data
 
     @property
     def number_fragments(self):
+        """Returns number of fragments in pixels"""
         return self._number_fragments
 
     @property
     def binsize(self):
+        """Returns binsize of pixels"""
         return self._binsize
 
     @property
     def binary_labels_equal(self):
+        """Returns whether binary labels are equal"""
         return self._binary_labels_equal
 
     @property
     def symmetry_flipped(self):
+        """Returns whether pixels are symmetry flipped"""
         return self._symmetry_flipped
 
     @property
     def metadata_combi(self):
+        """Returns metadata combination of pixels"""
         return self._metadata_combi
 
     @property
     def same_chromosome(self):
+        """Returns whether pixels are on same chromosome"""
         return self._same_chromosome
 
 

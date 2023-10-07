@@ -1,7 +1,7 @@
 """This file contains data classes for parameters
 of spoc data structures"""
-from pydantic import BaseModel
 from typing import Optional, List
+from pydantic import BaseModel
 
 
 class ContactsParameters(BaseModel):

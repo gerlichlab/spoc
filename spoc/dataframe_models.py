@@ -34,7 +34,7 @@ FragmentSchema = pa.DataFrameSchema(
 
 
 class ContactSchema:
-    """Dynamic schema for n-way contacts"""
+    """Dynamic schema for N-way contacts"""
 
     # field groups
 
@@ -69,14 +69,14 @@ class ContactSchema:
 
     @classmethod
     def get_contact_fields(cls, contains_metadata: bool) -> Dict:
+        """returns contact fields"""
         if contains_metadata:
             return copy.deepcopy(cls.contact_fields)
-        else:
-            return {
-                key: value
-                for key, value in copy.deepcopy(cls.contact_fields).items()
-                if key not in ["metadata"]
-            }
+        return {
+            key: value
+            for key, value in copy.deepcopy(cls.contact_fields).items()
+            if key not in ["metadata"]
+        }
 
     def _expand_contact_fields(
         self, expansions: Iterable = (1, 2, 3), contains_metadata: bool = True
@@ -104,7 +104,7 @@ class ContactSchema:
 
 
 class PixelSchema:
-    """Dynamic schema for n-way pixels"""
+    """Dynamic schema for N-way pixels"""
 
     def __init__(self, number_fragments: int = 3, same_chromosome: bool = True) -> None:
         self._number_fragments = number_fragments
@@ -122,8 +122,7 @@ class PixelSchema:
             return {
                 "start": pa.Column(int),
             }
-        else:
-            return {"chrom": pa.Column(str), "start": pa.Column(int)}
+        return {"chrom": pa.Column(str), "start": pa.Column(int)}
 
     def _get_constant_fields(self):
         if self._same_chromosome:
@@ -132,11 +131,10 @@ class PixelSchema:
                 "count": pa.Column(int),
                 "corrected_count": pa.Column(float, required=False),
             }
-        else:
-            return {
-                "count": pa.Column(int),
-                "corrected_count": pa.Column(float, required=False),
-            }
+        return {
+            "count": pa.Column(int),
+            "corrected_count": pa.Column(float, required=False),
+        }
 
     def _expand_contact_fields(self, expansions: Iterable = (1, 2, 3)) -> dict:
         """adds suffixes to fields"""

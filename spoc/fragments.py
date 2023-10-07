@@ -3,10 +3,10 @@ have not yet been converted to contacts. It deals with label information
 as well as expanding fragments to contacts."""
 
 from typing import Dict, Union
+from itertools import combinations
 import pandas as pd
 import dask.dataframe as dd
 import numpy as np
-from itertools import combinations
 from .dataframe_models import FragmentSchema, ContactSchema, DataFrame
 from .contacts import Contacts
 
@@ -16,20 +16,21 @@ class Fragments:
 
     def __init__(self, fragment_frame: DataFrame) -> None:
         self._data = FragmentSchema.validate(fragment_frame)
-        self._contains_metadata = (
-            True if "metadata" in fragment_frame.columns else False
-        )
+        self._contains_metadata = "metadata" in fragment_frame.columns
 
     @property
     def data(self):
+        """Returns the underlying dataframe"""
         return self._data
 
     @property
     def contains_metadata(self):
+        """Returns whether the dataframe contains metadata"""
         return self._contains_metadata
 
     @property
     def is_dask(self):
+        """Returns whether the underlying dataframe is dask"""
         return isinstance(self._data, dd.DataFrame)
 
 
@@ -131,7 +132,7 @@ class FragmentExpander:
         if fragments.is_dask:
             kwargs = dict(meta=self._get_expansion_output_structure())
         else:
-            kwargs = dict()
+            kwargs = {}
         # expand
         contact_df = (
             fragments.data.groupby(["read_name", "read_length"])
