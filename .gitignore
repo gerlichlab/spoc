@@ -109,4 +109,3 @@ ENV/
 playground/*
 
 #ignare local parquet files
-*.parquet
