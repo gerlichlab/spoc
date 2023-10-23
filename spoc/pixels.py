@@ -1,12 +1,10 @@
 """This part of spoc is responsible for binned,
 higher order contacts in the form of 'genomic pixels'"""
 from pathlib import Path
+from typing import Union, Optional, List
 import pandas as pd
 import dask.dataframe as dd
-import bioframe as bf
-import pyranges as pr
-from typing import Union, Optional, List
-from .dataframe_models import ContactSchema, PixelSchema
+from .dataframe_models import PixelSchema
 from .contacts import Contacts
 
 
@@ -18,7 +16,7 @@ class Pixels:
         - Order
         - Metadata combination (Whether the pixels represent a certain combination of metadata)
         - Whether binary labels are equal (e.g. whether AB pixles also represent BA pixels)
-    
+
     Pixels can contain different data sources such as:
         - pandas dataframe
         - dask dataframe
@@ -76,7 +74,7 @@ class Pixels:
     @property
     def binary_labels_equal(self):
         return self._binary_labels_equal
-    
+
     @property
     def symmetry_flipped(self):
         return self._symmetry_flipped
@@ -88,7 +86,7 @@ class Pixels:
     @property
     def same_chromosome(self):
         return self._same_chromosome
-    
+
 
 
 class GenomicBinner:
