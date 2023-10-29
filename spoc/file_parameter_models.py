@@ -11,6 +11,22 @@ class ContactsParameters(BaseModel):
     binary_labels_equal: bool = False
     symmetry_flipped: bool = False
 
+    def __hash__(self) -> int:
+        # get metadata hash
+        if self.metadata_combi is not None:
+            metadata_hash = hash(tuple(self.metadata_combi))
+        else:
+            metadata_hash = hash(None)
+        return hash(
+            (
+                self.number_fragments,
+                metadata_hash,
+                self.label_sorted,
+                self.binary_labels_equal,
+                self.symmetry_flipped,
+            )
+        )
+
 
 class PixelParameters(BaseModel):
     """Parameters for genomic pixels"""
@@ -21,3 +37,21 @@ class PixelParameters(BaseModel):
     binary_labels_equal: bool = False
     symmetry_flipped: bool = False
     same_chromosome: bool = True
+
+    def __hash__(self) -> int:
+        # get metadata hash
+        if self.metadata_combi is not None:
+            metadata_hash = hash(tuple(self.metadata_combi))
+        else:
+            metadata_hash = hash(None)
+        return hash(
+            (
+                self.number_fragments,
+                self.binsize,
+                metadata_hash,
+                self.label_sorted,
+                self.binary_labels_equal,
+                self.symmetry_flipped,
+                self.same_chromosome,
+            )
+        )

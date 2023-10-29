@@ -93,7 +93,7 @@ class Pixels:
             load_dataframe = False
             use_dask = False
         elif mode == "pandas":
-            laod_dataframe = True
+            load_dataframe = True
             use_dask = False
         else:
             load_dataframe = True

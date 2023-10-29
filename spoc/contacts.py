@@ -41,6 +41,57 @@ class Contacts:
         self.binary_labels_equal = binary_labels_equal
         self.symmetry_flipped = symmetry_flipped
 
+    def from_uri(uri, mode="pandas"):
+        """Construct contacts from uri.
+        Will match parameters based on the following order:
+
+        PATH::number_fragments::metadata_combi::binary_labels_equal::symmetry_flipped::label_sorted
+
+        PAth, number_fragments are required. The rest is optional
+        and will be tried to match to the available contacts. If no match is found, or there is no
+         uniue match, an error is raised.
+        Mode can be one of pandas|dask, which corresponds to the type of the pixel source.
+        """
+        # import here to avoid circular imports
+        from spoc.io import FileManager
+        # Define uir parameters
+        PARAMETERS = ['number_fragments', 'metadata_combi', 'binary_labels_equal', 'symmetry_flipped', 'label_sorted']
+        # parse uri
+        uri = uri.split("::")
+        # validate uri
+        if len(uri) < 2:
+            raise ValueError(
+                f"Uri: {uri} is not valid. Must contain at least Path, number_fragments"
+            )
+        params = {
+            key:value for key, value in zip(PARAMETERS, uri[1:])
+        }
+        # rewrite metadata_combi parameter
+        if 'metadata_combi' in params.keys() and params['metadata_combi'] != 'None':
+            params['metadata_combi'] = str(list(params['metadata_combi']))
+        # read mode
+        use_dask = mode == 'dask'
+        # get availabe contacts
+        available_contacts = FileManager().list_contacts(uri[0])
+        # filter contacts
+        matched_contacts = [
+            contacts for contacts in available_contacts 
+                    if all( params[key] == str(contacts.dict()[key]) for key in params.keys())
+        ]
+        # check whether there is a unique match
+        if len(matched_contacts) == 0:
+            raise ValueError(
+                f"No contacts found for uri: {uri}"
+            )
+        elif len(matched_contacts) > 1:
+            raise ValueError(
+                f"Multiple contacts found for uri: {uri}"
+            )
+        return FileManager(use_dask=use_dask).load_contacts(uri[0], matched_contacts[0])
+
+
+
+
     def get_global_parameters(self) -> ContactsParameters:
         """Returns global parameters"""
         return ContactsParameters(
