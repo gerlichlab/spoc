@@ -1,13 +1,10 @@
 """Console script for spoc."""
 import sys
-from itertools import chain
-from collections import Counter
 import click
 from spoc.contacts import ContactManipulator
 from spoc.fragments import FragmentAnnotator, FragmentExpander
 from spoc.io import FileManager
 from spoc.pixels import GenomicBinner
-from spoc.file_parameter_models import ContactsParameters
 from spoc.contacts import Contacts
 
 
@@ -26,7 +23,15 @@ def main():
     help="Number of fragments per read to expand",
 )
 def expand(fragments_path, expanded_contacts_path, n_fragments):
-    """Script for expanding labelled fragments to contacts."""
+    """
+    Script for expanding labelled fragments to contacts
+
+    Args:
+        fragments_path (str): Path to the labelled fragments file.
+        expanded_contacts_path (str): Path to the output contacts file.
+        n_fragments (int, optional): Number of fragments per read to expand. Defaults to 3.
+
+    """
     expander = FragmentExpander(number_fragments=n_fragments)
     file_manager = FileManager()
     input_fragments = file_manager.load_fragments(fragments_path)
@@ -39,7 +44,14 @@ def expand(fragments_path, expanded_contacts_path, n_fragments):
 @click.argument("label_library_path")
 @click.argument("labelled_fragments_path")
 def annotate(fragments_path, label_library_path, labelled_fragments_path):
-    """Script for annotating porec fragments"""
+    """Script for annotating porec fragments
+
+    Args:
+        fragments_path (str): Path to the input fragments file.
+        label_library_path (str): Path to the label library file.
+        labelled_fragments_path (str): Path to the output labelled fragments file.
+
+    """
     file_manager = FileManager()
     label_library = file_manager.load_label_library(label_library_path)
     annotator = FragmentAnnotator(label_library)
@@ -59,14 +71,20 @@ def bin_contacts(
     bin_size,
     same_chromosome,
 ):
-    """Script for binning contacts. Contact path should be an URI"""
+    """Script for binning contacts. Contacts path should be an URI.
+
+    Args:
+        contact_path (str): Path to the input contact file.
+        pixel_path (str): Path to the output pixel file.
+        bin_size (int, optional): Size of the bins. Defaults to 10000.
+        same_chromosome (bool, optional): Only bin contacts on the same chromosome. Defaults to False.
+
+    """
     # load data from disk
     file_manager = FileManager(use_dask=True)
     contacts = Contacts.from_uri(contact_path)
     # binning
-    binner = GenomicBinner(
-        bin_size=bin_size
-    )
+    binner = GenomicBinner(bin_size=bin_size)
     pixels = binner.bin_contacts(contacts, same_chromosome=same_chromosome)
     # persisting
     file_manager.write_pixels(pixel_path, pixels)
@@ -81,18 +99,20 @@ def merge():
 @click.argument("contact_paths", nargs=-1)
 @click.option("-o", "--output", help="output path")
 def merge_contacts(contact_paths, output):
-    """Functionality to merge contacts.
-    Concatanates contacts with the same configuration together and copies contacts with different configurations.
+    """Functionality to merge annotated fragments. Concatenates contacts with the same
+    configuration together and copies contacts with different configurations.
+
+    Args:
+        contact_paths (tuple): Paths to the input contact files.
+        output (str, optional): Path to the output merged contact file.
     """
     file_manager = FileManager(use_dask=True)
     # get list of parameters
-    parameters = [
-        file_manager.list_contacts(p) for p in contact_paths
-    ]
+    parameters = [file_manager.list_contacts(p) for p in contact_paths]
     # get parameter counts -> if count > 1 then we need to concatenate
     parameter_counter = {}
-    for file_index, p in enumerate(parameters):
-        for parameter in p:
+    for file_index, parameter_list in enumerate(parameters):
+        for parameter in parameter_list:
             if parameter not in parameter_counter:
                 parameter_counter[parameter] = [file_index]
             else:
@@ -105,7 +125,8 @@ def merge_contacts(contact_paths, output):
             file_manager.write_contacts(output, contacts)
         else:
             contact_files = [
-                file_manager.load_contacts(contact_paths[i], parameter) for i in file_indices
+                file_manager.load_contacts(contact_paths[i], parameter)
+                for i in file_indices
             ]
             manipulator = ContactManipulator()
             merged = manipulator.merge_contacts(contact_files)

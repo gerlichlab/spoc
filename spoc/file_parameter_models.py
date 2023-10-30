@@ -1,10 +1,12 @@
 """This file contains data classes for parameters
 of spoc data structures"""
-from pydantic import BaseModel
 from typing import Optional, List
+from pydantic import BaseModel
+
 
 class ContactsParameters(BaseModel):
     """Parameters for multiway contacts"""
+
     number_fragments: Optional[int] = None
     metadata_combi: Optional[List[str]] = None
     label_sorted: bool = False
@@ -30,6 +32,7 @@ class ContactsParameters(BaseModel):
 
 class PixelParameters(BaseModel):
     """Parameters for genomic pixels"""
+
     number_fragments: Optional[int] = None
     binsize: Optional[int] = None
     metadata_combi: Optional[List[str]] = None

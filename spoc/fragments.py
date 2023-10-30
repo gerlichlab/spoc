@@ -3,37 +3,60 @@ have not yet been converted to contacts. It deals with label information
 as well as expanding fragments to contacts."""
 
 from typing import Dict, Union
+from itertools import combinations
 import pandas as pd
 import dask.dataframe as dd
 import numpy as np
-from itertools import combinations
 from .dataframe_models import FragmentSchema, ContactSchema, DataFrame
 from .contacts import Contacts
 
 
 class Fragments:
-    """Genomic fragments that can be labelled or not"""
+    """Genomic fragments that can be labelled or not.
+
+    Args:
+        fragment_frame (DataFrame): DataFrame containing the fragment data.
+    """
 
     def __init__(self, fragment_frame: DataFrame) -> None:
         self._data = FragmentSchema.validate(fragment_frame)
-        self._contains_metadata = True if "metadata" in fragment_frame.columns else False
+        self._contains_metadata = "metadata" in fragment_frame.columns
 
     @property
-    def data(self):
+    def data(self) -> DataFrame:
+        """Returns the underlying dataframe.
+
+        Returns:
+            DataFrame: Fragment data.
+        """
         return self._data
 
     @property
-    def contains_metadata(self):
+    def contains_metadata(self) -> bool:
+        """Returns whether the dataframe contains metadata.
+
+        Returns:
+            bool: Whether the fragment data contains metadata.
+        """
         return self._contains_metadata
-    
+
     @property
-    def is_dask(self):
+    def is_dask(self) -> bool:
+        """Returns whether the underlying dataframe is dask.
+
+        Returns:
+            bool: Whether the underlying dataframe is a dask dataframe.
+        """
         return isinstance(self._data, dd.DataFrame)
 
 
 # TODO: make generic such that label library can hold arbitrary information
 class FragmentAnnotator:
-    """Responsible for annotating labels and sister identity of mapped read fragments"""
+    """Responsible for annotating labels and sister identity of mapped read fragments.
+
+    Args:
+        label_library (Dict[str, bool]): Dictionary containing the label library.
+    """
 
     def __init__(self, label_library: Dict[str, bool]) -> None:
         self._label_library = label_library
@@ -69,7 +92,15 @@ class FragmentAnnotator:
     def annotate_fragments(self, fragments: Fragments) -> Fragments:
         """Takes fragment dataframe and returns a copy of it with its labelling state in a separate
         column with name `is_labelled`. If drop_uninformative is true, drops fragments that
-        are not in label library."""
+        are not in label library.
+
+        Args:
+            fragments (Fragments): Fragments object containing the fragment data.
+
+        Returns:
+            Fragments: Fragments object with annotated fragment data.
+
+        """
         return Fragments(
             fragments.data.assign(is_labelled=self._assign_label_state)
             .dropna(subset=["is_labelled"])
@@ -78,10 +109,15 @@ class FragmentAnnotator:
         )
 
 
-
 class FragmentExpander:
     """Expands n-way fragments over sequencing reads
-    to yield contacts."""
+    to yield contacts.
+
+    Args:
+        number_fragments (int): Number of fragments.
+        contains_metadata (bool, optional): Whether the fragment data contains metadata. Defaults to True.
+
+    """
 
     def __init__(self, number_fragments: int, contains_metadata: bool = True) -> None:
         self._number_fragments = number_fragments
@@ -89,7 +125,7 @@ class FragmentExpander:
         self._schema = ContactSchema(number_fragments, contains_metadata)
 
     @staticmethod
-    def _add_suffix(row, suffix:int, contains_metadata:bool) -> Dict:
+    def _add_suffix(row, suffix: int, contains_metadata: bool) -> Dict:
         """expands contact fields"""
         output = {}
         for key in ContactSchema.get_contact_fields(contains_metadata):
@@ -98,9 +134,13 @@ class FragmentExpander:
 
     def _get_expansion_output_structure(self) -> pd.DataFrame:
         """returns expansion output dataframe structure for dask"""
-        return pd.DataFrame(columns=list(self._schema._schema.columns.keys()) + ['level_2']).set_index(["read_name", 'read_length', 'level_2'])
+        return pd.DataFrame(
+            columns=list(self._schema._schema.columns.keys()) + ["level_2"]
+        ).set_index(["read_name", "read_length", "level_2"])
 
-    def _expand_single_read(self, read_df: pd.DataFrame, contains_metadata:bool) -> pd.DataFrame:
+    def _expand_single_read(
+        self, read_df: pd.DataFrame, contains_metadata: bool
+    ) -> pd.DataFrame:
         """Expands a single read"""
         if len(read_df) < self._number_fragments:
             return pd.DataFrame()
@@ -116,29 +156,34 @@ class FragmentExpander:
             contact = {}
             # add reads
             for index, align in enumerate(alignments, start=1):
-                contact.update(
-                    self._add_suffix(align, index, contains_metadata)
-                )
+                contact.update(self._add_suffix(align, index, contains_metadata))
             result.append(contact)
         return pd.DataFrame(result)
 
     def expand(self, fragments: Fragments) -> Contacts:
-        """expand contacts n-ways"""
+        """expand contacts n-ways
+
+        Args:
+            fragments (Fragments): Fragments object containing the fragment data.
+
+        Returns:
+            Contacts: Contacts object containing the expanded contact data.
+        """
         # construct dataframe type specific kwargs
         if fragments.is_dask:
             kwargs = dict(meta=self._get_expansion_output_structure())
         else:
-            kwargs = dict()
+            kwargs = {}
         # expand
-        contact_df = fragments.data\
-                            .groupby(["read_name", "read_length"])\
-                            .apply(self._expand_single_read, 
-                                    contains_metadata=fragments.contains_metadata,
-                                    **kwargs)\
-                            .reset_index()\
-                            .drop("level_2", axis=1)
-        #return contact_df
-        return Contacts(
-            contact_df,
-            number_fragments=self._number_fragments
+        contact_df = (
+            fragments.data.groupby(["read_name", "read_length"])
+            .apply(
+                self._expand_single_read,
+                contains_metadata=fragments.contains_metadata,
+                **kwargs,
+            )
+            .reset_index()
+            .drop("level_2", axis=1)
         )
+        # return contact_df
+        return Contacts(contact_df, number_fragments=self._number_fragments)

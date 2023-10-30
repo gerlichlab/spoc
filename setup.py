@@ -4,11 +4,6 @@
 
 from setuptools import setup, find_packages
 
-with open("readme.md") as readme_file:
-    readme = readme_file.read()
-
-with open("HISTORY.rst") as history_file:
-    history = history_file.read()
 
 requirements = [
     "Click>=7.0",
@@ -23,10 +18,8 @@ requirements = [
     "matplotlib>=3.5.3",
     "seaborn>=0.11.2",
     "duckdb==0.3.4",
-    "bioframe==0.3.3",
     "sparse==0.13.0",
-    "multiprocess>=0.70.13",
-    "numba>=0.57.0"
+    "numba>=0.57.0",
 ]
 
 test_requirements = [
@@ -55,7 +48,6 @@ setup(
     },
     install_requires=requirements,
     license="MIT license",
-    long_description=readme + "\n\n" + history,
     include_package_data=True,
     keywords="spoc",
     name="spoc",

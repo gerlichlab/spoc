@@ -34,7 +34,12 @@ FragmentSchema = pa.DataFrameSchema(
 
 
 class ContactSchema:
-    """Dynamic schema for n-way contacts"""
+    """Dynamic schema for N-way contacts
+
+    Args:
+        number_fragments (int, optional): Number of fragments. Defaults to 3.
+        contains_metadata (bool, optional): Whether the contact data contains metadata. Defaults to True.
+    """
 
     # field groups
 
@@ -50,13 +55,12 @@ class ContactSchema:
         "mapping_quality": pa.Column(int),
         "align_score": pa.Column(int),
         "align_base_qscore": pa.Column(int),
-        "metadata": pa.Column(
-            str, 
-            required=False
-        ), 
+        "metadata": pa.Column(str, required=False),
     }
 
-    def __init__(self, number_fragments: int = 3, contains_metadata: bool = True) -> None:
+    def __init__(
+        self, number_fragments: int = 3, contains_metadata: bool = True
+    ) -> None:
         self._number_fragments = number_fragments
         self._schema = pa.DataFrameSchema(
             dict(
@@ -70,14 +74,21 @@ class ContactSchema:
 
     @classmethod
     def get_contact_fields(cls, contains_metadata: bool) -> Dict:
+        """returns contact fields
+
+        Args:
+            contains_metadata (bool): Whether the contact data contains metadata.
+
+        Returns:
+            Dict: Dictionary containing the contact fields.
+        """
         if contains_metadata:
             return copy.deepcopy(cls.contact_fields)
-        else:
-            return {
-                key: value
-                for key, value in copy.deepcopy(cls.contact_fields).items()
-                if key not in ["metadata"]
-            }
+        return {
+            key: value
+            for key, value in copy.deepcopy(cls.contact_fields).items()
+            if key not in ["metadata"]
+        }
 
     def _expand_contact_fields(
         self, expansions: Iterable = (1, 2, 3), contains_metadata: bool = True
@@ -91,23 +102,34 @@ class ContactSchema:
 
     def validate_header(self, data_frame: DataFrame) -> None:
         """Validates only header, needed to validate that dask taskgraph can be built before
-        evaluation"""
+        evaluation.
+
+        Args:
+            data_frame (DataFrame): The DataFrame to validate.
+        """
         for column in data_frame.columns:
             if column not in self._schema.columns:
                 raise pa.errors.SchemaError(
                     self._schema, data_frame, "Header is invalid!"
                 )
 
-    def validate(
-        self, data_frame: DataFrame
-    ) -> DataFrame:
-        """Validate multiway contact dataframe"""
+    def validate(self, data_frame: DataFrame) -> DataFrame:
+        """Validate multiway contact dataframe
+
+        Args:
+            data_frame (DataFrame): The DataFrame to validate.
+        """
         self.validate_header(data_frame)
         return self._schema.validate(data_frame)
 
 
 class PixelSchema:
-    """Dynamic schema for n-way pixels"""
+    """Dynamic schema for N-way pixels
+
+    Args:
+        number_fragments (int, optional): Number of fragments. Defaults to 3.
+        same_chromosome (bool, optional): Whether the fragments are on the same chromosome. Defaults to True.
+    """
 
     def __init__(self, number_fragments: int = 3, same_chromosome: bool = True) -> None:
         self._number_fragments = number_fragments
@@ -125,24 +147,19 @@ class PixelSchema:
             return {
                 "start": pa.Column(int),
             }
-        else:
-            return {
-                "chrom": pa.Column(str),
-                "start": pa.Column(int)
-            }
+        return {"chrom": pa.Column(str), "start": pa.Column(int)}
 
     def _get_constant_fields(self):
         if self._same_chromosome:
-                return {
-                        "chrom": pa.Column(str),
-                        "count": pa.Column(int),
-                        "corrected_count": pa.Column(float, required=False),
-                    }
-        else:
-                return  {
-                        "count": pa.Column(int),
-                        "corrected_count": pa.Column(float, required=False),
-                    }
+            return {
+                "chrom": pa.Column(str),
+                "count": pa.Column(int),
+                "corrected_count": pa.Column(float, required=False),
+            }
+        return {
+            "count": pa.Column(int),
+            "corrected_count": pa.Column(float, required=False),
+        }
 
     def _expand_contact_fields(self, expansions: Iterable = (1, 2, 3)) -> dict:
         """adds suffixes to fields"""
@@ -154,15 +171,22 @@ class PixelSchema:
 
     def validate_header(self, data_frame: DataFrame) -> None:
         """Validates only header, needed to validate that dask taskgraph can be built before
-        evaluation"""
+        evaluation
+
+        Args:
+            data_frame (DataFrame): The DataFrame to validate.
+        """
         for column in data_frame.columns:
             if column not in self._schema.columns:
                 raise pa.errors.SchemaError(
                     self._schema, data_frame, "Header is invalid!"
                 )
 
-    def validate(
-        self, data_frame: DataFrame
-    ) -> DataFrame:
-        """Validate multiway contact dataframe"""
+    def validate(self, data_frame: DataFrame) -> DataFrame:
+        """Validate multiway contact dataframe
+
+        Args:
+            data_frame (DataFrame): The DataFrame to validate.
+
+        """
         return self._schema.validate(data_frame)

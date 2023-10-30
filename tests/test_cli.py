@@ -1,17 +1,19 @@
 """Tests for CLI of spoc"""
+# pylint: disable=redefined-outer-name
 
+import shutil
+import os
 import pytest
 import pandas as pd
 from pandas.testing import assert_frame_equal
 import numpy as np
-import shutil
-import os
 from click.testing import CliRunner
 
 from spoc import cli, dataframe_models
 from spoc.io import FileManager
 from spoc.contacts import Contacts
 from spoc.pixels import Pixels
+
 
 def _create_tmp_dir():
     # check if tmp dir exists
@@ -22,8 +24,10 @@ def _create_tmp_dir():
         shutil.rmtree("tmp")
         os.mkdir("tmp")
 
+
 @pytest.fixture
 def good_annotated_porec_file():
+    """Fixture for a good porec file with annotations"""
     # setup
     _create_tmp_dir()
     yield "tests/test_files/good_porec.lab.parquet"
@@ -33,6 +37,7 @@ def good_annotated_porec_file():
 
 @pytest.fixture
 def label_library_path():
+    """Fixture for a label library file"""
     return "tests/test_files/ll1.pickle"
 
 
@@ -52,13 +57,17 @@ def mergable_triplet_files():
     # teardown
     shutil.rmtree("tmp")
 
+
 @pytest.fixture
 def non_mergable_triplet_files():
     # setup
     _create_tmp_dir()
     # create two contacts files
     con1 = Contacts(pd.read_parquet("tests/test_files/good_contacts.triplets.parquet"))
-    con2 = Contacts(pd.read_parquet("tests/test_files/good_contacts2.triplets.parquet"), symmetry_flipped=True)
+    con2 = Contacts(
+        pd.read_parquet("tests/test_files/good_contacts2.triplets.parquet"),
+        symmetry_flipped=True,
+    )
     FileManager().write_contacts("tmp/contacts1", con1)
     FileManager().write_contacts("tmp/contacts2", con2)
     yield [
@@ -71,6 +80,7 @@ def non_mergable_triplet_files():
 
 @pytest.fixture
 def good_triplet_file_for_pixels():
+    """Fixture for a good triplet file used to instantiate pixels"""
     # setup
     _create_tmp_dir()
     # create contacts file
@@ -80,8 +90,10 @@ def good_triplet_file_for_pixels():
     # teardown
     shutil.rmtree("tmp")
 
+
 @pytest.fixture
 def good_porec_file():
+    """Fixture for a good fragment file"""
     # setup
     _create_tmp_dir()
     yield "tests/test_files/good_porec.parquet"
@@ -91,6 +103,7 @@ def good_porec_file():
 
 @pytest.fixture
 def expected_pixels():
+    """Fixture for expected pixels from binning contacts"""
     return pd.DataFrame(
         {
             "chrom_1": ["chr1"] * 3,
@@ -133,6 +146,7 @@ def test_expand_triplets_works(good_annotated_porec_file):
         result["metadata_3"].values,
         np.array(["SisterA", "SisterB", "SisterB", "SisterB"]),
     )
+
 
 def test_expand_contacts_adds_to_existing_file(good_annotated_porec_file):
     """Tests whether expanding of contacts adds to existing file
@@ -188,21 +202,21 @@ def test_merge_contacts_copies_incompatible_contacts(non_mergable_triplet_files)
     output_path = "tmp/test_output3.parquet"
     runner.invoke(
         cli.merge_contacts,
-        [non_mergable_triplet_files[0], non_mergable_triplet_files[1], f"-o{output_path}"],
+        [
+            non_mergable_triplet_files[0],
+            non_mergable_triplet_files[1],
+            f"-o{output_path}",
+        ],
     )
     # check number of files
     assert len(FileManager().list_contacts(output_path)) == 2
 
 
-def test_bin_contacts(
-    good_triplet_file_for_pixels, expected_pixels
-):
+def test_bin_contacts(good_triplet_file_for_pixels, expected_pixels):
     """happy path for binning contacts without sister sorting"""
     runner = CliRunner()
     output_path = "tmp/test_output5.parquet"
-    result = runner.invoke(
-        cli.bin_contacts, [good_triplet_file_for_pixels, output_path]
-    )
+    runner.invoke(cli.bin_contacts, [good_triplet_file_for_pixels, output_path])
     # check content of file
     pixels = Pixels.from_uri(f"{output_path}::3::10000", mode="pandas")
     np.array_equal(pixels.data.values, expected_pixels.values)

@@ -1,29 +1,27 @@
 """Persisting functionality of spoc that manages writing to and reading from the filesystem."""
 
 import pickle
-from typing import Dict, Optional, Union, List
+from typing import Dict, Union, List
 from hashlib import md5
 import os
 import json
 from pathlib import Path
 import pandas as pd
 import dask.dataframe as dd
-import pyarrow as pa
-import pyarrow.parquet as pq
-from pydantic import BaseModel
 from spoc.contacts import Contacts
 from spoc.pixels import Pixels
-from spoc.dataframe_models import FragmentSchema, ContactSchema, DataFrame
 from spoc.file_parameter_models import ContactsParameters, PixelParameters
 from spoc.fragments import Fragments
 
 
 class FileManager:
-    """Is responsible for loading and writing files"""
+    """Is responsible for loading and writing files
 
-    def __init__(
-        self, use_dask: bool = False
-    ) -> None:
+    Args:
+        use_dask (bool, optional): Whether to use Dask for reading Parquet files. Defaults to False.
+    """
+
+    def __init__(self, use_dask: bool = False) -> None:
         if use_dask:
             self._parquet_reader_func = dd.read_parquet
         else:
@@ -31,31 +29,70 @@ class FileManager:
 
     @staticmethod
     def write_label_library(path: str, data: Dict[str, bool]) -> None:
-        """Writes label library to file"""
+        """Writes label library to file
+
+        Args:
+            path (str): Path to write the file to.
+            data (Dict[str, bool]): Label library data.
+
+        Returns:
+            None
+        """
         with open(path, "wb") as handle:
             pickle.dump(data, handle)
 
     @staticmethod
-    def load_label_library(path: str):
-        """Load label library"""
+    def load_label_library(path: str) -> Dict:
+        """Load label library
+
+        Args:
+            path (str): Path to the label library file.
+
+        Returns:
+            Dict: Label library data.
+        """
         with open(path, "rb") as handle:
             label_library = pickle.load(handle)
         return label_library
 
-    def load_fragments(self, path: str):
-        """Load annotated fragments"""
+    def load_fragments(self, path: str) -> Fragments:
+        """Load annotated fragments
+
+        Args:
+            path (str): Path to the fragments file.
+
+        Returns:
+            Fragments: Fragments object containing the fragment data.
+
+        """
         data = self._parquet_reader_func(path)
         return Fragments(data)
 
     @staticmethod
     def write_fragments(path: str, fragments: Fragments) -> None:
-        """Write annotated fragments"""
+        """Write annotated fragments
+
+        Args:
+            path (str): Path to write the file to.
+            fragments (Fragments): Fragments object containing the fragment data.
+
+        Returns:
+            None
+
+        """
         # Write fragments
-        fragments.data.to_parquet(path, row_group_size=1024*1024)
+        fragments.data.to_parquet(path, row_group_size=1024 * 1024)
 
     @staticmethod
     def load_chromosome_sizes(path: str):
-        """Load chromosome sizes"""
+        """Load chromosome sizes
+
+        Args:
+            path (str): Path to the chromosome sizes file.
+
+        Returns:
+            pd.DataFrame: DataFrame containing the chromosome sizes.
+        """
         # TODO: validate schema for this
         return pd.read_csv(
             path,
@@ -71,21 +108,26 @@ class FileManager:
         """Load metadata"""
         metadata_path = Path(path) / "metadata.json"
         if metadata_path.exists():
-            with open(metadata_path, "r") as f:
+            with open(metadata_path, "r", encoding="UTF-8") as f:
                 metadata = json.load(f)
         else:
             raise ValueError(f"Metadata file not found at {metadata_path}")
         return metadata
-    
+
     @staticmethod
     def list_pixels(path: str) -> List[PixelParameters]:
-        """List available pixels"""
+        """List available pixels
+
+        Args:
+            path (str): Path to the pixel data.
+
+        Returns:
+            List[PixelParameters]: List of PixelParameters objects.
+        """
         # read metadata.json
         metadata = FileManager._load_metadata(path)
         # instantiate pixel parameters
-        pixels = [
-            PixelParameters(**params) for params in metadata.values()
-        ]
+        pixels = [PixelParameters(**params) for params in metadata.values()]
         return pixels
 
     @staticmethod
@@ -94,15 +136,25 @@ class FileManager:
         # read metadata.json
         metadata = FileManager._load_metadata(path)
         # instantiate pixel parameters
-        contacts = [
-            ContactsParameters(**params) for params in metadata.values()
-        ]
+        contacts = [ContactsParameters(**params) for params in metadata.values()]
         return contacts
 
-    def load_pixels(self, path: str, global_parameters: PixelParameters, load_dataframe:bool = True) -> Pixels:
+    def load_pixels(
+        self, path: str, global_parameters: PixelParameters, load_dataframe: bool = True
+    ) -> Pixels:
         """Loads specific pixels instance based on global parameters.
         load_dataframe specifies whether the dataframe should be loaded, or whether pixels
-         should be instantiated based on the path alone. """
+         should be instantiated based on the path alone.
+
+        Args:
+            path (str): Path to the pixel data.
+            global_parameters (PixelParameters): Global parameters.
+            load_dataframe (bool, optional): Whether to load the dataframe. Defaults to True.
+
+        Returns:
+            Pixels: Pixels object containing the pixel data.
+
+        """
         metadata = self._load_metadata(path)
         # find matching pixels
         for pixel_path, value in metadata.items():
@@ -120,7 +172,9 @@ class FileManager:
             df = pixel_path
         return Pixels(df, **selected_value.dict())
 
-    def load_contacts(self, path: str, global_parameters: ContactsParameters) -> Contacts:
+    def load_contacts(
+        self, path: str, global_parameters: ContactsParameters
+    ) -> Contacts:
         """Loads specific contacts instance based on global parameters.
         load_dataframe specifies whether the dataframe should be loaded"""
         metadata = self._load_metadata(path)
@@ -143,7 +197,16 @@ class FileManager:
         return md5(hash_string.encode()).hexdigest() + ".parquet"
 
     def write_pixels(self, path: str, pixels: Pixels) -> None:
-        """Write pixels"""
+        """Write pixels
+
+        Args:
+            path (str): Path to write the pixel data to.
+            pixels (Pixels): Pixels object containing the pixel data.
+
+        Returns:
+            None
+
+        """
         # check whether path exists
         metadata_path = Path(path) / "metadata.json"
         if not Path(path).exists():
@@ -156,13 +219,14 @@ class FileManager:
         write_path = Path(path) / self._get_object_hash_path(path, pixels)
         # write pixels
         if pixels.data is None:
-            raise ValueError("Writing pixels only suppported for pixels hodling dataframes!")
-        pixels.data.to_parquet(write_path, row_group_size=1024*1024)
+            raise ValueError(
+                "Writing pixels only suppported for pixels hodling dataframes!"
+            )
+        pixels.data.to_parquet(write_path, row_group_size=1024 * 1024)
         # write metadata
         current_metadata[write_path.name] = pixels.get_global_parameters().dict()
-        with open(metadata_path, "w") as f:
+        with open(metadata_path, "w", encoding="UTF-8") as f:
             json.dump(current_metadata, f)
-
 
     def write_contacts(self, path: str, contacts: Contacts) -> None:
         """Write contacts"""
@@ -178,8 +242,10 @@ class FileManager:
         write_path = Path(path) / self._get_object_hash_path(path, contacts)
         # write contacts
         if contacts.data is None:
-            raise ValueError("Writing contacts only suppported for contacts hodling dataframes!")
-        contacts.data.to_parquet(write_path, row_group_size=1024*1024)
+            raise ValueError(
+                "Writing contacts only suppported for contacts hodling dataframes!"
+            )
+        contacts.data.to_parquet(write_path, row_group_size=1024 * 1024)
         # write metadata
         current_metadata[write_path.name] = contacts.get_global_parameters().dict()
         with open(metadata_path, "w") as f:

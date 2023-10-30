@@ -1,4 +1,5 @@
 """Tests for label functionality"""
+# pylint: disable=redefined-outer-name
 
 import pytest
 import pandas as pd
@@ -13,7 +14,7 @@ from spoc import fragments
 def empty_annotator():
     """sets up an annotator with empty
     label library"""
-    return fragments.FragmentAnnotator(dict())
+    return fragments.FragmentAnnotator({})
 
 
 @pytest.fixture
@@ -26,10 +27,13 @@ def annotator_with_entries():
 
 @pytest.fixture
 def bad_df():
+    """A dataframe with the wrong schema"""
     return pd.DataFrame({"be": ["bop"]})
+
 
 @pytest.fixture
 def unlabelled_df():
+    """A dataframe with the correct schema but no metadata"""
     return pd.DataFrame(
         {
             "chrom": pd.Series(["chr1"] * 3, dtype="category"),
@@ -47,17 +51,22 @@ def unlabelled_df():
         }
     )
 
+
 @pytest.fixture
 def unlabelled_fragments(unlabelled_df):
+    """A Fragments object with no metadata"""
     return fragments.Fragments(unlabelled_df)
 
 
 @pytest.fixture
 def unlabelled_fragments_dask(unlabelled_df):
+    """A Fragments object with no metadata with dask dataframe"""
     return fragments.Fragments(dd.from_pandas(unlabelled_df, npartitions=1))
+
 
 @pytest.fixture
 def labelled_df():
+    """A dataframe with the correct schema and metadata"""
     return pd.DataFrame(
         {
             "chrom": pd.Series(["chr1"] * 3, dtype="category"),
@@ -78,59 +87,74 @@ def labelled_df():
 
 
 def test_fragment_constructor_rejects_df_w_wrong_structure(bad_df):
+    """Test that the fragment constructor rejects a bad dataframe"""
     with pytest.raises(pa.errors.SchemaError):
         fragments.Fragments(bad_df)
 
 
 def test_fragments_constructor_accepts_unlabelled_fragments(unlabelled_df):
+    """Test that the fragment constructor accepts a good dataframe without labels"""
     frag = fragments.Fragments(unlabelled_df)
     assert not frag.contains_metadata
 
 
 def test_fragments_constructor_accepts_labelled_fragments(labelled_df):
+    """Test that the fragment constructor accepts a good dataframe with labels"""
     frag = fragments.Fragments(labelled_df)
     assert frag.contains_metadata
 
-@pytest.mark.parametrize("fragments", ["unlabelled_fragments", "unlabelled_fragments_dask"])
-def test_annotator_drops_unknown_fragments(
-    annotator_with_entries, fragments, request
-):
+
+@pytest.mark.parametrize(
+    "fragments", ["unlabelled_fragments", "unlabelled_fragments_dask"]
+)
+def test_annotator_drops_unknown_fragments(annotator_with_entries, fragments, request):
+    """Test that the annotator drops fragments that are not in the library"""
     labelled_fragments = annotator_with_entries.annotate_fragments(
         request.getfixturevalue(fragments)
     )
     # check length
     assert len(labelled_fragments.data) == 2
 
-@pytest.mark.parametrize("fragments", ["unlabelled_fragments", "unlabelled_fragments_dask"])
-def test_annotator_produces_correct_schema(
-    annotator_with_entries, fragments, request
-):
+
+@pytest.mark.parametrize(
+    "fragments", ["unlabelled_fragments", "unlabelled_fragments_dask"]
+)
+def test_annotator_produces_correct_schema(annotator_with_entries, fragments, request):
+    """Test that the annotator produces a dataframe with the correct schema"""
     labelled_fragments = annotator_with_entries.annotate_fragments(
         request.getfixturevalue(fragments)
     )
     # check schema (fragment constructor checks it)
     assert labelled_fragments.contains_metadata
 
-@pytest.mark.parametrize("fragments", ["unlabelled_fragments", "unlabelled_fragments_dask"])
-def test_annotator_calls_sisters_correctly(
-    annotator_with_entries, fragments, request
-):
+
+@pytest.mark.parametrize(
+    "fragments", ["unlabelled_fragments", "unlabelled_fragments_dask"]
+)
+def test_annotator_calls_sisters_correctly(annotator_with_entries, fragments, request):
+    """Test that the annotator calls the sister correctly"""
     labelled_fragments = annotator_with_entries.annotate_fragments(
         request.getfixturevalue(fragments)
     )
     # check values
     expected = pd.Series(["SisterB", "SisterA"])
     if isinstance(request.getfixturevalue(fragments), dd.DataFrame):
-        assert np.array_equal(labelled_fragments.data.metadata.values.compute(), expected.values)
+        assert np.array_equal(
+            labelled_fragments.data.metadata.values.compute(), expected.values
+        )
     else:
         assert np.array_equal(labelled_fragments.data.metadata.values, expected)
 
-@pytest.mark.parametrize("fragments", ["unlabelled_fragments", "unlabelled_fragments_dask"])
-def test_annotator_maintains_dataframe_type(
-    annotator_with_entries, fragments, request
-):
+
+@pytest.mark.parametrize(
+    "fragments", ["unlabelled_fragments", "unlabelled_fragments_dask"]
+)
+def test_annotator_maintains_dataframe_type(annotator_with_entries, fragments, request):
+    """Test that the annotator maintains the dataframe type"""
     labelled_fragments = annotator_with_entries.annotate_fragments(
         request.getfixturevalue(fragments)
     )
     # check values
-    assert isinstance(labelled_fragments.data, type(request.getfixturevalue(fragments).data))
+    assert isinstance(
+        labelled_fragments.data, type(request.getfixturevalue(fragments).data)
+    )
