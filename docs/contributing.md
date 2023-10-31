@@ -1,8 +1,6 @@
-
 # Contributing
 
-Contributions are welcome, and they are greatly appreciated! Every little bit
-helps, and credit will always be given.
+Contributions are welcome, and they are greatly appreciated! Every little bit helps, and credit will always be given.
 
 You can contribute in many ways:
 
@@ -20,13 +18,11 @@ If you are reporting a bug, please include:
 
 ### Fix Bugs
 
-Look through the GitHub issues for bugs. Anything tagged with "bug" and "help
-wanted" is open to whoever wants to implement it.
+Look through the GitHub issues for bugs. Anything tagged with "bug" and "help wanted" is open to whoever wants to implement it.
 
 ### Implement Features
 
-Look through the GitHub issues for features. Anything tagged with "enhancement"
-and "help wanted" is open to whoever wants to implement it.
+Look through the GitHub issues for features. Anything tagged with "enhancement" and "help wanted" is open to whoever wants to implement it.
 
 ### Write Documentation
 
@@ -41,8 +37,8 @@ The best way to send feedback is to file an issue [here](https://github.com/gerl
 If you are proposing a feature:
 
 - Explain in detail how it would work.
-- Keep the scope as narrow as possible, to make it easier to implement.
-- Remember that this is a volunteer-driven project, and that contributions
+- Keep the scope as narrow as possible to make implementation easier.
+- Remember that this is a volunteer-driven project and that contributions
   are welcome :)
 
 ## Get Started!
@@ -57,4 +53,4 @@ Before you submit a pull request, check that it meets these guidelines:
 
 1. The pull request should include tests.
 2. If the pull request adds functionality, the docs should be updated. Put
-   your new functionality into the relevenat markdown file in the [docs folder](https://github.com/gerlichlab/spoc/tree/master/docs).
+   your new functionality into the relevant markdown file in the [docs folder](https://github.com/gerlichlab/spoc/tree/master/docs).

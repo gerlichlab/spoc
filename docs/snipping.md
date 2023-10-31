@@ -2,34 +2,34 @@
 
 ## Background
 
-Snipping is the act of extraction rectangular "snippets" from a dataset containing pore-c interactions in the form of pixels. For example, we might have a file containing two-way interactions (similar to conventional Hi-C) in the form of a matrix of genomic bins, that encode the interaction frequency of these pixels. We might want to extract the neighborhood of TAD-boundaries form this file, specifically, neighborhoods centered at TAD-boundaries that stretch 1MB upstream and downstream. The results of this extraction is a 3-dimensional matrix, where the first two dimensions encode the relative genomic offset and the third dimension encodes the particular examples, here TAD-boundaries.
+Snipping is the act of extracting rectangular "snippets" from a dataset containing pore-c interactions in the form of pixels. For example, we might have a file containing two-way interactions (similar to conventional Hi-C) in the form of a matrix of genomic bins that encode the interaction frequency of these pixels. We can extract the neighborhood of TAD-boundaries from this file, specifically neighborhoods centered at TAD-boundaries that stretch 1MB upstream and downstream. The result of this extraction is a 3-dimensional matrix, where the first two dimensions encode the relative genomic offset and the third dimension encodes the particular examples, here TAD-boundaries.
 
 ## Average representation of snippets
 
-Snipping is often the first step of an anlysis pipeline, where the extraction of snippets is followed by reducing them along the example dimension to obtain an average representation of a particular genomic neighborhood.
+Snipping is often the first step of an analysis pipeline, where the extraction of snippets is followed by reducing them along the example dimension to obtain an average representation of a particular genomic neighbourhood.
 
 ## Higher-order contacts and snipping
 
-If we want to extract snippets from a higher-order contact file, things get a little more complicated than for two-way contacts. Specifically, we are often interested in obtaining a two-dimensional representation of a certain high-dimensional snippet to enable visualization. To do this, we need to define different ways of snipping from a high-dimensional file. For example, we might want to know, which two-dimensional contacts are associated with a set of third coordinates, like TAD-boundaries. Or we might want to know which genomic positions are associated with a two-dimensional query. To account for this, spoc implements different "snipping strategies" that encapsulate the different ways we might want to query a high-dimensional contact file.
+If we want to extract snippets from a higher-order contact file, things get a little more complicated than for two-way contacts. Specifically, we are often interested in obtaining a two-dimensional representation of a certain high-dimensional snippet to enable visualization. To do this, we need to define different ways of snipping from a high-dimensional file. For example, we might want to know which two-dimensional contacts are associated with a set of third coordinates, like TAD-boundaries. Or we might want to know which genomic positions are associated with a two-dimensional query. To account for this, spoc implements different "snipping strategies" that encapsulate the different ways we might want to query a high-dimensional contact file.
 
 
 ## Snipper class
 The snipper class is spoc's central interface to access snipping functionality. It can be used with different snipping strategies to extract snippets. The idea is that a snipper can hold different snipping strategies that can be deployed to achieve the desired result.
 
 
-## Snipping strategies and snipping vlaues
+## Snipping strategies and snipping values
 
 ### Snipping strategies
 
-Snipping strategies are specific ways of snipping higher order contacts. For example, the `Triplet1DSnippingStrategy` implements snipping 2D pieces from triplets based on a set of 1d-coordinates. This can be used to ask questions like:
+Snipping strategies are specific ways of snipping higher-order contacts. For example, the `Triplet1DSnippingStrategy` implements snipping 2D pieces from triplets based on a set of 1d-coordinates. This can be used to ask questions like:
 
-- Do sister chromatids form internal loops, when they contact each other?
+- Do sister chromatids form internal loops when they contact each other?
 
-The idea is that a specific snipping strategy encapsulates all information of extracting snippets such as the size of the snippets, potential offsets, values etc. The constructor of a specific snipping strategy is specific to that strategy, but the snipping implementation has a unified strategy to allow composing different strategies in a snipper class.
+The idea is that a specific snipping strategy encapsulates all information of extracting snippets, such as the size of the snippets, potential offsets, values, etc. The constructor of a particular snipping strategy is specific to that strategy. Still, the snipping implementation has a unified strategy to allow the composition of different strategies in a snipper class.
 
 ### Snipping values
 
-Usually, the values that are extracted from a target file can be either ICCF (iteratively corrected contact frequencies), or observed-over-expected values. The latter represents the ratio of the actually observed contacts and the expected contacts for randomly chosen genomic regions.
+Usually, the values that are extracted from a target file can be either ICCF (iteratively corrected contact frequencies) or observed-over-expected values. The latter represents the ratio of the actually observed contacts and the expected contacts for randomly chosen genomic regions.
 
 
 ```python
@@ -114,7 +114,7 @@ plt.show()
     
 
 
-Generate triplet strategies with different offsets
+Generate triplet strategies with different offsets.
 
 
 ```python

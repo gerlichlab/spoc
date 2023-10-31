@@ -1,7 +1,7 @@
 # Spoc data structures
-This notebook explains the data structures that are availabel within spoc and shows how they relate to each other. On a high level, spoc provides data structures for all parts of the transformation pipline from raw reads to aggregated pixels. 
+Let us have a look what data structures are available within spoc and see how they relate to each other. On a high level, spoc provides data structures for all parts of the transformation pipeline, from raw reads to aggregated pixels. 
 
-Often, these data structures (with the exception of the pixels class) will not be used within every day analysis tasks, but rather within analysis pipelines.
+Often, these data structures (except the pixels class) will not be used within everyday analysis tasks but rather within analysis pipelines.
 
 ## Data frame schemas
 Spoc data structures are wrappers around tabular data containers such as `panda.DataFrame` or `dask.dataframe.DataFrame`. To ensure that the underlying data complies with the format that spoc expects, spoc implements dataframe validation using `pandera`. The underlying schemas reside in the `spoc.dataframe_models` file.
@@ -10,7 +10,7 @@ Spoc data structures are wrappers around tabular data containers such as `panda.
 Reading and writing of spoc data structures is managed by the `spoc.io` package, specifically by the `FileManager` class. Examples of using the FileManager can be found with the specific data structure.
 
 ## Fragments
-Fragments encapsulate a data structure that can hold a dynamic number of aligned fragments per sequencing unit. In a Pore-C experiment, a sequencing unit is the sequencing read that holds multiple fragments per read. In theory, this structure can also be used for other experiment types that generate aligned fragments that are grouped together by an id, for exapmle SPRITE
+Fragments encapsulate a data structure that can hold a dynamic number of aligned fragments per sequencing unit. In a Pore-C experiment, a sequencing unit is the sequencing read that holds multiple fragments per read. In theory, this structure can also be used for other experiment types that generate aligned fragments that are grouped together by an id, for example SPRITE
 
 Reading fragments using `FileManager`
 
@@ -20,7 +20,7 @@ from spoc.io import FileManager
 fragments = FileManager().load_fragments("good_porec.parquet")
 ```
 
-Fragments class has data accessor for fragments
+Fragments class has data accessor for fragments.
 
 
 ```python
@@ -225,7 +225,7 @@ fragments.data
 
 
 
-Note that if reading from dask dataframes, schema evaluation is deferred until the dask taskgraph is evaluated
+Note that if reading from dask dataframes, schema evaluation is deferred until the dask taskgraph is evaluated.
 
 
 ```python
@@ -240,7 +240,7 @@ except SchemaError as e:
 ```
 
 ### Annotating fragments
-Fragments can carry metadata that add additional information, which can be propagated in the analysis pipeline. `FragmentAnnotator` uses a dictionary called label library that contains compound fragment ids and metainformation to annotate fragments. These ids are concatenations of the read_id, chromosome, start and end of the mapping.
+Fragments can carry metadata that adds additional information, which can be propagated in the analysis pipeline. `FragmentAnnotator` uses a dictionary called label library that contains compound fragment ids and metainformation to annotate fragments. These ids are concatenations of the read_id, chromosome, start and end of the mapping.
 
 
 ```python
@@ -331,7 +331,7 @@ annotated_fragments.data.head()
 
 
 ## Contacts
-While the fragment representation retains flexibility, it is often not practical to have contacts of multiple orders and types in different rows of the same file. To this end, we employ the contact representation, where each row contains one contact of a defined order, e.g. a duplet, or a triplet. The `Contact` class is a wrapper around the data structure that holds this representation.
+While the fragment representation retains flexibility, it is often not practical to have contacts of multiple orders and types in different rows of the same file. To this end, we employ the contact representation, where each row contains one contact of a defined order, e.g. a duplet or a triplet. The `Contact` class is a wrapper around the data structure that holds this representation.
 The `Contacts` class is a generic interface that can represent different orders.
 The class that creates contacts from fragments is called `FragmentExpander`, which can be used to generate contacts of arbitrary order.
 
@@ -596,7 +596,7 @@ contacts.data.head()
 
 
 
-Fragment expander also allows us to deal with metadata that is associated with fragments
+Fragment expander also allows us to deal with metadata that is associated with fragments.
 
 
 ```python
@@ -759,9 +759,9 @@ contacts_labelled.contains_metadata
 
 
 #### Unlabelled contacts
-The quantification of genomic interactions in conventional (2-way) Hi-C assumes that there is no difference in the order of interactions. This means that whether a genomic location is measured in the first read or second read of a paired-end sequencing experiment carries the same information. This means that during preprocessing, conventional Hi-C data is flipped based on some convention (often that the first read has a smaller genomic location based on some sort order) and then only the upper triangular interaction matrix is stored.
+The quantification of genomic interactions in conventional (2-way) Hi-C assumes no difference in the order of interactions. This means that whether a genomic location is measured in the first read or second read of a paired-end sequencing experiment carries the same information. This means that during preprocessing, conventional Hi-C data is flipped based on some convention (often, the first read has a smaller genomic location based on some sort of order), and then only the upper triangular interaction matrix is stored.
 
-When we talk about higher genomic order, a similar reasoning can apply (except for special use-cases) and we thus can flip genomic contacts such that genomic coordinates are monotonically increasing from lower to higher order (we mean this order if we refer to flipping below). This produces a symmetric, high-dimensional tensor, meaning that every permutation of dimensions does not change the associated value.
+When we talk about higher genomic order, a similar reasoning can apply (except for special use cases), and we thus can flip genomic contacts such that genomic coordinates are monotonically increasing from lower to higher order (we mean this order if we refer to flipping below). This produces a symmetric, high-dimensional tensor, meaning that every permutation of dimensions does not change the associated value.
 
 In `spoc`, this logic is implemented in the `ContactManipulator` class, in the `.flip_symmetric_contacts` method.
 
@@ -831,7 +831,7 @@ contacts.data.head().filter(regex="(read_name|start|end)")
 
 
 
-This particular contacts dataframe has one contact that conforms with the convention that the first contact should be smaller than the second (`read1`), whereas the other two contacts don't conform with that convention. Using the `.flip_symmetric_contacts` method we can fix this:
+This particular contacts dataframe has one contact that conforms with the convention that the first contact should be smaller than the second (`read1`), whereas the other two contacts don't conform to that convention. Using the `.flip_symmetric_contacts` method, we can fix this:
 
 
 ```python
@@ -899,7 +899,7 @@ flipped_contacts.data.head().filter(regex="(read_name|start|end)")
 
 
 
-Symmetry flipped contacts have the flag `symmetry_flipped` set to true
+Symmetry flipped contacts have the flag `symmetry_flipped` set to true.
 
 
 ```python
@@ -1068,25 +1068,25 @@ If we extend the argument that order of interactions is unimportant, this reduce
  (AAA, BBB, ABB, BAA)
 ```
  
-It is often the case that for binary contacts, the specific label type is unimportant, the only important information is whether the labels where different (e.g. for sister specific labels or homologous chromosome labels). In such a situation, the possible arrangements reduce further to 2 possible label types:
+It is often the case that for binary contacts, the specific label type is unimportant, the only important information is whether the labels were different (e.g. for sister-specific labels or homologous chromosome labels). In such a situation, the possible arrangements are reduced further to 2 possible label types:
 
 ```
  (AAA, AAB)
 ```
 
-For those contact types, two different “rules” for symmetry apply, for the situation of all similar labels (AAA or BBB), the same rules apply as for unlabelled contacts as there is no difference in order. For the other situation (ABB or BBA, which we denote as ABB from now on), only permutations within one label type produce the same value, meaning that if we have the label state ABB, and denote permutations as tuples of length three with (0,1,2) being the identity permutation then only the permutations (0,1,2) and (0,2,1) are identical. Practically, this means that we can flip contacts that are related by these permutations such that their genomic coordinates are monotonically increasing, but we cannot do this for contacts that are not related through a symmetry relation. 
+For those contact types, two different “rules” for symmetry apply; for the situation of all similar labels (AAA or BBB), the same rules apply for unlabelled contacts as there is no difference in order. For the other situation (ABB or BBA, which we denote as ABB from now on), only permutations within one label type produce the same value, meaning that if we have the label state ABB, and denote permutations as tuples of length three with (0,1,2) being the identity permutation then only the permutations (0,1,2) and (0,2,1) are identical. Practically, this means that we can flip contacts that are related by these permutations such that their genomic coordinates are monotonically increasing, but we cannot do this for contacts that are not related through a symmetry relation. 
 
-This reasoning can be generalized to higher dimensions, where contacts can be flipped if they can be related via a symmetry relation. Practically speaking, this means that we have a higher-order contact with two possible label states of order n with k labels of type A and (n-k) labels of type B, we can flip the labels within type A and within type B. For example, if we have a contact of order 4 with the configuration AABB, we can flip within A and within B based on genomic coordinates, but not within them. This reasoning also applies to the situation where we have more than one possible label state. Also here, we can flip within one label state, but not between them.
+This reasoning can be generalized to higher dimensions, where contacts can be flipped if they can be related via a symmetry relation. Practically speaking, this means that we have a higher-order contact with two possible label states of order n with k labels of type A and (n-k) labels of type B; we can flip the labels within type A and within type B. For example, if we have a contact of order 4 with the configuration AABB, we can flip within A and within B based on genomic coordinates, but not within them. This reasoning also applies to the situation where we have more than one possible label state. Also, here, we can flip within one label state but not between them.
 
 This logic is implemented in `spoc` in the `ContactManipulator` class, with to methods:
 
 - The `.equate_binary_labels` method can be used to specify whether in a binary label situation, the labels shold be different or not (e.g. whether AA is equivaltent to BB) or not. This method is optional and can be used prior to the flipping procedure.
 - The `.flip_symmetric_contacts` method flips symmetric contacts base don the rules specified above
 
-Note that all symmetry operations require the contact metadata to be alphabetically sorted, this can be either done explicitely via the `.sort_labels` method, or is performed automatically within the other methods. For example, the metadat order of `ABA` will be converted to `AAB` by the `.sort_labels` operation.
+Note that all symmetry operations require the contact metadata to be alphabetically sorted; this can be either done explicitly via the `.sort_labels` method, or is performed automatically within the other methods. For example, the metadata order of `ABA` will be converted to `AAB` by the `.sort_labels` operation.
 
 
-Let's look at an example! Here, we have 3d contacts that have binary labels
+Let's look at an example! Here, we have 3D contacts that have binary labels.
 
 
 ```python
@@ -1179,13 +1179,13 @@ contacts.number_fragments, contacts.get_label_values()
 #> (3, {'A', 'B'})
 ```
 
-This dataframe contains three contacts, with the following label state:
+This dataframe contains three contacts with the following label state:
 ```
 (ABB)
 (AAB)
 (BBB)
 ```
-In this analysis use case, we want to equate the binary labels since we don't have a biological reason to belive that there is any difference between the labels. The only information that is important for us is whether the contacts happened between different label states or the same label state. Therefore, we use the `.equate_binary_labels` method to replace all occurences of the same contact combination with their alphabetically first example. For example, the label state `(ABB)` is a contact, where two parts come from one label state and one part comes from another. In our logic, this equivalent to `(AAB)`, which is the alphabetically first label, which we therefore use to replace it. Following the same logic, `(BBB)` will be replaced by `(AAA)`.
+In this analysis use case, we want to equate the binary labels since we don't have a biological reason to believe that there is any difference between the labels. The only information that is important for us is whether the contacts happened between different label states or the same label state. Therefore, we use the `.equate_binary_labels` method to replace all occurrences of the same contact combination with their alphabetically first example. For example, the label state `(ABB)` is a contact, where two parts come from one label state and one part comes from another. In our logic, this is equivalent to `(AAB)`, which is the alphabetically first label, which we therefore use to replace it. Following the same logic, `(BBB)` will be replaced by `(AAA)`.
 
 
 ```python
@@ -1272,7 +1272,7 @@ equated_contacts.data.head().filter(regex="(read_name|start|end|metadata)")
 
 
 
-As you can see, the occurence of `(ABB)` has been replaced by `(AAB)` and the occurence of `(BBB)` has been replaced by `(AAA)`. We can now reduce the symmetry of these contacts based on the logic explained above using the `.flip_symmetric_contacts` method.
+As you can see, the occurrence of `(ABB)` has been replaced by `(AAB)`, and the occurrence of `(BBB)` has been replaced by `(AAA)`. We can now reduce the symmetry of these contacts based on the logic explained above using the `.flip_symmetric_contacts` method.
 
 
 ```python
@@ -1362,7 +1362,7 @@ flipped_labelled_contacts.data.head()\
 
 
 ### Persisting contacts
-Contacts can be persisted using the file manager, which writes the data as well as the gobal parameters to a parquet file. Loading the file restores the global parameters.
+Contacts can be persisted using the file manager, which writes the data as well as the global parameters to a parquet file. Loading the file restores the global parameters.
 
 
 ```python
@@ -1386,7 +1386,7 @@ contacts.get_global_parameters()
 
 ### Concept
 
-Pixels represent aggregated information that count the number of genomic contacts per genomic bin. In this context, a genomic bin is a genomic interval with a fixed size (for example 10 kb) and a genomic contact is defined as above as an interaction between the corresponding bins. Pixels represent a single contact order, binsize and labelling state (if metadata is provided) and are thought to be the central datastructure that an analyst will use to interact with multiway genomic data to answer questions about genomic structure.
+Pixels represent aggregated information that counts the number of genomic contacts per genomic bin. In this context, a genomic bin is a genomic interval with a fixed size (for example, 10 kb), and a genomic contact is defined above as an interaction between the corresponding bins. Pixels represent a single contact order, binsize and labelling state (if metadata is provided) and are thought to be the central data structure that an analyst will use to interact with multiway genomic data to answer questions about genomic structure.
 
 ### Implementation
 
@@ -1506,14 +1506,14 @@ contacts.data.head().filter(regex="(read_name|chrom|start|end|metadata)")
 
 
 
-`GenomicBinner` takes a binsize and aggregates contacts by counting the number of contacts that fall within a genomic bin. As with all the other preprocessing functionalities, `GenomicBinner` can take arguments as either pandas dataframes or dask dataframes. The output is consistent, meaning that when passing a pandas dataframe, a pandas dataframe is returned and if passing a dask dataframe, a dask dataframe is returned.
+`GenomicBinner` takes a binsize and aggregates contacts by counting the number of contacts that fall within a genomic bin. As with all the other preprocessing functionalities, `GenomicBinner` can take arguments as either pandas dataframes or dask dataframes. The output is consistent, meaning that when passing a pandas dataframe, a pandas dataframe is returned, and if passing a dask dataframe, a dask dataframe is returned.
 
 
 ```python
 pixels = GenomicBinner(bin_size=100_000).bin_contacts(contacts)
 ```
 
-The default behavior of genomic binner is to filter for contacts that are on the same chromosome and produce an intrachromosomal pixels instance. This behavior allows us to create a compact representation of pixels, which only store one chromosome field per pixel.
+The default behaviour of genomic binner is to filter for contacts that are on the same chromosome and produce an intrachromosomal pixels instance. This behaviour allows us to create a compact representation of pixels, which only store one chromosome field per pixel.
 
 
 ```python
@@ -1571,7 +1571,7 @@ pixels.data.head()
 
 
 
-The pixels class additionally contains all information associated with the data stored. This data is taken from the contacts object passed to genomic binner.
+The pixels class additionally contains all information associated with the data stored. This data is taken from the contacts object passed to the genomic binner.
 
 
 ```python
@@ -1662,7 +1662,7 @@ pixels_w_inter.data.head()
 
 
 ### Lablled contacts
-The concept of pixels representing a single labeling state allows simplification of the interfaces to downstream processing functionality, but offloads responsibiltiy to the analyst to ensure that the biological question at hand is adequately adressed by the chosen labelling state. The pixels class does not perform any labelling state checks and forwards the combination(s) of labelling states present in the contacts class used for their construction. This allows for greater flexibility with regards to the questions that can be answered. 
+The concept of pixels representing a single labelling state allows simplifying the interfaces to downstream processing functionality but offloads responsibility to the analyst to ensure that the chosen labelling state adequately addresses the biological question at hand. The pixels class does not perform any labelling state checks and forwards the combination(s) of labelling states present in the contacts class used for their construction. This allows for greater flexibility with regard to the questions that can be answered. 
 
 The `ContactManipulator` class contains functionality to filter contacts for a given labelling state to perform downstream aggregation of pixels.
 
@@ -1912,7 +1912,7 @@ pixels_filtered.metadata_combi
 ```
 
 ### Persisting pixels
-Pixels come in a multitude of different flavors and it would thus be cumbsersome to have to keep track of pixels of different binsize, labelling state or contact order that belong to the same source fragments. We thus developed a pixel file format that exposes a unified name to pixels that belong together as well as functoinality to load the exact pixels that we want.
+Pixels come in a multitude of different flavours, and it would thus be cumbersome to have to keep track of pixels of different binsize, labelling states or contact order that belong to the same source fragments. We thus developed a pixel file format that exposes a unified name to pixels that belong together, as well as functionality to load the exact pixels that we want.
 
 #### The pixel file format
 The pixel file format is a directory that contains a number of parquet files as well as a config file that holds information about what specific pixels are available. As with the other io-operations, the `FileManager` object is responsible for saving pixels.
@@ -1991,4 +1991,4 @@ loaded_pixels.get_global_parameters()
 #>                   )
 ```
 
-If the specified uri is not specific enough and multiple pixels match, an error is raised.
+If the specified URI is not specific enough and multiple pixels match, an error is raised.

@@ -68,9 +68,9 @@ class Contacts:
 
         PATH::number_fragments::metadata_combi::binary_labels_equal::symmetry_flipped::label_sorted
 
-        PAth, number_fragments are required. The rest is optional
+        Path, number_fragments are required. The rest is optional
         and will be tried to match to the available contacts. If no match is found, or there is no
-         uniue match, an error is raised.
+         unique match, an error is raised.
         Mode can be one of pandas|dask, which corresponds to the type of the pixel source.
         """
         # import here to avoid circular imports

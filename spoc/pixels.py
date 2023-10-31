@@ -13,10 +13,10 @@ class Pixels:
     """Genomic pixels of arbitrary order.
     Contain information about:
         - Bin size
-        - Symmetry (whehter contacts that where used to construct them where symmetric)
+        - Symmetry (whether contacts that where used to construct them where symmetric)
         - Order
         - Metadata combination (Whether the pixels represent a certain combination of metadata)
-        - Whether binary labels are equal (e.g. whether AB pixles also represent BA pixels)
+        - Whether binary labels are equal (e.g. whether AB pixels also represent BA pixels)
 
 
     Pixels can contain different data sources such as:
@@ -48,7 +48,7 @@ class Pixels:
         same_chromosome: bool = True,
     ):
         """Constructor for genomic pixels. pixel_source
-        can be a pandas or dask dataframe or a path. Caveate is that
+        can be a pandas or dask dataframe or a path. Caveat is that
         if pixels are a path, source data is not validated."""
         self._schema = PixelSchema(
             number_fragments=number_fragments, same_chromosome=same_chromosome
@@ -77,9 +77,9 @@ class Pixels:
 
         PATH::number_fragments::binsize::metadata_combi::binary_labels_equal::symmetry_flipped::label_sorted::same_chromosome
 
-        PAth, number_fragments and binsize are required. The rest is optional
+        Path, number_fragments and binsize are required. The rest is optional
         and will be tried to match to the available pixels. If no match is found, or there is no
-         uniue match, an error is raised.
+         unique match, an error is raised.
         Mode can be one of pandas|dask|path, which corresponds to the type of the pixel source.
 
 

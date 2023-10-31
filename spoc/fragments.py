@@ -42,7 +42,7 @@ class Fragments:
 
     @property
     def is_dask(self) -> bool:
-        """Returns whether the underlying dataframe is dask.
+        """Returns whether the underlying dataframe is dask dataframe.
 
         Returns:
             bool: Whether the underlying dataframe is a dask dataframe.
