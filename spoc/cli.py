@@ -24,7 +24,8 @@ def main():
 )
 def expand(fragments_path, expanded_contacts_path, n_fragments):
     """
-    Script for expanding labelled fragments to contacts
+    Functionality to expand labelled fragments to contacts. Expands n-way fragments over sequencing reads
+    to yield contacts.
 
     Args:
         fragments_path (str): Path to the labelled fragments file.
@@ -44,7 +45,8 @@ def expand(fragments_path, expanded_contacts_path, n_fragments):
 @click.argument("label_library_path")
 @click.argument("labelled_fragments_path")
 def annotate(fragments_path, label_library_path, labelled_fragments_path):
-    """Script for annotating porec fragments
+    """
+    Functionality to annotate porec fragments. Adds annotating labels and sister identity of mapped read fragments.
 
     Args:
         fragments_path (str): Path to the input fragments file.
@@ -71,7 +73,9 @@ def bin_contacts(
     bin_size,
     same_chromosome,
 ):
-    """Script for binning contacts. Contacts path should be an URI.
+    """
+    Functionality to bin contacts.  Bins higher order contacts into genomic bins of fixed size.
+    Contacts path should be an URI.
 
     Args:
         contact_path (str): Path to the input contact file.
