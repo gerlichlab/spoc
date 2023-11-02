@@ -1,16 +1,14 @@
 """This file tests the io module for contacts"""
 import tempfile
-import pytest
-from itertools import product
 import os
 import json
 import shutil
 from pathlib import Path
-import pandas as pd
+import pytest
+import dask.dataframe as dd
 from spoc.contacts import Contacts
 from spoc.io import FileManager
-from spoc.file_parameter_models import ContactsParameters
-import dask.dataframe as dd
+from spoc.models.file_parameter_models import ContactsParameters
 from ..fixtures.symmetry import unlabelled_contacts_2d, labelled_binary_contacts_2d
 
 

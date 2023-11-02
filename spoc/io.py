@@ -10,7 +10,7 @@ import pandas as pd
 import dask.dataframe as dd
 from spoc.contacts import Contacts
 from spoc.pixels import Pixels
-from spoc.file_parameter_models import ContactsParameters, PixelParameters
+from spoc.models.file_parameter_models import ContactsParameters, PixelParameters
 from spoc.fragments import Fragments
 
 

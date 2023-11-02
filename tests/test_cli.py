@@ -9,9 +9,10 @@ from pandas.testing import assert_frame_equal
 import numpy as np
 from click.testing import CliRunner
 
-from spoc import cli, dataframe_models
+from spoc import cli
 from spoc.io import FileManager
 from spoc.contacts import Contacts
+from spoc.models import dataframe_models
 from spoc.pixels import Pixels
 
 

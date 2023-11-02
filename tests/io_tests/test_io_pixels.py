@@ -1,16 +1,16 @@
 """This file tests the io module for pixels"""
 import tempfile
-import pytest
-from itertools import product
 import os
 import json
 import shutil
 from pathlib import Path
+import pytest
 import pandas as pd
-from spoc.io import FileManager
-from spoc.file_parameter_models import PixelParameters
-from spoc.pixels import Pixels
 import dask.dataframe as dd
+from spoc.io import FileManager
+from spoc.models.file_parameter_models import PixelParameters
+from spoc.pixels import Pixels
+
 
 CONTACT_PARAMETERS = (
     [2],

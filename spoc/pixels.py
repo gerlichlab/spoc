@@ -4,8 +4,8 @@ from pathlib import Path
 from typing import Union, Optional, List
 import pandas as pd
 import dask.dataframe as dd
-from spoc.dataframe_models import PixelSchema, DataFrame
-from spoc.file_parameter_models import PixelParameters
+from spoc.models.dataframe_models import PixelSchema, DataFrame
+from spoc.models.file_parameter_models import PixelParameters
 from spoc.contacts import Contacts
 
 

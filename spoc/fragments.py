@@ -7,7 +7,7 @@ from itertools import combinations
 import pandas as pd
 import dask.dataframe as dd
 import numpy as np
-from .dataframe_models import FragmentSchema, ContactSchema, DataFrame
+from .models.dataframe_models import FragmentSchema, ContactSchema, DataFrame
 from .contacts import Contacts
 
 

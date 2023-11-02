@@ -6,8 +6,8 @@ from typing import List, Optional, Dict
 import pandas as pd
 import dask.dataframe as dd
 import numpy as np
-from spoc.dataframe_models import ContactSchema, DataFrame
-from spoc.file_parameter_models import ContactsParameters
+from spoc.models.dataframe_models import ContactSchema, DataFrame
+from spoc.models.file_parameter_models import ContactsParameters
 
 
 class Contacts:
