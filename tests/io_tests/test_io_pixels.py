@@ -1,4 +1,5 @@
 """This file tests the io module for pixels"""
+# pylint: disable=redefined-outer-name
 import tempfile
 import os
 import json

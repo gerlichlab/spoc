@@ -1,4 +1,5 @@
 """Fixtures for testing symmetry.py"""
+# pylint: disable=redefined-outer-name
 import pytest
 import pandas as pd
 import dask.dataframe as dd
