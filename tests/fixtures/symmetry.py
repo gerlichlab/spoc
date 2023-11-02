@@ -1,4 +1,4 @@
-"""Fixutres for testing symmetry.py"""
+"""Fixtures for testing symmetry.py"""
 import pytest
 import pandas as pd
 import dask.dataframe as dd

@@ -163,7 +163,7 @@ def test_expand_contacts_adds_to_existing_file(good_annotated_porec_file):
 
 
 def test_annotate_fragments_works(good_porec_file, label_library_path):
-    """tests happy path for annotated fragments"""
+    """Tests happy path for annotated fragments"""
     runner = CliRunner()
     output_path = "tmp/test_output2.parquet"
     runner.invoke(cli.annotate, [good_porec_file, label_library_path, output_path])
@@ -178,7 +178,7 @@ def test_annotate_fragments_works(good_porec_file, label_library_path):
 
 
 def test_merge_contacts_works_with_compatible_contacts(mergable_triplet_files):
-    """happy path for merging contacts"""
+    """Happy path for merging contacts"""
     runner = CliRunner()
     output_path = "tmp/test_output3.parquet"
     runner.invoke(
@@ -213,7 +213,7 @@ def test_merge_contacts_copies_incompatible_contacts(non_mergable_triplet_files)
 
 
 def test_bin_contacts(good_triplet_file_for_pixels, expected_pixels):
-    """happy path for binning contacts without sister sorting"""
+    """Happy path for binning contacts without sister sorting"""
     runner = CliRunner()
     output_path = "tmp/test_output5.parquet"
     runner.invoke(cli.bin_contacts, [good_triplet_file_for_pixels, output_path])

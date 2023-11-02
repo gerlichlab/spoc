@@ -8,7 +8,7 @@ import pandera as pa
 import numpy as np
 import dask.dataframe as dd
 from spoc.contacts import Contacts, ContactManipulator
-from .fixtures.symmetry import (
+from ..fixtures.symmetry import (
     unlabelled_contacts_2d,
     unlabelled_contacts_2d_flipped,
     unlabelled_contacts_3d,

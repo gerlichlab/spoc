@@ -10,7 +10,7 @@ import dask.dataframe as dd
 from spoc import contacts, fragments
 
 # pytlint: disable=unused-import
-from .fixtures.symmetry import (
+from ..fixtures.symmetry import (
     unlabelled_contacts_2d,
     labelled_binary_contacts_2d_sorted,
 )
