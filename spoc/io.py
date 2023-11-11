@@ -88,7 +88,7 @@ class FileManager:
         fragments.data.to_parquet(path, row_group_size=1024 * 1024)
 
     @staticmethod
-    def load_chromosome_sizes(path: str):
+    def load_chromosome_sizes(path: str) -> pd.DataFrame:
         """Load chromosome sizes
 
         Args:

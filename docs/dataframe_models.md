@@ -1,3 +1,3 @@
 # Dataframe models
 
-::: spoc.dataframe_models
+::: spoc.models.dataframe_models

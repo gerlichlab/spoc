@@ -1,3 +1,3 @@
 # File parameter models
 
-::: spoc.file_parameter_models
+::: spoc.models.file_parameter_models
