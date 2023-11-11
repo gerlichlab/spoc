@@ -15,7 +15,7 @@ from spoc.pixels import Pixels
 
 CONTACT_PARAMETERS = (
     [2],
-    [["A", "B"], ["B", "C"]],
+    [("A", "B"), ("B", "C")],
     [True, False],
     [True, False],
     [True, False],
@@ -69,7 +69,7 @@ def example_pixels_w_metadata(df_order_2, df_order_3):
         PixelParameters(
             number_fragments=3,
             binsize=10_000,
-            metadata_combi=["A", "B", "B"],
+            metadata_combi=("A", "B", "B"),
             label_sorted=True,
             binary_labels_equal=True,
             symmetry_flipped=True,
@@ -160,7 +160,7 @@ def test_read_pixels_as_dask_df(example_pixels_w_metadata):
         (
             "df_order_3",
             PixelParameters(
-                number_fragments=3, binsize=10_000, metadata_combi=["A", "B", "B"]
+                number_fragments=3, binsize=10_000, metadata_combi=("A", "B", "B")
             ),
         ),
         ("df_order_2", PixelParameters(number_fragments=2, binsize=100_000)),
@@ -190,7 +190,7 @@ def test_write_pandas_pixels_to_new_file(df, params, request):
         (
             "df_order_3",
             PixelParameters(
-                number_fragments=3, binsize=10_000, metadata_combi=["A", "B", "B"]
+                number_fragments=3, binsize=10_000, metadata_combi=("A", "B", "B")
             ),
         ),
         ("df_order_2", PixelParameters(number_fragments=2, binsize=100_000)),
@@ -229,7 +229,7 @@ def test_write_dask_pixels_to_new_file(df, params, request):
             "df_order_2",
             [
                 PixelParameters(
-                    number_fragments=3, binsize=10_000, metadata_combi=["A", "B", "B"]
+                    number_fragments=3, binsize=10_000, metadata_combi=("A", "B", "B")
                 ),
                 PixelParameters(number_fragments=2, binsize=100),
             ],
@@ -240,7 +240,7 @@ def test_write_dask_pixels_to_new_file(df, params, request):
             [
                 PixelParameters(number_fragments=2, binsize=100_000),
                 PixelParameters(
-                    number_fragments=3, binsize=10_000, metadata_combi=["A", "B", "B"]
+                    number_fragments=3, binsize=10_000, metadata_combi=("A", "B", "B")
                 ),
             ],
         ),
@@ -293,7 +293,7 @@ def test_load_pixels_from_uri_fails_without_required_parameters(df, params, requ
         (
             "df_order_2",
             PixelParameters(
-                number_fragments=2, binsize=1000, metadata_combi=["A", "B"]
+                number_fragments=2, binsize=1000, metadata_combi=("A", "B")
             ),
         ),
         (
@@ -301,7 +301,7 @@ def test_load_pixels_from_uri_fails_without_required_parameters(df, params, requ
             PixelParameters(
                 number_fragments=2,
                 binsize=1000,
-                metadata_combi=["A", "B"],
+                metadata_combi=("A", "B"),
                 label_sorted=True,
             ),
         ),
@@ -346,7 +346,7 @@ def test_load_pixels_from_uri_succeeds_exact_match(df, params, request):
         (
             "df_order_2",
             PixelParameters(
-                number_fragments=2, binsize=1000, metadata_combi=["A", "B"]
+                number_fragments=2, binsize=1000, metadata_combi=("A", "B")
             ),
         ),
         (
@@ -391,7 +391,7 @@ def test_load_pixels_from_uri_succeeds_partial_match(df, params, request):
             "df_order_2",
             [
                 PixelParameters(
-                    number_fragments=2, binsize=1000, metadata_combi=["A", "B"]
+                    number_fragments=2, binsize=1000, metadata_combi=("A", "B")
                 ),
                 PixelParameters(
                     number_fragments=2,

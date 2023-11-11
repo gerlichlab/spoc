@@ -76,41 +76,7 @@ class Contacts:
         # import here to avoid circular imports
         from spoc.io import FileManager
 
-        # Define uir parameters
-        PARAMETERS = [
-            "number_fragments",
-            "metadata_combi",
-            "binary_labels_equal",
-            "symmetry_flipped",
-            "label_sorted",
-        ]
-        # parse uri
-        uri = uri.split("::")
-        # validate uri
-        if len(uri) < 2:
-            raise ValueError(
-                f"Uri: {uri} is not valid. Must contain at least Path, number_fragments"
-            )
-        params = dict(zip(PARAMETERS, uri[1:]))
-        # rewrite metadata_combi parameter
-        if "metadata_combi" in params.keys() and params["metadata_combi"] != "None":
-            params["metadata_combi"] = str(list(params["metadata_combi"]))
-        # read mode
-        use_dask = mode == "dask"
-        # get availabe contacts
-        available_contacts = FileManager().list_contacts(uri[0])
-        # filter contacts
-        matched_contacts = [
-            contacts
-            for contacts in available_contacts
-            if all(params[key] == str(contacts.dict()[key]) for key in params.keys())
-        ]
-        # check whether there is a unique match
-        if len(matched_contacts) == 0:
-            raise ValueError(f"No contacts found for uri: {uri}")
-        if len(matched_contacts) > 1:
-            raise ValueError(f"Multiple contacts found for uri: {uri}")
-        return FileManager(use_dask=use_dask).load_contacts(uri[0], matched_contacts[0])
+        return FileManager(use_dask=mode == "dask").load_contacts(uri)
 
     def get_global_parameters(self) -> ContactsParameters:
         """Returns global parameters"""
@@ -484,11 +450,11 @@ class ContactManipulator:
 
         """
         # check if metadata is present
-        assert contacts.contains_metadata, "Contacts do not contain metadata!"
+        if not contacts.contains_metadata:
+            raise ValueError("Contacts do not contain metadata!")
         # check if metadata_combi has the correct length
-        assert (
-            len(metadata_combi) == contacts.number_fragments
-        ), "Metadata combination does not match number of fragments!"
+        if not len(metadata_combi) == contacts.number_fragments:
+            raise ValueError("Metadata combination does not match number of fragments!")
         # get label values
         label_values = contacts.get_label_values()
         # check if metadata_combi is compatible with label values

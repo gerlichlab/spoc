@@ -1,7 +1,7 @@
 """Persisting functionality of spoc that manages writing to and reading from the filesystem."""
 
 import pickle
-from typing import Dict, Union, List
+from typing import Dict, Union, List, Optional, Tuple
 from hashlib import md5
 import os
 import json
@@ -10,7 +10,11 @@ import pandas as pd
 import dask.dataframe as dd
 from spoc.contacts import Contacts
 from spoc.pixels import Pixels
-from spoc.models.file_parameter_models import ContactsParameters, PixelParameters
+from spoc.models.file_parameter_models import (
+    ContactsParameters,
+    PixelParameters,
+    GlobalParameters,
+)
 from spoc.fragments import Fragments
 
 
@@ -132,15 +136,81 @@ class FileManager:
 
     @staticmethod
     def list_contacts(path: str) -> List[ContactsParameters]:
-        """List available contacts"""
+        """List available contacts
+
+        Args:
+            path (str): Path to the contacts data.
+
+        Returns:
+            List[ContactsParameters]: List of ContactsParameters objects.
+        """
         # read metadata.json
         metadata = FileManager._load_metadata(path)
         # instantiate pixel parameters
         contacts = [ContactsParameters(**params) for params in metadata.values()]
         return contacts
 
+    def _parse_uri(
+        self, uri: str, uri_parameters: List[str], min_fields: int = 2
+    ) -> Tuple[str, Dict[str, str]]:
+        """Parse URI
+
+        Args:
+            uri (str): URI to parse.
+            uri_parameters (List[str]): List of URI parameters.
+            min_fields (int, optional): Minimum number of fields that the URI should contain. Defaults to 2.
+        Returns:
+            Tuple(str, Dict[str, str]): Tuple containing the path and a dictionary of parameters.
+        """
+        # parse uri
+        uri = uri.split("::")
+        # validate uri
+        if len(uri) < min_fields:
+            raise ValueError(
+                f"Uri: {uri} is not valid. Must contain at least Path, number_fragments and binsize"
+            )
+        params = dict(zip(uri_parameters, uri[1:]))
+        # rewrite metadata_combi parameter
+        if "metadata_combi" in params.keys() and params["metadata_combi"] != "None":
+            params["metadata_combi"] = str(tuple(params["metadata_combi"]))
+        return uri[0], params
+
+    def _fuzzy_match_parameters(
+        self,
+        target_parameters: Dict[str, str],
+        candidate_parameters: Dict[str, GlobalParameters],
+    ) -> Tuple[str, GlobalParameters]:
+        """Fuzzy match parameters
+
+        Args:
+            target_parameters (Dict[str,str]): Target parameters.
+            candidate_parameters (Dict[str,GlobalParameters]): Candidate parameters.
+        Returns:
+            Tuple[str,GlobalParameters]: Tuple containing the path and a dictionary of parameters.
+        """
+        # get fuzzy matched parameters
+        matched_parameters = [
+            (path, param)
+            for path, param in candidate_parameters.items()
+            if all(
+                str(value) == str(param.dict()[key])
+                for key, value in target_parameters.items()
+            )
+        ]
+        # check whether there was a unique match
+        if len(matched_parameters) == 0:
+            raise ValueError(f"No matches found for parameters: {target_parameters}!")
+        if len(matched_parameters) > 1:
+            raise ValueError(
+                f"Multiple matches found for parameters: {target_parameters}!"
+            )
+        return matched_parameters[0]
+
     def load_pixels(
-        self, path: str, global_parameters: PixelParameters, load_dataframe: bool = True
+        self,
+        path: str,
+        global_parameters: Optional[PixelParameters] = None,
+        load_dataframe: bool = True,
     ) -> Pixels:
         """Loads specific pixels instance based on global parameters.
         load_dataframe specifies whether the dataframe should be loaded, or whether pixels
@@ -155,46 +225,77 @@ class FileManager:
             Pixels: Pixels object containing the pixel data.
 
         """
-        metadata = self._load_metadata(path)
-        # find matching pixels
-        for pixel_path, value in metadata.items():
-            param_value = PixelParameters(**value)
-            if param_value == global_parameters:
-                selected_value = param_value
-                break
+        # if global parameters is None, path is assumed to be a uri
+        if global_parameters is None:
+            # parse uri
+            path, parsed_parameters = self._parse_uri(
+                path, PixelParameters.get_uri_fields(), min_fields=3
+            )
         else:
-            raise ValueError(f"No matching pixels found for {global_parameters}")
+            parsed_parameters = global_parameters.dict()
+        # get fuzzy matched parameters
+        metadata = {
+            path: PixelParameters(**values)
+            for path, values in self._load_metadata(path).items()
+        }
+        pixel_path, matched_parameters = self._fuzzy_match_parameters(
+            parsed_parameters, metadata
+        )
         # rewrite path to contain parent folder
         pixel_path = Path(path) / pixel_path
         if load_dataframe:
             df = self._parquet_reader_func(pixel_path)
         else:
             df = pixel_path
-        return Pixels(df, **selected_value.dict())
+        return Pixels(df, **matched_parameters.dict())
 
     def load_contacts(
-        self, path: str, global_parameters: ContactsParameters
+        self, path: str, global_parameters: Optional[ContactsParameters] = None
     ) -> Contacts:
         """Loads specific contacts instance based on global parameters.
-        load_dataframe specifies whether the dataframe should be loaded"""
-        metadata = self._load_metadata(path)
-        # find matching contacts
-        for contacts_path, value in metadata.items():
-            param_value = ContactsParameters(**value)
-            if param_value == global_parameters:
-                selected_value = param_value
-                break
+        load_dataframe specifies whether the dataframe should be loaded
+
+        Args:
+            path (str): Path to the contacts data.
+            global_parameters (ContactsParameters): Global parameters.
+        Returns:
+            Contacts: Contacts object containing the contacts data.
+        """
+        # if global parameters is None, path is assumed to be a uri
+        if global_parameters is None:
+            # parse uri
+            path, parsed_parameters = self._parse_uri(
+                path, ContactsParameters.get_uri_fields(), min_fields=2
+            )
         else:
-            raise ValueError(f"No matching contacts found for {global_parameters}")
+            parsed_parameters = global_parameters.dict()
+        # get fuzzy matched parameters
+        metadata = {
+            path: ContactsParameters(**values)
+            for path, values in self._load_metadata(path).items()
+        }
+        contacts_path, matched_parameters = self._fuzzy_match_parameters(
+            parsed_parameters, metadata
+        )
         # rewrite path to contain parent folder
         contacts_path = Path(path) / contacts_path
         df = self._parquet_reader_func(contacts_path)
-        return Contacts(df, **selected_value.dict())
+        return Contacts(df, **matched_parameters.dict())
 
     @staticmethod
     def _get_object_hash_path(path: str, data_object: Union[Pixels, Contacts]) -> str:
-        hash_string = path + json.dumps(data_object.get_global_parameters().dict())
-        return md5(hash_string.encode()).hexdigest() + ".parquet"
+        hash_string = path + json.dumps(
+            data_object.get_global_parameters().dict(),
+            skipkeys=False,
+            ensure_ascii=True,
+            check_circular=True,
+            allow_nan=True,
+            indent=None,
+            sort_keys=False,
+            separators=None,
+            default=None,
+        )
+        return md5(hash_string.encode(encoding="utf-8")).hexdigest() + ".parquet"
 
     def write_pixels(self, path: str, pixels: Pixels) -> None:
         """Write pixels

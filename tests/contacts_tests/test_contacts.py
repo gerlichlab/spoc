@@ -16,18 +16,6 @@ from ..fixtures.symmetry import (
 )
 
 
-# @pytest.fixture
-# def triplet_expander():
-#     """expander for triplets"""
-#     return fragments.FragmentExpander(number_fragments=3, contains_metadata=False)
-
-
-# @pytest.fixture
-# def triplet_expander_labelled():
-#     """expander for triplets"""
-#     return fragments.FragmentExpander(number_fragments=3, contains_metadata=True)
-
-
 @pytest.fixture
 def contact_manipulator():
     """manipulator for triplest"""
@@ -94,7 +82,7 @@ def test_subset_metadata_fails_if_not_labelled(unlabelled_contacts_2d):
     """Tests whether subset fails if the datafrane is not laelled"""
     contact_manipulator = contacts.ContactManipulator()
     unlab_contacts = contacts.Contacts(unlabelled_contacts_2d)
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         contact_manipulator.subset_on_metadata(unlab_contacts, ["A", "B"])
 
 
@@ -104,7 +92,7 @@ def test_subset_metadata_fails_if_pattern_longer_than_number_fragments(
     """Tests whether subset fails if the pattern is longer than number of fragments"""
     contact_manipulator = contacts.ContactManipulator()
     lab_contacts = contacts.Contacts(labelled_binary_contacts_2d_sorted)
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         contact_manipulator.subset_on_metadata(lab_contacts, ["A", "B", "A"])
 
 

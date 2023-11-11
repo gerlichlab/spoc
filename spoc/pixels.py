@@ -95,28 +95,7 @@ class Pixels:
         # pylint: disable=import-outside-toplevel
         from spoc.io import FileManager
 
-        # Define uri parameters
-        uri_parameters = [
-            "number_fragments",
-            "binsize",
-            "metadata_combi",
-            "binary_labels_equal",
-            "symmetry_flipped",
-            "label_sorted",
-            "same_chromosome",
-        ]
-        # parse uri
-        uri = uri.split("::")
-        # validate uri
-        if len(uri) < 3:
-            raise ValueError(
-                f"Uri: {uri} is not valid. Must contain at least Path, number_fragments and binsize"
-            )
-        params = dict(zip(uri_parameters, uri[1:]))
-        # rewrite metadata_combi parameter
-        if "metadata_combi" in params.keys() and params["metadata_combi"] != "None":
-            params["metadata_combi"] = str(list(params["metadata_combi"]))
-        # read mode
+        # get read mode
         if mode == "path":
             load_dataframe = False
             use_dask = False
@@ -126,21 +105,8 @@ class Pixels:
         else:
             load_dataframe = True
             use_dask = True
-        # get availabe pixels
-        available_pixels = FileManager().list_pixels(uri[0])
-        # filter pixels
-        matched_pixels = [
-            pixel
-            for pixel in available_pixels
-            if all(value == str(pixel.dict()[key]) for key, value in params.items())
-        ]
-        # check whether there is a unique match
-        if len(matched_pixels) == 0:
-            raise ValueError(f"No pixels found for uri: {uri}")
-        if len(matched_pixels) > 1:
-            raise ValueError(f"Multiple pixels found for uri: {uri}")
         return FileManager(use_dask=use_dask).load_pixels(
-            uri[0], matched_pixels[0], load_dataframe=load_dataframe
+            uri, load_dataframe=load_dataframe
         )
 
     def get_global_parameters(self):
