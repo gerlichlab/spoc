@@ -4,6 +4,7 @@ on:
     branches:
       - master
       - docs
+      - pages-build-fix
 permissions:
   contents: write
 jobs:

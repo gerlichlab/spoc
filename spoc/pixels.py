@@ -71,7 +71,7 @@ class Pixels:
             self._data = None
 
     @staticmethod
-    def from_uri(uri, mode="path"):
+    def from_uri(uri, mode="path") -> "Pixels":
         """Construct pixels from uri.
         Will match parameters based on the following order:
 
@@ -109,7 +109,7 @@ class Pixels:
             uri, load_dataframe=load_dataframe
         )
 
-    def get_global_parameters(self):
+    def get_global_parameters(self) -> PixelParameters:
         """Returns global parameters of pixels
 
         Returns:
