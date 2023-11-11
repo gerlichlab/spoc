@@ -1,0 +1,32 @@
+name: Unittests
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    types: [opened, reopened, review_requested]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.8"]
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      # You can test your matrix by printing the current Python version
+      - name: Install spoc, black, pylint and pytest
+        run: pip install . && pip install black==23.9.1 && pip install pylint==2.15.5 && pip install pytest
+      - name: Run black
+        run: black --check .
+      - name: Run pylint
+        run: pylint --fail-under=8 spoc/* tests/test_*.py
+      - name: Run tests
+        run: pytest .

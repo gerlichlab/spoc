@@ -1,7 +1,9 @@
-"""Fixutres for testing symmetry.py"""
+"""Fixtures for testing symmetry.py"""
+# pylint: disable=redefined-outer-name
 import pytest
 import pandas as pd
 import dask.dataframe as dd
+
 
 @pytest.fixture
 def unlabelled_contacts_2d():
@@ -20,13 +22,15 @@ def unlabelled_contacts_2d():
             "end_2": [2000, 300, 400],
             "mapping_quality_2": [10, 10, 10],
             "align_score_2": [10, 10, 10],
-            "align_base_qscore_2": [10, 10, 10]
+            "align_base_qscore_2": [10, 10, 10],
         }
     )
+
 
 @pytest.fixture
 def unlabelled_contacts_2d_dask(unlabelled_contacts_2d):
     return dd.from_pandas(unlabelled_contacts_2d, npartitions=2)
+
 
 @pytest.fixture
 def unlabelled_contacts_3d():
@@ -51,13 +55,15 @@ def unlabelled_contacts_3d():
             "end_3": [300, 500, 200],
             "mapping_quality_3": [10, 10, 5],
             "align_score_3": [10, 10, 5],
-            "align_base_qscore_3": [10, 10, 5]
+            "align_base_qscore_3": [10, 10, 5],
         }
     )
+
 
 @pytest.fixture
 def unlabelled_contacts_3d_dask(unlabelled_contacts_3d):
     return dd.from_pandas(unlabelled_contacts_3d, npartitions=2)
+
 
 @pytest.fixture
 def unlabelled_contacts_2d_flipped():
@@ -76,7 +82,7 @@ def unlabelled_contacts_2d_flipped():
             "end_2": [2000, 3000, 4000],
             "mapping_quality_2": [10, 10, 15],
             "align_score_2": [10, 10, 15],
-            "align_base_qscore_2": [10, 10, 15]
+            "align_base_qscore_2": [10, 10, 15],
         }
     )
 
@@ -104,9 +110,10 @@ def unlabelled_contacts_3d_flipped():
             "end_3": [2000, 3000, 4000],
             "mapping_quality_3": [10, 10, 15],
             "align_score_3": [10, 10, 15],
-            "align_base_qscore_3": [10, 10, 15]
+            "align_base_qscore_3": [10, 10, 15],
         }
     )
+
 
 @pytest.fixture
 def labelled_binary_contacts_2d():
@@ -127,9 +134,10 @@ def labelled_binary_contacts_2d():
             "mapping_quality_2": [10, 10, 15],
             "align_score_2": [10, 10, 15],
             "align_base_qscore_2": [10, 10, 15],
-            "metadata_2": ["B", "A", "A"]
+            "metadata_2": ["B", "A", "A"],
         }
     )
+
 
 @pytest.fixture
 def labelled_binary_contacts_2d_sorted():
@@ -150,7 +158,7 @@ def labelled_binary_contacts_2d_sorted():
             "mapping_quality_2": [10, 10, 15],
             "align_score_2": [10, 10, 15],
             "align_base_qscore_2": [10, 10, 15],
-            "metadata_2": ["B", "B", "A"]
+            "metadata_2": ["B", "B", "A"],
         }
     )
 
@@ -181,9 +189,10 @@ def labelled_binary_contacts_3d():
             "mapping_quality_3": [10, 10, 15],
             "align_score_3": [10, 10, 15],
             "align_base_qscore_3": [10, 10, 15],
-            "metadata_3": ["B", "A", "A"]
+            "metadata_3": ["B", "A", "A"],
         }
     )
+
 
 @pytest.fixture
 def labelled_binary_contacts_3d_sorted():
@@ -211,32 +220,34 @@ def labelled_binary_contacts_3d_sorted():
             "mapping_quality_3": [10, 10, 15],
             "align_score_3": [10, 10, 15],
             "align_base_qscore_3": [10, 10, 15],
-            "metadata_3": ["B", "B", "A"]
+            "metadata_3": ["B", "B", "A"],
         }
     )
+
 
 @pytest.fixture
 def binary_contacts_not_equated_2d():
     return pd.DataFrame(
-            {
-                "read_name": ["read1", "read2", "read3"],
-                "read_length": [100, 100, 100],
-                "chrom_1": ["chr1", "chr1", "chr1"],
-                "start_1": [100, 2000, 300],
-                "end_1": [200, 3000, 400],
-                "mapping_quality_1": [10, 10, 10],
-                "align_score_1": [10, 10, 10],
-                "align_base_qscore_1": [10, 10, 10],
-                "metadata_1": ["B", "A", "A"],
-                "chrom_2": ["chr1", "chr1", "chr1"],
-                "start_2": [1000, 200, 3000],
-                "end_2": [2000, 300, 4000],
-                "mapping_quality_2": [10, 10, 15],
-                "align_score_2": [10, 10, 15],
-                "align_base_qscore_2": [10, 10, 15],
-                "metadata_2": ["B", "B", "A"]
-            }
-        )
+        {
+            "read_name": ["read1", "read2", "read3"],
+            "read_length": [100, 100, 100],
+            "chrom_1": ["chr1", "chr1", "chr1"],
+            "start_1": [100, 2000, 300],
+            "end_1": [200, 3000, 400],
+            "mapping_quality_1": [10, 10, 10],
+            "align_score_1": [10, 10, 10],
+            "align_base_qscore_1": [10, 10, 10],
+            "metadata_1": ["B", "A", "A"],
+            "chrom_2": ["chr1", "chr1", "chr1"],
+            "start_2": [1000, 200, 3000],
+            "end_2": [2000, 300, 4000],
+            "mapping_quality_2": [10, 10, 15],
+            "align_score_2": [10, 10, 15],
+            "align_base_qscore_2": [10, 10, 15],
+            "metadata_2": ["B", "B", "A"],
+        }
+    )
+
 
 @pytest.fixture
 def binary_contacts_not_equated_3d():
@@ -264,9 +275,10 @@ def binary_contacts_not_equated_3d():
             "mapping_quality_3": [10, 10, 15],
             "align_score_3": [10, 10, 15],
             "align_base_qscore_3": [10, 10, 15],
-            "metadata_3": ["B", "B", "B"]
+            "metadata_3": ["B", "B", "B"],
         }
     )
+
 
 @pytest.fixture
 def binary_contacts_not_equated_4d():
@@ -301,9 +313,10 @@ def binary_contacts_not_equated_4d():
             "mapping_quality_4": [10, 10, 15],
             "align_score_4": [10, 10, 15],
             "align_base_qscore_4": [10, 10, 15],
-            "metadata_4": ["B", "B", "B"]
+            "metadata_4": ["B", "B", "B"],
         }
     )
+
 
 @pytest.fixture
 def binary_contacts_equated_2d():
@@ -324,9 +337,10 @@ def binary_contacts_equated_2d():
             "mapping_quality_2": [10, 10, 15],
             "align_score_2": [10, 10, 15],
             "align_base_qscore_2": [10, 10, 15],
-            "metadata_2": ["A", "B", "A"]
+            "metadata_2": ["A", "B", "A"],
         }
     )
+
 
 @pytest.fixture
 def binary_contacts_equated_3d():
@@ -354,9 +368,10 @@ def binary_contacts_equated_3d():
             "mapping_quality_3": [10, 10, 15],
             "align_score_3": [10, 10, 15],
             "align_base_qscore_3": [10, 10, 15],
-            "metadata_3": ["B", "B", "A"]
+            "metadata_3": ["B", "B", "A"],
         }
     )
+
 
 @pytest.fixture
 def binary_contacts_equated_4d():
@@ -391,9 +406,10 @@ def binary_contacts_equated_4d():
             "mapping_quality_4": [10, 10, 15],
             "align_score_4": [10, 10, 15],
             "align_base_qscore_4": [10, 10, 15],
-            "metadata_4": ["B", "B", "A"]
+            "metadata_4": ["B", "B", "A"],
         }
     )
+
 
 @pytest.fixture
 def labelled_binary_contacts_2d_unflipped():
@@ -414,9 +430,10 @@ def labelled_binary_contacts_2d_unflipped():
             "mapping_quality_2": [10, 10, 15],
             "align_score_2": [10, 10, 15],
             "align_base_qscore_2": [10, 10, 15],
-            "metadata_2": ["B", "B", "A"]
+            "metadata_2": ["B", "B", "A"],
         }
     )
+
 
 @pytest.fixture
 def labelled_binary_contacts_3d_unflipped():
@@ -444,9 +461,10 @@ def labelled_binary_contacts_3d_unflipped():
             "mapping_quality_3": [10, 10, 15, 14],
             "align_score_3": [10, 10, 15, 14],
             "align_base_qscore_3": [10, 10, 15, 14],
-            "metadata_3": ["B", "B", "B", "A"]
+            "metadata_3": ["B", "B", "B", "A"],
         }
     )
+
 
 @pytest.fixture
 def labelled_binary_contacts_3d_unflipped_example2():
@@ -474,11 +492,9 @@ def labelled_binary_contacts_3d_unflipped_example2():
             "mapping_quality_3": [10, 10, 14],
             "align_score_3": [10, 10, 14],
             "align_base_qscore_3": [10, 10, 14],
-            "metadata_3": ["B", "B", "A"]
+            "metadata_3": ["B", "B", "A"],
         }
     )
-
-
 
 
 @pytest.fixture
@@ -500,9 +516,10 @@ def labelled_binary_contacts_2d_flipped():
             "mapping_quality_2": [10, 10, 10],
             "align_score_2": [10, 10, 10],
             "align_base_qscore_2": [10, 10, 10],
-            "metadata_2": ["B", "B", "A"]
+            "metadata_2": ["B", "B", "A"],
         }
     )
+
 
 @pytest.fixture
 def labelled_binary_contacts_3d_flipped():
@@ -530,9 +547,10 @@ def labelled_binary_contacts_3d_flipped():
             "mapping_quality_3": [10, 10, 15, 20],
             "align_score_3": [10, 10, 15, 20],
             "align_base_qscore_3": [10, 10, 15, 20],
-            "metadata_3": ["B", "B", "B", "A"]
+            "metadata_3": ["B", "B", "B", "A"],
         }
     )
+
 
 @pytest.fixture
 def labelled_binary_contacts_3d_flipped_example2():
@@ -560,9 +578,10 @@ def labelled_binary_contacts_3d_flipped_example2():
             "mapping_quality_3": [10, 10, 14],
             "align_score_3": [10, 10, 14],
             "align_base_qscore_3": [10, 10, 14],
-            "metadata_3": ["B", "B", "A"]
+            "metadata_3": ["B", "B", "A"],
         }
     )
+
 
 @pytest.fixture
 def unlabelled_contacts_diff_chrom_2d():
@@ -609,7 +628,7 @@ def unlabelled_contacts_diff_chrom_3d():
             "end_3": [300, 500, 600],
             "mapping_quality_3": [10, 10, 5],
             "align_score_3": [10, 10, 5],
-            "align_base_qscore_3": [10, 10, 5]
+            "align_base_qscore_3": [10, 10, 5],
         }
     )
 
@@ -643,9 +662,10 @@ def unlabelled_contacts_diff_chrom_4d():
             "end_4": [350, 300, 600],
             "mapping_quality_4": [10, 10, 10],
             "align_score_4": [10, 10, 10],
-            "align_base_qscore_4": [10, 10, 10]
+            "align_base_qscore_4": [10, 10, 10],
         }
     )
+
 
 @pytest.fixture
 def unlabelled_contacts_diff_chrom_4d_flipped():
@@ -676,10 +696,9 @@ def unlabelled_contacts_diff_chrom_4d_flipped():
             "end_4": [4000, 500, 600],
             "mapping_quality_4": [10, 10, 10],
             "align_score_4": [10, 10, 10],
-            "align_base_qscore_4": [10, 10, 10]
+            "align_base_qscore_4": [10, 10, 10],
         }
     )
-
 
 
 @pytest.fixture
@@ -705,9 +724,10 @@ def unlabelled_contacts_diff_chrom_3d_flipped():
             "end_3": [2000, 3000, 200],
             "mapping_quality_3": [10, 10, 15],
             "align_score_3": [10, 10, 15],
-            "align_base_qscore_3": [10, 10, 15]
+            "align_base_qscore_3": [10, 10, 15],
         }
     )
+
 
 @pytest.fixture
 def unlabelled_contacts_diff_chrom_2d_flipped():
@@ -730,6 +750,7 @@ def unlabelled_contacts_diff_chrom_2d_flipped():
         }
     )
 
+
 @pytest.fixture
 def labelled_binary_contacts_diff_chrom_2d():
     return pd.DataFrame(
@@ -749,9 +770,10 @@ def labelled_binary_contacts_diff_chrom_2d():
             "mapping_quality_2": [10, 10, 15],
             "align_score_2": [10, 10, 15],
             "align_base_qscore_2": [10, 10, 15],
-            "metadata_2": ["B", "B", "A"]
+            "metadata_2": ["B", "B", "A"],
         }
     )
+
 
 @pytest.fixture
 def labelled_binary_contacts_diff_chrom_2d_flipped():
@@ -772,9 +794,10 @@ def labelled_binary_contacts_diff_chrom_2d_flipped():
             "mapping_quality_2": [10, 10, 15],
             "align_score_2": [10, 10, 15],
             "align_base_qscore_2": [10, 10, 15],
-            "metadata_2": ["B", "B", "A"]
+            "metadata_2": ["B", "B", "A"],
         }
     )
+
 
 @pytest.fixture
 def labelled_binary_contacts_diff_chrom_3d():
@@ -802,9 +825,10 @@ def labelled_binary_contacts_diff_chrom_3d():
             "mapping_quality_3": [10, 10, 15, 14],
             "align_score_3": [10, 10, 15, 14],
             "align_base_qscore_3": [10, 10, 15, 14],
-            "metadata_3": ["B", "B", "B", "A"]
+            "metadata_3": ["B", "B", "B", "A"],
         }
     )
+
 
 @pytest.fixture
 def labelled_binary_contacts_diff_chrom_3d_flipped():
@@ -832,6 +856,6 @@ def labelled_binary_contacts_diff_chrom_3d_flipped():
             "mapping_quality_3": [10, 10, 15, 20],
             "align_score_3": [10, 10, 15, 20],
             "align_base_qscore_3": [10, 10, 15, 20],
-            "metadata_3": ["B", "B", "B", "A"]
+            "metadata_3": ["B", "B", "B", "A"],
         }
     )

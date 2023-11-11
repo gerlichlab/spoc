@@ -1,0 +1,41 @@
+site_name: Spoc
+repo_url: https://github.com/gerlichlab/spoc
+repo_name: gerlichlab/spoc
+dev_addr: 127.0.0.1:8000
+theme:
+  name: material
+  features:
+    - navigation.instant
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.top
+nav:
+  - Getting Started: 
+    - Welcomde to spoc: index.md
+    - Installation: installation.md
+    - Load example dataset: load_example_dataset.md
+    - Transformation pipeline: transformation_pipeline.md
+  - Data Structures: data_structures.md
+  - Snipping: snipping.md
+  - Contributing: contributing.md
+  - API:
+    - CLI: cli.md
+    - IO: io.md
+    - Contacts: contacts.md
+    - Fragments: fragments.md
+    - Pixels: pixels.md
+    - Dataframe models: dataframe_models.md
+    - File parameters models: file_parameters_models.md
+plugins:
+  - mkdocstrings
+  - search
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - tables

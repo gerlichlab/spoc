@@ -1,3 +1,6 @@
+"""Tests for the pixels module"""
+# pylint: disable=redefined-outer-name
+
 import pytest
 import dask.dataframe as dd
 import pandas as pd
@@ -7,27 +10,14 @@ from spoc.contacts import Contacts
 
 
 @pytest.fixture
-def chromosome_sizes():
-    return pd.read_csv(
-        "./tests/test_files/hg19.chrom.sizes",
-        sep="\t",
-        header=None,
-        names=["chrom", "size"],
-        index_col=["chrom"],
-        squeeze=True,
-    )
-
-
-@pytest.fixture
-def genomic_binner(chromosome_sizes):
+def genomic_binner():
     """genomic binner for pixels"""
-    return pixels.GenomicBinner(
-        bin_size=100_000
-    )
+    return pixels.GenomicBinner(bin_size=100_000)
 
 
 @pytest.fixture
 def contacts_df():
+    """A dataframe containing contacts of order 3"""
     return pd.DataFrame(
         {
             "read_name": ["a", "b", "c", "d"],
@@ -57,9 +47,9 @@ def contacts_df():
     )
 
 
-
 @pytest.fixture
 def expected_pixels():
+    """A dataframe containing the expected pixels after binning"""
     return pd.DataFrame(
         {
             "chrom": ["chr1"] * 2,
@@ -70,17 +60,20 @@ def expected_pixels():
         }
     )
 
+
 @pytest.fixture
 def expected_pixels_different_chromosomes():
+    """A dataframe containing the expected pixels after binning with different chromosomes
+    enabled"""
     return pd.DataFrame(
         {
             "chrom_1": ["chr1"] * 3,
-            "start_1": [100_000,10_000_000, 5_000_000],
+            "start_1": [100_000, 10_000_000, 5_000_000],
             "chrom_2": ["chr1"] * 3,
-            "start_2": [500_000,25_000_000, 7_000_000],
+            "start_2": [500_000, 25_000_000, 7_000_000],
             "chrom_3": ["chr1", "chr1", "chr4"],
-            "start_3": [600_000,6_000_000, 2_000_000],
-            "contact_count": [1, 2,1],
+            "start_3": [600_000, 6_000_000, 2_000_000],
+            "contact_count": [1, 2, 1],
         }
     )
 
@@ -88,48 +81,60 @@ def expected_pixels_different_chromosomes():
 def test_genomic_binner_bins_correctly_same_chromosome_pandas(
     genomic_binner, contacts_df, expected_pixels
 ):
+    """Test if genomic binner bins correctly with same chromosome enabled"""
     contacts = Contacts(contacts_df)
     result = genomic_binner.bin_contacts(contacts)
     assert np.array_equal(result.data.values, expected_pixels.values)
     assert result.number_fragments == 3
     assert result.binsize == 100_000
-    assert result.binary_labels_equal == False
-    assert result.symmetry_flipped == False
+    assert not result.binary_labels_equal
+    assert not result.symmetry_flipped
     assert result.metadata_combi is None
+
 
 def test_genomic_binner_bins_correctly_w_different_chromosomes_pandas(
     genomic_binner, contacts_df, expected_pixels_different_chromosomes
 ):
+    """Test if genomic binner bins correctly with same chromosome disabled"""
     contacts = Contacts(contacts_df)
     result = genomic_binner.bin_contacts(contacts, same_chromosome=False)
-    assert np.array_equal(result.data.values, expected_pixels_different_chromosomes.values)
+    assert np.array_equal(
+        result.data.values, expected_pixels_different_chromosomes.values
+    )
     assert result.number_fragments == 3
     assert result.binsize == 100_000
-    assert result.binary_labels_equal == False
-    assert result.symmetry_flipped == False
+    assert not result.binary_labels_equal
+    assert not result.symmetry_flipped
     assert result.metadata_combi is None
 
 
 def test_genomic_binner_bins_correctly_same_chromosome_dask(
     genomic_binner, contacts_df, expected_pixels
 ):
+    """Test if genomic binner bins correctly with same chromosome enabled
+    using a dask dataframe"""
     contacts = Contacts(dd.from_pandas(contacts_df, chunksize=1000))
     result = genomic_binner.bin_contacts(contacts)
     assert np.array_equal(result.data.compute().values, expected_pixels.values)
     assert result.number_fragments == 3
     assert result.binsize == 100_000
-    assert result.binary_labels_equal == False
-    assert result.symmetry_flipped == False
+    assert not result.binary_labels_equal
+    assert not result.symmetry_flipped
     assert result.metadata_combi is None
+
 
 def test_genomic_binner_bins_correctly_w_different_chromosome_dask(
     genomic_binner, contacts_df, expected_pixels_different_chromosomes
 ):
+    """Test if genomic binner bins correctly with same chromosome disabled
+    using a dask dataframe"""
     contacts = Contacts(dd.from_pandas(contacts_df, chunksize=1000))
     result = genomic_binner.bin_contacts(contacts, same_chromosome=False)
-    assert np.array_equal(result.data.compute().values, expected_pixels_different_chromosomes.values)
+    assert np.array_equal(
+        result.data.compute().values, expected_pixels_different_chromosomes.values
+    )
     assert result.number_fragments == 3
     assert result.binsize == 100_000
-    assert result.binary_labels_equal == False
-    assert result.symmetry_flipped == False
+    assert not result.binary_labels_equal
+    assert not result.symmetry_flipped
     assert result.metadata_combi is None
