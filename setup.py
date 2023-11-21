@@ -17,7 +17,7 @@ requirements = [
     "ipykernel",
     "matplotlib>=3.5.3",
     "seaborn>=0.11.2",
-    "duckdb==0.3.4",
+    "duckdb==0.9.1",
     "sparse==0.13.0",
     "numba>=0.57.0",
 ]
