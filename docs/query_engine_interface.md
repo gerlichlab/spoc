@@ -14,7 +14,12 @@ namespace genomicData {
     class gDataProtocol{
         <<Protocol>>
         +DataFrame data
-        get_schema(): pandera.Schema
+        +get_schema(): pandera.Schema
+    }
+
+    class QueryStep{
+        <<Protocol>>
+        +validate_schema(schema)
     }
 
     class BasicQuery
@@ -31,11 +36,15 @@ namespace genomicData {
     gDataProtocol ..|> Contacts : realization
     gDataProtocol ..|> QueryResult : realization
     Filter --|> RegionFilter
+    QueryStep ..|> Filter
+    QueryStep ..|> Transformation
+    QueryStep ..|> Aggregation
 
     class Filter {
         <<Interface>>
         +gDataProtocol data
         +get_row_subset() pd.Series~gDataIds~
+        +validate_schema(schema)
     }
 
     class RegionFilter {
@@ -43,12 +52,17 @@ namespace genomicData {
         +pd.DataFrame~Regions~
         +String anchor_mode
         +get_row_subset() pd.Series~gDataIds~
+        +validate_schema(schema)
     }
         
 
-    class Aggregation
+    class Aggregation{
+        +validate_schema(schema)
+    }
 
-    class Transformation
+    class Transformation{
+        +validate_schema(schema)
+    }
 
     class QueryResult
         QueryResult: +DataFrame data
