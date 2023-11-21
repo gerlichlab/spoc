@@ -20,48 +20,43 @@ namespace genomicData {
     class QueryStep{
         <<Protocol>>
         +validate_schema(schema)
+        -__call__() gDataProtocol
     }
 
     class BasicQuery
-        BasicQuery: +List~Filter|Aggregation|Transformation~ query_plan
+        BasicQuery: +List~QueryStep~ query_plan
         BasicQuery: +compose_with(BasicQuery) BasicQuery
         BasicQuery: +query(gDataProtocol)
 
     BasicQuery --> QueryResult : query result
-    BasicQuery "1" --* "*" Filter
+    BasicQuery "1" --* "*" RegionFilter
     BasicQuery "1" --* "*" Aggregation
     BasicQuery "1" --* "*" Transformation
     gDataProtocol --> BasicQuery : takes input
     gDataProtocol ..|> Pixels : realization
     gDataProtocol ..|> Contacts : realization
     gDataProtocol ..|> QueryResult : realization
-    Filter --|> RegionFilter
-    QueryStep ..|> Filter
+    QueryStep ..|> RegionFilter
     QueryStep ..|> Transformation
     QueryStep ..|> Aggregation
 
-    class Filter {
-        <<Interface>>
-        +gDataProtocol data
-        +get_row_subset() pd.Series~gDataIds~
-        +validate_schema(schema)
-    }
 
     class RegionFilter {
-        +gDataProtocol data
         +pd.DataFrame~Regions~
         +String anchor_mode
-        +get_row_subset() pd.Series~gDataIds~
         +validate_schema(schema)
+        -__call__(data) gDataProtocol
     }
         
 
     class Aggregation{
         +validate_schema(schema)
+        -__call__() gDataProtocol
     }
 
     class Transformation{
         +validate_schema(schema)
+        -__call__() gDataProtocol
     }
 
     class QueryResult

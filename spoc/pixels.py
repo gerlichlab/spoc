@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Union, Optional, List
 import pandas as pd
 import dask.dataframe as dd
-from spoc.models.dataframe_models import PixelSchema, DataFrame
+from spoc.models.dataframe_models import DataMode, PixelSchema, DataFrame
 from spoc.models.file_parameter_models import PixelParameters
 from spoc.contacts import Contacts
 
@@ -263,12 +263,14 @@ class GenomicBinner:
         """
         self._contact_order = contacts.number_fragments
         contacts_w_midpoints = self._assign_midpoints(contacts.data)
-        if contacts.is_dask:
+        if contacts.data_mode == DataMode.DASK:
             contact_bins = contacts_w_midpoints.map_partitions(
                 self._assign_bins, meta=self._get_assigned_bin_output_structure()
             )
-        else:
+        elif contacts.data_mode == DataMode.PANDAS:
             contact_bins = self._assign_bins(contacts_w_midpoints)
+        else:
+            raise ValueError(f"Data mode: {contacts.data_mode} not supported!")
         pixels = (
             contact_bins.groupby(
                 [

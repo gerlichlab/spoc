@@ -1,14 +1,16 @@
 """Dataframe models"""
 
+from enum import Enum, auto
 from typing import Iterable, Union, Dict
 import copy
 import pandera as pa
 import pandas as pd
 import dask.dataframe as dd
+import duckdb
 
 # Define dataframe type
 
-DataFrame = Union[pd.DataFrame, dd.DataFrame]
+DataFrame = Union[pd.DataFrame, dd.DataFrame, duckdb.DuckDBPyRelation]
 
 FragmentSchema = pa.DataFrameSchema(
     {
@@ -113,6 +115,9 @@ class ContactSchema:
                     self._schema, data_frame, "Header is invalid!"
                 )
 
+    def get_schema(self) -> pa.DataFrameSchema:
+        return self._schema
+
     def validate(self, data_frame: DataFrame) -> DataFrame:
         """Validate multiway contact dataframe
 
@@ -120,6 +125,9 @@ class ContactSchema:
             data_frame (DataFrame): The DataFrame to validate.
         """
         self.validate_header(data_frame)
+        if isinstance(data_frame, duckdb.DuckDBPyRelation):
+            # duckdb does not support schema validation
+            return data_frame
         return self._schema.validate(data_frame)
 
 
@@ -182,6 +190,9 @@ class PixelSchema:
                     self._schema, data_frame, "Header is invalid!"
                 )
 
+    def get_schema(self) -> pa.DataFrameSchema:
+        return self._schema
+
     def validate(self, data_frame: DataFrame) -> DataFrame:
         """Validate multiway contact dataframe
 
@@ -190,3 +201,10 @@ class PixelSchema:
 
         """
         return self._schema.validate(data_frame)
+
+
+class DataMode(Enum):
+    """Enum for data mode"""
+    PANDAS:auto = "pandas"
+    DASK:auto = "dask"
+    DUCKDB:auto = "duckdb"

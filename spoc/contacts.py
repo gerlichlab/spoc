@@ -6,9 +6,11 @@ from typing import List, Optional, Dict
 import pandas as pd
 import dask.dataframe as dd
 import numpy as np
+import pandera as pa
+import duckdb
 from spoc.models.dataframe_models import ContactSchema, DataFrame
+from spoc.models.dataframe_models import DataMode
 from spoc.models.file_parameter_models import ContactsParameters
-
 
 class Contacts:
     """N-way genomic contacts
@@ -51,10 +53,15 @@ class Contacts:
             number_fragments=self.number_fragments,
             contains_metadata=self.contains_metadata,
         )
+        # TODO: make this work for duckdb pyrelation -> switch to mode
         if isinstance(contact_frame, pd.DataFrame):
-            self.is_dask = False
+            self.data_mode = DataMode.PANDAS
+        elif isinstance(contact_frame, dd.DataFrame):
+            self.data_mode = DataMode.DASK
+        elif isinstance(contact_frame, duckdb.DuckDBPyRelation):
+            self.data_mode = DataMode.DUCKDB
         else:
-            self.is_dask = True
+            raise ValueError("Unknown data mode!")
         self._data = self._schema.validate(contact_frame)
         self.metadata_combi = metadata_combi
         self.label_sorted = label_sorted
@@ -88,6 +95,10 @@ class Contacts:
             symmetry_flipped=self.symmetry_flipped,
         )
 
+    def get_schema(self) -> pa.DataFrameSchema:
+        """Returns the schema of the underlying data"""
+        return self._schema.get_schema()
+
     def _guess_number_fragments(self, contact_frame: DataFrame) -> int:
         """Guesses the number of fragments from the contact frame"""
         return max(int(i.split("_")[1]) for i in contact_frame.columns if "start" in i)
@@ -99,10 +110,12 @@ class Contacts:
             raise ValueError("Contacts do not contain metadata!")
         output = set()
         for i in range(self.number_fragments):
-            if self.is_dask:
+            if self.data_mode == DataMode.DASK:
                 output.update(self.data[f"metadata_{i+1}"].unique().compute())
-            else:
+            elif self.data_mode == DataMode.PANDAS:
                 output.update(self.data[f"metadata_{i+1}"].unique())
+            else:
+                raise ValueError("Label values not supported for duckdb!")
         return output
 
     def get_chromosome_values(self) -> List[str]:
@@ -110,10 +123,12 @@ class Contacts:
         # TODO: This could be put in global metadata of parquet file
         output = set()
         for i in range(self.number_fragments):
-            if self.is_dask:
+            if self.data_mode == DataMode.DASK:
                 output.update(self.data[f"chrom_{i+1}"].unique().compute())
-            else:
+            elif self.data_mode == DataMode.PANDAS:
                 output.update(self.data[f"chrom_{i+1}"].unique())
+            else:
+                raise ValueError("Chromosome values not supported for duckdb!")
         return output
 
     @property
@@ -150,18 +165,22 @@ class ContactManipulator:
         # validate that merge is possible
         if len({i.number_fragments for i in merge_list}) != 1:
             raise ValueError("All contacts need to have the same order!")
-        if len({i.is_dask for i in merge_list}) != 1:
-            raise ValueError("Mixture of dask and pandas dataframes is not supported!")
+        if len({i.data_mode for i in merge_list}) != 1:
+            raise ValueError("Mixture of dataframes is not supported!")
         # TODO: assert all have same labelling state
         number_fragments = merge_list[0].number_fragments
-        if merge_list[0].is_dask:
+        if merge_list[0].data_mode == DataMode.DASK:
             return Contacts(
                 dd.concat([i.data for i in merge_list]),
                 number_fragments=number_fragments,
             )
-        return Contacts(
-            pd.concat([i.data for i in merge_list]), number_fragments=number_fragments
-        )
+        elif merge_list[0].data_mode == DataMode.PANDAS:
+            return Contacts(
+                pd.concat([i.data for i in merge_list]),
+                number_fragments=number_fragments,
+            )
+        else:
+            raise ValueError("Merging duckdb relations is not supported!")
 
     @staticmethod
     def _generate_rename_columns(order, start_index=1):
@@ -317,13 +336,15 @@ class ContactManipulator:
                 )
             )
         # determine which method to use for concatenation
-        if contacts.is_dask:
+        if contacts.data_mode == DataMode.DASK:
             # this is a bit of a hack to get the index sorted. Dask does not support index sorting
             result = (
                 dd.concat(subsets).reset_index().sort_values("index").set_index("index")
             )
-        else:
+        elif contacts.data_mode == DataMode.PANDAS:
             result = pd.concat(subsets).sort_index()
+        else:
+            raise ValueError("Sorting labels for duckdb relations is not implemented.")
         return Contacts(
             result, number_fragments=contacts.number_fragments, label_sorted=True
         )
@@ -422,13 +443,17 @@ class ContactManipulator:
                 subset[f"metadata_{i+1}"] = j
             subsets.append(subset)
         # determine which method to use for concatenation
-        if contacts.is_dask:
+        if contacts.data_mode == DataMode.DASK:
             # this is a bit of a hack to get the index sorted. Dask does not support index sorting
             result = (
                 dd.concat(subsets).reset_index().sort_values("index").set_index("index")
             )
-        else:
+        elif contacts.data_mode == DataMode.PANDAS:
             result = pd.concat(subsets).sort_index()
+        else:
+            raise ValueError(
+                "Equate binary labels for duckdb relations is not implemented."
+            )
         return Contacts(
             result,
             number_fragments=contacts.number_fragments,
