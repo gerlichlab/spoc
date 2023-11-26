@@ -3,7 +3,7 @@ import pytest
 import pandas as pd
 import dask.dataframe as dd
 import duckdb
-from spoc.query_engine import BasicQuery
+from spoc.query_engine import BasicQuery, Anchor, Snipper
 from spoc.contacts import Contacts
 
 DUCKDB_CONNECTION = duckdb.connect(database=":memory:")
@@ -21,8 +21,8 @@ def example_2d_df_fixture():
             "align_score_1": [100, 100, 100, 100],
             "align_base_qscore_1": [100, 100, 100, 100],
             "chrom_2": ["chr1", "chr1", "chr1", "chr1"],
-            "start_2": [100, 200, 300, 400],
-            "end_2": [200, 300, 400, 500],
+            "start_2": [300, 100, 300, 400],
+            "end_2": [400, 200, 400, 500],
             "mapping_quality_2": [30, 30, 30, 30],
             "align_score_2": [100, 100, 100, 100],
             "align_base_qscore_2": [100, 100, 100, 100],
@@ -30,6 +30,18 @@ def example_2d_df_fixture():
             "read_length": [100, 100, 100, 100],
         }
     )
+
+@pytest.fixture(name="single_region")
+def single_region_fixture():
+    """Single region"""
+    return pd.DataFrame(
+        {
+            "chrom": ["chr1"],
+            "start": [150],
+            "end": [200],
+        }
+    )
+
 
 @pytest.fixture(name="example_2d_contacts_pandas")
 def example_2d_contacts_pandas_fixture(example_2d_df):
@@ -65,9 +77,26 @@ def test_no_filter_returns_all_contacts(contact_fixture, request):
     result = query.query(contacts)
     assert result.load_result().shape[0] == 4
 
-def test_any_anchor_region_returns_correct_contacts():
+@pytest.mark.parametrize("contact_fixture", [
+    "example_2d_contacts_pandas",
+    "example_2d_contacts_dask",
+    "example_2d_contacts_duckdb"
+]
+)
+def test_any_anchor_region_returns_correct_contacts(contact_fixture,single_region, request):
     """Test that any anchor region returns correct contacts"""
-    ...
+    # setup
+    contacts = request.getfixturevalue(contact_fixture)
+    query_plan = [
+        Snipper(
+            regions=single_region,
+            anchor_mode=Anchor(mode="ANY")
+        )
+    ]
+    query = BasicQuery(query_plan=query_plan)
+    result = query.query(contacts)
+    assert result.load_result().shape[0] == 2
+    assert result.load_result().read_name.tolist() == ["read1", "read2"]
 
 def test_all_anchor_regions_returns_correct_contacts():
     """Test that all anchor regions returns correct contacts"""

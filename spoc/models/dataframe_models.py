@@ -1,7 +1,7 @@
 """Dataframe models"""
 
 from enum import Enum, auto
-from typing import Iterable, Union, Dict
+from typing import Iterable, Union, Dict, Protocol, List
 import copy
 import pandera as pa
 import pandas as pd
@@ -31,6 +31,26 @@ FragmentSchema = pa.DataFrameSchema(
     coerce=True,
 )
 
+
+# Protocol for genomic data
+
+class GenomicDataSchema(Protocol):
+    """Protocol for genomic data schema
+    to be used in the query engine"""
+
+
+    def get_position_fields(self) -> Dict[int, List[str]]:
+        """Returns the position fields as a dictionary
+        of framgent index to the respective fields"""
+        ...
+
+    def et_contact_order(self) -> int:
+        """Returns the order of the genomic data"""
+        ...
+
+    def get_schema(self) -> pa.DataFrameSchema:
+        """Return the schema of the underlying data"""
+        ...
 
 # schemas for higher order contacts
 
@@ -118,6 +138,19 @@ class ContactSchema:
     def get_schema(self) -> pa.DataFrameSchema:
         return self._schema
 
+    def get_position_fields(self) -> Dict[int, List[str]]:
+        """Returns the position fields as a dictionary
+        of framgent index to the respective fields"""
+        return {
+            i: [f"chrom_{i}", f"start_{i}", f"end_{i}"]
+            for i in range(1, self._number_fragments + 1)
+        }
+
+
+    def get_contact_order(self) -> int:
+        """Returns the order of the genomic data"""
+        return self._number_fragments
+
     def validate(self, data_frame: DataFrame) -> DataFrame:
         """Validate multiway contact dataframe
 
@@ -192,6 +225,18 @@ class PixelSchema:
 
     def get_schema(self) -> pa.DataFrameSchema:
         return self._schema
+    
+    def get_position_fields(self) -> Dict[int, List[str]]:
+        """Returns the position fields as a dictionary
+        of framgent index to the respective fields"""
+        return {
+            i: [f"chrom_{i}", f"start_{i}"]
+            for i in range(1, self._number_fragments + 1)
+        }
+
+    def get_contact_order(self) -> int:
+        """Returns the order of the genomic data"""
+        return self._number_fragments
 
     def validate(self, data_frame: DataFrame) -> DataFrame:
         """Validate multiway contact dataframe
