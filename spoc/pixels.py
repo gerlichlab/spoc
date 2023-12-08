@@ -45,8 +45,8 @@ class Pixels:
     def __init__(
         self,
         pixel_source: DataFrame,
-        number_fragments: Optional[int] = None,
-        binsize: Optional[int] = None,
+        number_fragments: int,
+        binsize: int,
         metadata_combi: Optional[List[str]] = None,
         label_sorted: bool = False,
         binary_labels_equal: bool = False,

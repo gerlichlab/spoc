@@ -268,7 +268,7 @@ class PixelSchema:
         """Returns the position fields as a dictionary
         of framgent index to the respective fields"""
         return {
-            i: [f"chrom_{i}", f"start_{i}"]
+            i: ["chrom",f"start_{i}"]
             for i in range(1, self._number_fragments + 1)
         }
 
@@ -283,6 +283,10 @@ class PixelSchema:
             data_frame (DataFrame): The DataFrame to validate.
 
         """
+        self.validate_header(data_frame)
+        if isinstance(data_frame, duckdb.DuckDBPyRelation):
+            # duckdb does not support schema validation
+            return data_frame
         return self._schema.validate(data_frame)
 
 

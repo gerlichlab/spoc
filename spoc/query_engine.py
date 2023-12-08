@@ -132,7 +132,8 @@ class Snipper:
                                      (data.{start} between regions.start and regions.end or 
                                        data.{end} between regions.start and regions.end))"""
             else:
-                raise NotImplementedError
+                chrom, start = fields
+                output_string = f"""(data.chrom = regions.chrom and data.{start} between regions.start and regions.end)"""
             query_strings.append(output_string)
         return join_string.join(query_strings)
 
@@ -167,14 +168,14 @@ class Snipper:
         input_schema = genomic_data.get_schema()
         # bring input to duckdb dataframe
         if isinstance(genomic_data.data, duckdb.DuckDBPyRelation):
-            genomic_data = genomic_data.data
+            genomic_df = genomic_data.data
         else:
-            genomic_data = self._convert_to_duckdb(genomic_data.data)
+            genomic_df = self._convert_to_duckdb(genomic_data.data)
         regions = self._convert_to_duckdb(self._regions)
         # get position columns and construct filter
         position_fields = input_schema.get_position_fields()
         # construct query
-        df = genomic_data.set_alias("data").join(
+        df = genomic_df.set_alias("data").join(
             regions.set_alias("regions"), self._contstruct_filter(position_fields)
         )
         return QueryResult(df, self._get_transformed_schema(input_schema))
