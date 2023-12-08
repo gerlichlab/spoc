@@ -1,10 +1,16 @@
 """This part of spoc is responsible for binned,
 higher order contacts in the form of 'genomic pixels'"""
 from pathlib import Path
-from typing import Union, Optional, List
+from typing import Optional, List
 import pandas as pd
 import dask.dataframe as dd
-from spoc.models.dataframe_models import DataMode, PixelSchema, DataFrame
+import duckdb
+from spoc.models.dataframe_models import (
+    DataMode,
+    PixelSchema,
+    DataFrame,
+    GenomicDataSchema,
+)
 from spoc.models.file_parameter_models import PixelParameters
 from spoc.contacts import Contacts
 
@@ -38,7 +44,7 @@ class Pixels:
 
     def __init__(
         self,
-        pixel_source: Union[pd.DataFrame, dd.DataFrame, str],
+        pixel_source: DataFrame,
         number_fragments: Optional[int] = None,
         binsize: Optional[int] = None,
         metadata_combi: Optional[List[str]] = None,
@@ -60,15 +66,16 @@ class Pixels:
         self._symmetry_flipped = symmetry_flipped
         self._metadata_combi = metadata_combi
         self._label_sorted = label_sorted
-        if isinstance(pixel_source, (pd.DataFrame, dd.DataFrame)):
-            self._data = self._schema.validate(pixel_source)
-            self._path = None
+        # get data mode
+        if isinstance(pixel_source, pd.DataFrame):
+            self.data_mode = DataMode.PANDAS
+        elif isinstance(pixel_source, dd.DataFrame):
+            self.data_mode = DataMode.DASK
+        elif isinstance(pixel_source, duckdb.DuckDBPyRelation):
+            self.data_mode = DataMode.DUCKDB
         else:
-            # check whether path exists
-            if not Path(pixel_source).exists():
-                raise ValueError(f"Path: {pixel_source} does not exist!")
-            self._path = Path(pixel_source)
-            self._data = None
+            raise ValueError("Unknown data mode!")
+        self._data = self._schema.validate(pixel_source)
 
     @staticmethod
     def from_uri(uri, mode="path") -> "Pixels":
@@ -95,19 +102,8 @@ class Pixels:
         # pylint: disable=import-outside-toplevel
         from spoc.io import FileManager
 
-        # get read mode
-        if mode == "path":
-            load_dataframe = False
-            use_dask = False
-        elif mode == "pandas":
-            load_dataframe = True
-            use_dask = False
-        else:
-            load_dataframe = True
-            use_dask = True
-        return FileManager(use_dask=use_dask).load_pixels(
-            uri, load_dataframe=load_dataframe
-        )
+        # TODO: add duckdb readmode to FileManager
+        return FileManager(use_dask=mode == "dask").load_pixels(uri)
 
     def get_global_parameters(self) -> PixelParameters:
         """Returns global parameters of pixels
@@ -124,15 +120,6 @@ class Pixels:
             symmetry_flipped=self._symmetry_flipped,
             same_chromosome=self._same_chromosome,
         )
-
-    @property
-    def path(self) -> str:
-        """Returns path of pixels
-
-        Returns:
-            str: The path of the pixels.
-        """
-        return self._path
 
     @property
     def data(self) -> DataFrame:
@@ -199,6 +186,10 @@ class Pixels:
 
         """
         return self._same_chromosome
+
+    def get_schema(self) -> GenomicDataSchema:
+        """Returns the schema of the underlying data"""
+        return self._schema
 
 
 class GenomicBinner:

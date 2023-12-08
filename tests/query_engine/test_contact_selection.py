@@ -1,5 +1,4 @@
 """Tests for contact selection"""
-from itertools import repeat
 import pytest
 import pandas as pd
 import dask.dataframe as dd

@@ -119,23 +119,13 @@ def test_read_pixels_metadata_json_fails_gracefully():
         assert e.value == "Metadata file not found at bad_path/metadata.json"
 
 
-def test_read_pixels_as_path(example_pixels_w_metadata):
-    """Test reading pixels metadata json file"""
-    pixels_dir, expected_parameters, paths, _ = example_pixels_w_metadata
-    # read metadata
-    for path, expected in zip(paths, expected_parameters):
-        pixels = FileManager().load_pixels(pixels_dir, expected, load_dataframe=False)
-        assert pixels.path == path
-        assert pixels.get_global_parameters() == expected
-
-
 def test_read_pixels_as_pandas_df(example_pixels_w_metadata):
     """Test reading pixels metadata json file"""
     pixels_dir, expected_parameters, paths, dataframes = example_pixels_w_metadata
     # read metadata
     for path, expected, df in zip(paths, expected_parameters, dataframes):
         pixels = FileManager(use_dask=False).load_pixels(
-            pixels_dir, expected, load_dataframe=True
+            pixels_dir, expected
         )
         assert pixels.get_global_parameters() == expected
         assert pixels.data.equals(df)
@@ -147,7 +137,7 @@ def test_read_pixels_as_dask_df(example_pixels_w_metadata):
     # read metadata
     for path, expected, df in zip(paths, expected_parameters, dataframes):
         pixels = FileManager(use_dask=True).load_pixels(
-            pixels_dir, expected, load_dataframe=True
+            pixels_dir, expected
         )
         assert pixels.get_global_parameters() == expected
         assert pixels.data.compute().equals(df)

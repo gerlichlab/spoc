@@ -213,8 +213,7 @@ class FileManager:
     def load_pixels(
         self,
         path: str,
-        global_parameters: Optional[PixelParameters] = None,
-        load_dataframe: bool = True,
+        global_parameters: Optional[PixelParameters] = None
     ) -> Pixels:
         """Loads specific pixels instance based on global parameters.
         load_dataframe specifies whether the dataframe should be loaded, or whether pixels
@@ -223,7 +222,6 @@ class FileManager:
         Args:
             path (str): Path to the pixel data.
             global_parameters (PixelParameters): Global parameters.
-            load_dataframe (bool, optional): Whether to load the dataframe. Defaults to True.
 
         Returns:
             Pixels: Pixels object containing the pixel data.
@@ -247,10 +245,7 @@ class FileManager:
         )
         # rewrite path to contain parent folder
         pixel_path = Path(path) / pixel_path
-        if load_dataframe:
-            df = self._parquet_reader_func(pixel_path)
-        else:
-            df = pixel_path
+        df = self._parquet_reader_func(pixel_path)
         return Pixels(df, **matched_parameters.dict())
 
     def load_contacts(

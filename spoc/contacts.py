@@ -8,7 +8,7 @@ import dask.dataframe as dd
 import numpy as np
 import pandera as pa
 import duckdb
-from spoc.models.dataframe_models import ContactSchema, DataFrame
+from spoc.models.dataframe_models import ContactSchema, DataFrame, GenomicDataSchema
 from spoc.models.dataframe_models import DataMode
 from spoc.models.file_parameter_models import ContactsParameters
 
@@ -96,7 +96,7 @@ class Contacts:
             symmetry_flipped=self.symmetry_flipped,
         )
 
-    def get_schema(self) -> pa.DataFrameSchema:
+    def get_schema(self) -> GenomicDataSchema:
         """Returns the schema of the underlying data"""
         return self._schema
 
