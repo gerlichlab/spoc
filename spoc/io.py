@@ -211,9 +211,7 @@ class FileManager:
         return matched_parameters[0]
 
     def load_pixels(
-        self,
-        path: str,
-        global_parameters: Optional[PixelParameters] = None
+        self, path: str, global_parameters: Optional[PixelParameters] = None
     ) -> Pixels:
         """Loads specific pixels instance based on global parameters.
         load_dataframe specifies whether the dataframe should be loaded, or whether pixels

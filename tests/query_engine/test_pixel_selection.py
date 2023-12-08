@@ -192,7 +192,8 @@ def test_specific_anchor_regions_returns_correct_pixels(
     result = query.query(pixels)
     # test
     assert result.load_result().shape[0] == len(expected_reads)
-    assert sorted(result.load_result()['count'].tolist()) == sorted(expected_reads)
+    assert sorted(result.load_result()["count"].tolist()) == sorted(expected_reads)
+
 
 @pytest.mark.parametrize(
     "pixels_fixture",
@@ -203,7 +204,7 @@ def test_specific_anchor_regions_returns_correct_pixels(
     ],
 )
 def test_any_anchor_region_returns_correct_pixels_multi_region(
-        pixels_fixture, multi_region, request
+    pixels_fixture, multi_region, request
 ):
     """Test that any anchor region returns correct pixels"""
     # setup
@@ -214,9 +215,8 @@ def test_any_anchor_region_returns_correct_pixels_multi_region(
     result = query.query(pixels)
     # test
     assert result.load_result().shape[0] == 4
-    assert sorted(result.load_result()['count'].tolist()) == sorted(
-        [1,2,3,4]
-    )
+    assert sorted(result.load_result()["count"].tolist()) == sorted([1, 2, 3, 4])
+
 
 @pytest.mark.parametrize(
     "pixels_fixture",
@@ -238,9 +238,8 @@ def test_all_anchor_regions_returns_correct_pixels_multi_region(
     result = query.query(pixels)
     # test
     assert result.load_result().shape[0] == 1
-    assert sorted(result.load_result()['count'].tolist()) == sorted(
-        [2]
-    )
+    assert sorted(result.load_result()["count"].tolist()) == sorted([2])
+
 
 @pytest.mark.parametrize(
     "pixels_fixture",
@@ -265,9 +264,8 @@ def test_pixels_duplicated_for_multiple_overlapping_regions(
     result = query.query(pixels)
     # test
     assert result.load_result().shape[0] == 2
-    assert sorted(result.load_result()['count'].tolist()) == sorted(
-        [2,2]
-    )
+    assert sorted(result.load_result()["count"].tolist()) == sorted([2, 2])
+
 
 @pytest.mark.parametrize(
     "pixels_fixture,anchors,expected_reads",
@@ -281,9 +279,7 @@ def test_pixels_duplicated_for_multiple_overlapping_regions(
             ]
             * 3,
             [[1]] * 3 + [[2]] * 3 + [[1, 2]] * 3,
-            [[1,2,3]] * 3
-            + [[2,4]] * 3
-            + [[2]] * 3,
+            [[1, 2, 3]] * 3 + [[2, 4]] * 3 + [[2]] * 3,
         )
     ],
 )
@@ -294,16 +290,15 @@ def test_specific_anchor_regions_returns_correct_pixels_multi_region(
     # setup
     pixels = request.getfixturevalue(pixels_fixture)
     query_plan = [
-        Snipper(
-            regions=multi_region, anchor_mode=Anchor(mode="ALL", anchors=anchors)
-        )
+        Snipper(regions=multi_region, anchor_mode=Anchor(mode="ALL", anchors=anchors))
     ]
     # execution
     query = BasicQuery(query_plan=query_plan)
     result = query.query(pixels)
     # test
     assert result.load_result().shape[0] == len(expected_reads)
-    assert sorted(result.load_result()['count'].tolist()) == sorted(expected_reads)
+    assert sorted(result.load_result()["count"].tolist()) == sorted(expected_reads)
+
 
 # validation problems
 

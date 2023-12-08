@@ -268,8 +268,7 @@ class PixelSchema:
         """Returns the position fields as a dictionary
         of framgent index to the respective fields"""
         return {
-            i: ["chrom",f"start_{i}"]
-            for i in range(1, self._number_fragments + 1)
+            i: ["chrom", f"start_{i}"] for i in range(1, self._number_fragments + 1)
         }
 
     def get_contact_order(self) -> int:
