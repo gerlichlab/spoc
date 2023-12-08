@@ -26,7 +26,7 @@ def example_2d_df_fixture():
             "mapping_quality_2": [30, 30, 30, 30],
             "align_score_2": [100, 100, 100, 100],
             "align_base_qscore_2": [100, 100, 100, 100],
-            "read_name": ["read1", "read2", "read3", "read4"], # read name serves as id
+            "read_name": ["read1", "read2", "read3", "read4"],  # read name serves as id
             "read_length": [100, 100, 100, 100],
         }
     )
@@ -55,6 +55,7 @@ def single_region_2_fixture():
         }
     )
 
+
 @pytest.fixture(name="multi_region")
 def multi_region_fixture():
     """Multi region"""
@@ -65,6 +66,7 @@ def multi_region_fixture():
             "end": [200, 800],
         }
     )
+
 
 @pytest.fixture(name="multi_region_2")
 def multi_region_2_fixture():
@@ -152,9 +154,7 @@ def test_all_anchor_regions_returns_correct_contacts(
     """Test that all anchor regions returns correct contacts"""
     # setup
     contacts = request.getfixturevalue(contact_fixture)
-    query_plan = [
-        Snipper(regions=single_region, anchor_mode=Anchor(mode="ALL"))
-    ]
+    query_plan = [Snipper(regions=single_region, anchor_mode=Anchor(mode="ALL"))]
     # execution
     query = BasicQuery(query_plan=query_plan)
     result = query.query(contacts)
@@ -197,6 +197,7 @@ def test_specific_anchor_regions_returns_correct_contacts(
     assert result.load_result().shape[0] == len(expected_reads)
     assert sorted(result.load_result().read_name.tolist()) == sorted(expected_reads)
 
+
 @pytest.mark.parametrize(
     "contact_fixture",
     [
@@ -205,19 +206,22 @@ def test_specific_anchor_regions_returns_correct_contacts(
         "example_2d_contacts_duckdb",
     ],
 )
-def test_any_anchor_region_returns_correct_contacts_multi_region(contact_fixture, multi_region, request):
+def test_any_anchor_region_returns_correct_contacts_multi_region(
+    contact_fixture, multi_region, request
+):
     """Test that any anchor region returns correct contacts"""
     # setup
     contacts = request.getfixturevalue(contact_fixture)
-    query_plan = [
-        Snipper(regions=multi_region, anchor_mode=Anchor(mode="ANY"))
-    ]
+    query_plan = [Snipper(regions=multi_region, anchor_mode=Anchor(mode="ANY"))]
     # execution
     query = BasicQuery(query_plan=query_plan)
     result = query.query(contacts)
     # test
     assert result.load_result().shape[0] == 4
-    assert sorted(result.load_result().read_name.tolist()) == sorted(["read1", 'read2', 'read3', 'read4'])
+    assert sorted(result.load_result().read_name.tolist()) == sorted(
+        ["read1", "read2", "read3", "read4"]
+    )
+
 
 @pytest.mark.parametrize(
     "contact_fixture",
@@ -227,19 +231,20 @@ def test_any_anchor_region_returns_correct_contacts_multi_region(contact_fixture
         "example_2d_contacts_duckdb",
     ],
 )
-def test_all_anchor_regions_returns_correct_contacts_multi_region(contact_fixture, multi_region, request):
+def test_all_anchor_regions_returns_correct_contacts_multi_region(
+    contact_fixture, multi_region, request
+):
     """Test that all anchor regions returns correct contacts"""
     # setup
     contacts = request.getfixturevalue(contact_fixture)
-    query_plan = [
-        Snipper(regions=multi_region, anchor_mode=Anchor(mode="ALL"))
-    ]
+    query_plan = [Snipper(regions=multi_region, anchor_mode=Anchor(mode="ALL"))]
     # execution
     query = BasicQuery(query_plan=query_plan)
     result = query.query(contacts)
     # test
     assert result.load_result().shape[0] == 1
-    assert sorted(result.load_result().read_name.tolist()) == sorted(['read2'])
+    assert sorted(result.load_result().read_name.tolist()) == sorted(["read2"])
+
 
 @pytest.mark.parametrize(
     "contact_fixture",
@@ -249,22 +254,22 @@ def test_all_anchor_regions_returns_correct_contacts_multi_region(contact_fixtur
         "example_2d_contacts_duckdb",
     ],
 )
-def test_contacts_duplicated_for_multiple_overlapping_regions(contact_fixture, multi_region_2, request):
+def test_contacts_duplicated_for_multiple_overlapping_regions(
+    contact_fixture, multi_region_2, request
+):
     """
     This test verifies that when multiple overlapping regions are specified as anchor regions,
     the query returns duplicated contacts for each overlapping region.
     """
     # setup
     contacts = request.getfixturevalue(contact_fixture)
-    query_plan = [
-        Snipper(regions=multi_region_2, anchor_mode=Anchor(mode="ALL"))
-    ]
+    query_plan = [Snipper(regions=multi_region_2, anchor_mode=Anchor(mode="ALL"))]
     # execution
     query = BasicQuery(query_plan=query_plan)
     result = query.query(contacts)
     # test
     assert result.load_result().shape[0] == 2
-    assert sorted(result.load_result().read_name.tolist()) == sorted(['read2', 'read2'])
+    assert sorted(result.load_result().read_name.tolist()) == sorted(["read2", "read2"])
 
 
 @pytest.mark.parametrize(
@@ -279,7 +284,9 @@ def test_contacts_duplicated_for_multiple_overlapping_regions(contact_fixture, m
             ]
             * 3,
             [[1]] * 3 + [[2]] * 3 + [[1, 2]] * 3,
-            [['read1','read2',"read3"]] * 3 + [["read2","read4"]] * 3 + [["read2"]] * 3,
+            [["read1", "read2", "read3"]] * 3
+            + [["read2", "read4"]] * 3
+            + [["read2"]] * 3,
         )
     ],
 )
@@ -290,9 +297,7 @@ def test_specific_anchor_regions_returns_correct_contacts_multi_region(
     # setup
     contacts = request.getfixturevalue(contact_fixture)
     query_plan = [
-        Snipper(
-            regions=multi_region, anchor_mode=Anchor(mode="ALL", anchors=anchors)
-        )
+        Snipper(regions=multi_region, anchor_mode=Anchor(mode="ALL", anchors=anchors))
     ]
     # execution
     query = BasicQuery(query_plan=query_plan)
@@ -304,6 +309,7 @@ def test_specific_anchor_regions_returns_correct_contacts_multi_region(
 
 # validation problems
 
+
 @pytest.mark.parametrize(
     "contact_fixture",
     [
@@ -312,14 +318,14 @@ def test_specific_anchor_regions_returns_correct_contacts_multi_region(
         "example_2d_contacts_duckdb",
     ],
 )
-def test_specific_anchor_region_not_in_contacts_raises_error( contact_fixture, single_region, request):
+def test_specific_anchor_region_not_in_contacts_raises_error(
+    contact_fixture, single_region, request
+):
     """Test that specific anchor region not in contacts raises error"""
     # setup
     contacts = request.getfixturevalue(contact_fixture)
     query_plan = [
-        Snipper(
-            regions=single_region, anchor_mode=Anchor(mode="ALL", anchors=[3])
-        )
+        Snipper(regions=single_region, anchor_mode=Anchor(mode="ALL", anchors=[3]))
     ]
     with pytest.raises(ValueError):
         query = BasicQuery(query_plan=query_plan)

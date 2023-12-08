@@ -12,6 +12,7 @@ from spoc.models.dataframe_models import ContactSchema, DataFrame
 from spoc.models.dataframe_models import DataMode
 from spoc.models.file_parameter_models import ContactsParameters
 
+
 class Contacts:
     """N-way genomic contacts
 
