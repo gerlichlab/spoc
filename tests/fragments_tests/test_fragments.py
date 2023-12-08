@@ -7,6 +7,7 @@ import numpy as np
 import dask.dataframe as dd
 
 from spoc import fragments
+from spoc import contacts
 
 # pytlint: disable=unused-import
 from ..fixtures.symmetry import (

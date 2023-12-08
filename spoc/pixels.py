@@ -1,6 +1,5 @@
 """This part of spoc is responsible for binned,
 higher order contacts in the form of 'genomic pixels'"""
-from pathlib import Path
 from typing import Optional, List
 import pandas as pd
 import dask.dataframe as dd

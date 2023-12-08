@@ -19,11 +19,9 @@ class GenomicData(Protocol):
     @property
     def data(self) -> Union[pd.DataFrame, duckdb.DuckDBPyRelation, dd.DataFrame]:
         """Return the data in the object"""
-        ...
 
     def get_schema(self) -> GenomicDataSchema:
         """Return the schema of the underlying data"""
-        ...
 
 
 class QueryStep(Protocol):
@@ -187,6 +185,8 @@ class MappedRegionFilter:
 
 
 class Aggregation:
+    """Aggregation of contacts or pixels"""
+
     # TODO: think about how to specify aggregation
     def __init__(self, data: GenomicData) -> None:
         self._data = data
@@ -196,6 +196,8 @@ class Aggregation:
 
 
 class Transformation:
+    """Transformation of contacts or pixels"""
+
     # TODO: think about how to specify transformation
     def __init__(self, data: GenomicData) -> None:
         self._data = data
@@ -224,7 +226,7 @@ class QueryResult:
         """Loads the result into memory"""
         if isinstance(self._data, duckdb.DuckDBPyRelation):
             return self._data.to_df()
-        elif isinstance(self._data, dd.DataFrame):
+        if isinstance(self._data, dd.DataFrame):
             return self._data.compute()
         return self._data
 
@@ -234,6 +236,8 @@ class QueryResult:
 
 
 class BasicQuery:
+    """Basic query engine that runs a query plan on the data"""
+
     def __init__(self, query_plan: List[QueryStep]) -> None:
         self._query_plan = query_plan
 

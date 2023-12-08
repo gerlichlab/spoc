@@ -1,7 +1,7 @@
 """Dataframe models"""
 
 from enum import Enum, auto
-from typing import Iterable, Union, Dict, Protocol, List, Any
+from typing import Iterable, Union, Dict, Protocol, List
 import copy
 import pandera as pa
 import pandas as pd
@@ -52,15 +52,12 @@ class GenomicDataSchema(Protocol):
     def get_position_fields(self) -> Dict[int, List[str]]:
         """Returns the position fields as a dictionary
         of framgent index to the respective fields"""
-        ...
 
     def get_contact_order(self) -> int:
         """Returns the order of the genomic data"""
-        ...
 
     def get_schema(self) -> pa.DataFrameSchema:
         """Return the schema of the underlying data"""
-        ...
 
 
 class QueryStepDataSchema:
@@ -82,12 +79,23 @@ class QueryStepDataSchema:
         )
 
     def get_position_fields(self) -> Dict[int, List[str]]:
+        """
+        Returns the position fields as a dictionary.
+
+        Returns:
+            A dictionary where the keys are integers representing positions
+            and the values are lists of strings representing the fields.
+        """
         return self._position_fields
 
     def get_contact_order(self) -> int:
+        """
+        Returns the contact order of the object.
+        """
         return self._contact_order
 
     def get_schema(self) -> pa.DataFrameSchema:
+        """Return the schema of the underlying data"""
         return self._schema
 
 
@@ -175,6 +183,12 @@ class ContactSchema:
                 )
 
     def get_schema(self) -> pa.DataFrameSchema:
+        """
+        Get the schema of the DataFrame.
+
+        Returns:
+            pa.DataFrameSchema: The schema of the DataFrame.
+        """
         return self._schema
 
     def get_position_fields(self) -> Dict[int, List[str]]:
@@ -262,6 +276,12 @@ class PixelSchema:
                 )
 
     def get_schema(self) -> pa.DataFrameSchema:
+        """
+        Get the schema of the DataFrame.
+
+        Returns:
+            pa.DataFrameSchema: The schema of the DataFrame.
+        """
         return self._schema
 
     def get_position_fields(self) -> Dict[int, List[str]]:

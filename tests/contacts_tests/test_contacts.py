@@ -3,9 +3,6 @@
 # pylint: disable=redefined-outer-name
 import pytest
 import pandas as pd
-import pandera as pa
-import numpy as np
-import dask.dataframe as dd
 
 from spoc import contacts
 
