@@ -76,6 +76,15 @@ class Snipper:
 
     def validate(self, data_schema: GenomicDataSchema) -> None:
         """Validate the filter against the data schema"""
+        # check whether an anchor is specified that is not in the data
+        if self._anchor_mode.anchors is not None:
+            if not all(
+                anchor in data_schema.get_position_fields().keys()
+                for anchor in self._anchor_mode.anchors
+            ):
+                raise ValueError(
+                    "An anchor is specified that is not in the data schema."
+                )
 
     def _convert_to_duckdb(
         self,
