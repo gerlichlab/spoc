@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 import pandas as pd
 import dask.dataframe as dd
+import duckdb
 from spoc.contacts import Contacts
 from spoc.pixels import Pixels
 from spoc.models.file_parameter_models import (
@@ -16,6 +17,9 @@ from spoc.models.file_parameter_models import (
     GlobalParameters,
 )
 from spoc.fragments import Fragments
+
+# Instantiate one duckdb connection to be used for all duckdb relations
+DUCKDB_CONNECTION = duckdb.connect(database=":memory:")
 
 
 class FileManager:

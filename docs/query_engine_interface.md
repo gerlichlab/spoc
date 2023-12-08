@@ -129,7 +129,8 @@ from spoc.query_engine import (
             BasicQuery,
             RegionOffsetTransformation,
             Aggregation,
-            AggregationMode
+            AggregationMode.
+            MappedRegionFilter
 )
 from spoc.pixels import Pixels
 from spoc.utils import get_center_bin
@@ -150,7 +151,7 @@ query_plan = [
     # select pixels where all bins in a triplet are contained in a region
     Snipper(target_regions, anchor_mode=Anchor(mode="ALL", contacs=[0,1])),
     # select pixels where the third contact overlaps a specific bin
-    Snipper(target_regions_mid_points, anchor_mode=Anchor(mode="ALL", contacs=[2])),
+    MappedRegionFilter(transform=partial(get_center_bin, bin_size=10_000), anchor_mode=Anchor(mode="ALL", contacs=[2])),
     # this transformation calculates the offset of a pixel to any containing target region
     RegionOffsetTransformation(target_regions),
     # this aggregation computes the sum of contacts per region and 2d coordinate
@@ -174,7 +175,7 @@ result
 
 query_plan_1 = [
     Snipper(target_regions, anchor_mode=Anchor(mode="ALL", contacs=[0,1])),
-    Snipper(target_regions_mid_points, anchor_mode=Anchor(mode="ALL", contacs=[2])),
+    MappedRegionFilter(transform=partial(get_center_bin, bin_size=10_000), anchor_mode=Anchor(mode="ALL", contacs=[2])),
     RegionOffsetTransformation(target_regions),
     Aggregation(function='sum', mode=AggregationMode(['Region', 'Contact1', 'Contact2'])),
 ]
@@ -193,7 +194,7 @@ composed_query = query1.compose_with(query2)
 composed_query.query_plan
 #|> query_plan = [
 #|>    Snipper(target_regions, anchor_mode=Anchor(mode="ALL", contacs=[0,1])),
-#|>    Snipper(target_regions_mid_points, anchor_mode=Anchor(mode="ALL", contacs=[2])),
+#|>     MappedRegionFilter(transform=partial(get_center_bin, bin_size=10_000), anchor_mode=Anchor(mode="ALL", contacs=[2])),
 #|>    RegionOffsetTransformation(target_regions),
 #|>    Aggregation(function='sum', mode=AggregationMode(['Region', 'Contact1', 'Contact2'])),
 #|>    Aggregtaion(function='average', mode=AggregationMode(['Contact1', 'Contact2']))

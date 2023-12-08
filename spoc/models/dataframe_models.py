@@ -1,7 +1,7 @@
 """Dataframe models"""
 
 from enum import Enum, auto
-from typing import Iterable, Union, Dict, Protocol, List
+from typing import Iterable, Union, Dict, Protocol, List, Any
 import copy
 import pandera as pa
 import pandas as pd
@@ -31,26 +31,65 @@ FragmentSchema = pa.DataFrameSchema(
     coerce=True,
 )
 
+RegionSchema = pa.DataFrameSchema(
+    {
+        "id": pa.Column(),
+        "chrom": pa.Column(str),
+        "start": pa.Column(int),
+        "end": pa.Column(int),
+    },
+    coerce=True,
+    unique=["id"],
+)
 
 # Protocol for genomic data
+
 
 class GenomicDataSchema(Protocol):
     """Protocol for genomic data schema
     to be used in the query engine"""
-
 
     def get_position_fields(self) -> Dict[int, List[str]]:
         """Returns the position fields as a dictionary
         of framgent index to the respective fields"""
         ...
 
-    def et_contact_order(self) -> int:
+    def get_contact_order(self) -> int:
         """Returns the order of the genomic data"""
         ...
 
     def get_schema(self) -> pa.DataFrameSchema:
         """Return the schema of the underlying data"""
         ...
+
+
+class QueryStepDataSchema:
+    """Implements GenomicDataSchema for query steps
+    with generic columns"""
+
+    def __init__(
+        self,
+        columns: List[str],
+        position_fields: Dict[int, List[str]],
+        contact_order: int,
+    ) -> None:
+        self._columns = columns
+        self._contact_order = contact_order
+        self._position_fields = position_fields
+        self._schema = pa.DataFrameSchema(
+            {column: pa.Column() for column in columns},
+            coerce=True,
+        )
+
+    def get_position_fields(self) -> Dict[int, List[str]]:
+        return self._position_fields
+
+    def get_contact_order(self) -> int:
+        return self._contact_order
+
+    def get_schema(self) -> pa.DataFrameSchema:
+        return self._schema
+
 
 # schemas for higher order contacts
 
@@ -146,7 +185,6 @@ class ContactSchema:
             for i in range(1, self._number_fragments + 1)
         }
 
-
     def get_contact_order(self) -> int:
         """Returns the order of the genomic data"""
         return self._number_fragments
@@ -225,7 +263,7 @@ class PixelSchema:
 
     def get_schema(self) -> pa.DataFrameSchema:
         return self._schema
-    
+
     def get_position_fields(self) -> Dict[int, List[str]]:
         """Returns the position fields as a dictionary
         of framgent index to the respective fields"""
@@ -250,6 +288,7 @@ class PixelSchema:
 
 class DataMode(Enum):
     """Enum for data mode"""
-    PANDAS:auto = "pandas"
-    DASK:auto = "dask"
-    DUCKDB:auto = "duckdb"
+
+    PANDAS: auto = "pandas"
+    DASK: auto = "dask"
+    DUCKDB: auto = "duckdb"

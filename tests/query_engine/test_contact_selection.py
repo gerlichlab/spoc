@@ -5,9 +5,7 @@ import dask.dataframe as dd
 import duckdb
 from spoc.query_engine import BasicQuery, Anchor, Snipper
 from spoc.contacts import Contacts
-
-DUCKDB_CONNECTION = duckdb.connect(database=":memory:")
-
+from spoc.io import DUCKDB_CONNECTION
 
 @pytest.fixture(name="example_2d_df")
 def example_2d_df_fixture():
@@ -56,8 +54,7 @@ def example_2d_contacts_dask_fixture(example_2d_df):
 @pytest.fixture(name="example_2d_contacts_duckdb")
 def example_2d_contacts_duckdb_fixture(example_2d_df):
     """Example 2d contacts"""
-    DUCKDB_CONNECTION.register("example_2d_df", example_2d_df)
-    return Contacts(duckdb.sql("SELECT * FROM example_2d_df", connection=DUCKDB_CONNECTION))
+    return Contacts(duckdb.from_df(example_2d_df, connection=DUCKDB_CONNECTION))
 
 
 
@@ -96,7 +93,7 @@ def test_any_anchor_region_returns_correct_contacts(contact_fixture,single_regio
     query = BasicQuery(query_plan=query_plan)
     result = query.query(contacts)
     assert result.load_result().shape[0] == 2
-    assert result.load_result().read_name.tolist() == ["read1", "read2"]
+    assert sorted(result.load_result().read_name.tolist()) == sorted(["read1", "read2"])
 
 def test_all_anchor_regions_returns_correct_contacts():
     """Test that all anchor regions returns correct contacts"""

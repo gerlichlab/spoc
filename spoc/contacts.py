@@ -97,7 +97,7 @@ class Contacts:
 
     def get_schema(self) -> pa.DataFrameSchema:
         """Returns the schema of the underlying data"""
-        return self._schema.get_schema()
+        return self._schema
 
     def _guess_number_fragments(self, contact_frame: DataFrame) -> int:
         """Guesses the number of fragments from the contact frame"""
