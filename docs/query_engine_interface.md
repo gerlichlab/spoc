@@ -6,10 +6,6 @@ This document defines the high-level interface of the spoc query engine.
 
 ```mermaid
 classDiagram
-namespace genomicData {
-    class Pixels
-    class Contacts
-    } 
 
     class gDataProtocol{
         <<Protocol>>
@@ -68,6 +64,7 @@ namespace genomicData {
         QueryResult: +DataFrame data
         QueryResult: get_schema() pandera.Schema
         QueryResult: compute() gDataProtocol
+
 ```
 
 ## Description

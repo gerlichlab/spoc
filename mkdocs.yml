@@ -17,7 +17,9 @@ nav:
     - Load example dataset: load_example_dataset.md
     - Transformation pipeline: transformation_pipeline.md
   - Data Structures: data_structures.md
-  - Snipping: snipping.md
+  - Query Engine: 
+    - Usage guide: query_engine_usage.md
+    - Class interface: query_engine_interface.md
   - Contributing: contributing.md
   - API:
     - CLI: cli.md
@@ -25,6 +27,7 @@ nav:
     - Contacts: contacts.md
     - Fragments: fragments.md
     - Pixels: pixels.md
+    - Query Engine: query_engine.md
     - Dataframe models: dataframe_models.md
     - File parameters models: file_parameters_models.md
 plugins:
@@ -35,6 +38,11 @@ markdown_extensions:
       anchor_linenums: true
       line_spans: __span
       pygments_lang_class: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.superfences
