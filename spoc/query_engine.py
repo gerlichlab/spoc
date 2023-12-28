@@ -61,15 +61,15 @@ class Snipper:
     and apply the filter to the data.
 
     Attributes:
-        _regions (List[pd.DataFrame]): The regions to be used for filtering.
+        _regions (pd.DataFrame): The regions to be used for filtering.
         _anchor_mode (Anchor): The anchor mode for filtering.
     """
 
-    def __init__(self, regions: List[pd.DataFrame], anchor_mode: Anchor) -> None:
+    def __init__(self, regions: pd.DataFrame, anchor_mode: Anchor) -> None:
         # add ids to regions if they don't exist
         if "id" not in regions.columns:
             regions["id"] = range(len(regions))
-        self._regions = RegionSchema.validate(regions)
+        self._regions = RegionSchema.validate(regions.add_prefix("region_"))
         self._anchor_mode = anchor_mode
 
     def validate(self, data_schema: GenomicDataSchema) -> None:
@@ -126,12 +126,12 @@ class Snipper:
             # check two or three-way definition of fields
             if len(fields) == 3:
                 chrom, start, end = fields
-                output_string = f"""(data.{chrom} = regions.chrom and
-                                     (data.{start} between regions.start and regions.end or 
-                                       data.{end} between regions.start and regions.end))"""
+                output_string = f"""(data.{chrom} = regions.region_chrom and
+                                     (data.{start} between regions.region_start and regions.region_end or 
+                                       data.{end} between regions.region_start and regions.region_end))"""
             else:
                 chrom, start = fields
-                output_string = f"""(data.chrom = regions.chrom and data.{start} between regions.start and regions.end)"""
+                output_string = f"""(data.chrom = regions.region_chrom and data.{start} between regions.region_start and regions.region_end)"""
             query_strings.append(output_string)
         return join_string.join(query_strings)
 
@@ -204,6 +204,12 @@ class Transformation:
 
     def validate(self, data_schema: GenomicDataSchema) -> None:
         """Validate the transformation against the data schema"""
+
+
+class RegionOffsetTransformation:
+    """Adds offset columns for each position field relative
+    to required region_columns."""
+
 
 
 class QueryResult:

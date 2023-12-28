@@ -33,13 +33,13 @@ FragmentSchema = pa.DataFrameSchema(
 
 RegionSchema = pa.DataFrameSchema(
     {
-        "id": pa.Column(),
-        "chrom": pa.Column(str),
-        "start": pa.Column(int),
-        "end": pa.Column(int),
+        "region_id": pa.Column(),
+        "region_chrom": pa.Column(str),
+        "region_start": pa.Column(int),
+        "region_end": pa.Column(int),
     },
     coerce=True,
-    unique=["id"],
+    unique=["region_id"],
 )
 
 # Protocol for genomic data
