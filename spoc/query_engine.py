@@ -210,6 +210,59 @@ class RegionOffsetTransformation:
     """Adds offset columns for each position field relative
     to required region_columns."""
 
+    def __init__(self, round_to: int = None) -> None:
+        """Initialize the transformation."""
+        if round_to is None:
+            round_to = 1
+        elif round_to < 1:
+            raise ValueError("round_to must be at least 1.")
+        self._round_to = round_to
+
+    def validate(self, data_schema: GenomicDataSchema) -> None:
+        """Validate the transformation against the data schema"""
+        # check that there are position fields and region columns
+        if not data_schema.get_position_fields():
+            raise ValueError("No position fields in data schema.")
+        schema_columns = data_schema.get_schema().columns
+        required_columns = ["region_chrom", "region_start", "region_end"]
+        if not all(column in schema_columns for column in required_columns):
+            raise ValueError("No region columns in data schema.")
+
+    def _create_transform_columns(
+        self, genomic_df: duckdb.DuckDBPyRelation, position_fields: Dict[int, List[str]]
+    ) -> duckdb.DuckDBPyRelation:
+        """Creates the transform columns for the given position fields"""
+        # get existing columns
+        transform_strings = [f"data.{column}" for column in genomic_df.columns]
+        # create transform columns
+        for position_field, fields in position_fields.items():
+            # check two or three-way definition of fields
+            if len(fields) == 3:
+                _, start, end = fields
+                output_string = f"""(FLOOR(data.{start}/{self._round_to}) - FLOOR(regions.region_start/{self._round_to})) as start_offset_{position_field},
+                                       (FLOOR(data.{end}/{self._round_to}) - FLOOR(regions.region_end/{self._round_to})) as end_offset_{position_field}"""
+            else:
+                _, start = fields
+                output_string = f"(FLOOR(data.{start}/{self._round_to}) - FLOOR(regions.region_start/{self._round_to})) as start_offset_{position_field}"
+            transform_strings.append(output_string)
+        return ",".join(transform_strings)
+
+    def __call__(self, genomic_data: GenomicData) -> Any:
+        """Apply the transformation to the data"""
+        # get input schema
+        input_schema = genomic_data.get_schema()
+        # bring input to duckdb dataframe
+        if isinstance(genomic_data.data, duckdb.DuckDBPyRelation):
+            genomic_df = genomic_data.data
+        else:
+            genomic_df = duckdb.from_df(genomic_data.data, connection=DUCKDB_CONNECTION)
+        # get position columns
+        position_fields = input_schema.get_position_fields()
+        # construct transformation
+        df = genomic_df.set_alias("data").project(
+            self._create_transform_columns(genomic_df, position_fields)
+        )
+        return QueryResult(df, self._get_transformed_schema(input_schema))
 
 
 class QueryResult:
