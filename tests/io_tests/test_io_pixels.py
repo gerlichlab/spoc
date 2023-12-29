@@ -270,7 +270,7 @@ def test_load_pixels_from_uri_fails_without_required_parameters(df, params, requ
         file_name = tmpdirname + "/" + "test.parquet"
         FileManager().write_pixels(file_name, pixels)
         # try loading without required parameters
-        with pytest.raises(ValueError) as e:
+        with pytest.raises(ValueError):
             Pixels.from_uri(file_name)
 
 
@@ -406,5 +406,5 @@ def test_load_pixels_from_uri_fails_with_ambiguous_specification(df, params, req
         FileManager().write_pixels(file_name, pixels)
         FileManager().write_pixels(file_name, pixels2)
         # load pixels
-        with pytest.raises(ValueError) as e:
+        with pytest.raises(ValueError):
             Pixels.from_uri(file_name + "::" + uri)

@@ -6,12 +6,12 @@ from itertools import product
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Tuple
 
 import dask.dataframe as dd
 import duckdb
 import numpy as np
 import pandas as pd
-import pandera as pa
 
 from spoc.models.dataframe_models import ContactSchema
 from spoc.models.dataframe_models import DataFrame
@@ -124,7 +124,7 @@ class Contacts:
                 output.update(self.data[f"metadata_{i+1}"].unique())
             else:
                 raise ValueError("Label values not supported for duckdb!")
-        return output
+        return list(output)
 
     def get_chromosome_values(self) -> List[str]:
         """Returns all chromosome values"""
@@ -137,7 +137,7 @@ class Contacts:
                 output.update(self.data[f"chrom_{i+1}"].unique())
             else:
                 raise ValueError("Chromosome values not supported for duckdb!")
-        return output
+        return list(output)
 
     @property
     def data(self):
@@ -394,7 +394,7 @@ class ContactManipulator:
 
     def _generate_binary_label_mapping(
         self, label_values: List[str], number_fragments: int
-    ) -> Dict[str, str]:
+    ) -> Dict[Tuple[str, ...], Tuple[str, ...]]:
         sorted_labels = sorted(label_values)
         mapping = {}
         for i in range(number_fragments + 1):

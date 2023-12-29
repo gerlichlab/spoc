@@ -1,7 +1,6 @@
 """Tests for contact selection"""
 import dask.dataframe as dd
 import duckdb
-import pandas as pd
 import pytest
 
 from spoc.contacts import Contacts

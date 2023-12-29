@@ -1,5 +1,6 @@
 """This part of spoc is responsible for binned,
 higher order contacts in the form of 'genomic pixels'"""
+from functools import partial
 from typing import List
 from typing import Optional
 
@@ -201,43 +202,45 @@ class GenomicBinner:
 
     Args:
         bin_size (int): The size of the genomic bins.
-
     """
 
     def __init__(self, bin_size: int) -> None:
         self._bin_size = bin_size
-        self._contact_order = None
 
-    def _get_assigned_bin_output_structure(self):
-        columns = [f"chrom_{index}" for index in range(1, self._contact_order + 1)] + [
-            f"start_{index}" for index in range(1, self._contact_order + 1)
+    def _get_assigned_bin_output_structure(self, contact_order: int):
+        columns = [f"chrom_{index}" for index in range(1, contact_order + 1)] + [
+            f"start_{index}" for index in range(1, contact_order + 1)
         ]
         return pd.DataFrame(columns=columns).astype(int)
 
-    def _assign_bins(self, data_frame: pd.DataFrame) -> pd.DataFrame:
+    def _assign_bins(
+        self, data_frame: pd.DataFrame, contact_order: int
+    ) -> pd.DataFrame:
         # capture empty dataframe
         if data_frame.empty:
-            return self._get_assigned_bin_output_structure()
+            return self._get_assigned_bin_output_structure(contact_order)
         return data_frame.assign(
             **{
                 f"start_{index}": (data_frame[f"pos_{index}"] // self._bin_size)
                 * self._bin_size
-                for index in range(1, self._contact_order + 1)
+                for index in range(1, contact_order + 1)
             }
         ).filter(regex="(chrom|start)")
 
-    def _assign_midpoints(self, contacts: dd.DataFrame) -> dd.DataFrame:
+    def _assign_midpoints(
+        self, contacts: dd.DataFrame, contact_order: int
+    ) -> dd.DataFrame:
         """Collapses start-end to a middle position"""
         return contacts.assign(
             **{
                 f"pos_{index}": (contacts[f"start_{index}"] + contacts[f"end_{index}"])
                 // 2
-                for index in range(1, self._contact_order + 1)
+                for index in range(1, contact_order + 1)
             }
         ).drop(
             [
                 c
-                for index in range(1, self._contact_order + 1)
+                for index in range(1, contact_order + 1)
                 for c in [f"start_{index}", f"end_{index}"]
             ],
             axis=1,
@@ -254,21 +257,22 @@ class GenomicBinner:
             Pixels: The binned genomic pixels.
 
         """
-        self._contact_order = contacts.number_fragments
-        contacts_w_midpoints = self._assign_midpoints(contacts.data)
+        contact_order = contacts.number_fragments
+        contacts_w_midpoints = self._assign_midpoints(contacts.data, contact_order)
         if contacts.data_mode == DataMode.DASK:
             contact_bins = contacts_w_midpoints.map_partitions(
-                self._assign_bins, meta=self._get_assigned_bin_output_structure()
+                partial(self._assign_bins, contact_order=contact_order),
+                meta=self._get_assigned_bin_output_structure(contact_order),
             )
         elif contacts.data_mode == DataMode.PANDAS:
-            contact_bins = self._assign_bins(contacts_w_midpoints)
+            contact_bins = self._assign_bins(contacts_w_midpoints, contact_order)
         else:
             raise ValueError(f"Data mode: {contacts.data_mode} not supported!")
         pixels = (
             contact_bins.groupby(
                 [
                     c
-                    for index in range(1, self._contact_order + 1)
+                    for index in range(1, contact_order + 1)
                     for c in [f"chrom_{index}", f"start_{index}"]
                 ],
                 observed=True,
@@ -285,26 +289,25 @@ class GenomicBinner:
                     & (pixels.chrom_2.astype(str) == pixels.chrom_3.astype(str))
                 ]
                 .drop(
-                    [f"chrom_{index}" for index in range(2, self._contact_order + 1)],
+                    [f"chrom_{index}" for index in range(2, contact_order + 1)],
                     axis=1,
                 )
                 .rename(columns={"chrom_1": "chrom"})
             )
             # sort pixels
             pixels_sorted = pixels.sort_values(
-                ["chrom"]
-                + [f"start_{index}" for index in range(1, self._contact_order + 1)]
+                ["chrom"] + [f"start_{index}" for index in range(1, contact_order + 1)]
             ).reset_index(drop=True)
         else:
             pixels_sorted = pixels.sort_values(
-                [f"chrom_{index}" for index in range(1, self._contact_order + 1)]
-                + [f"start_{index}" for index in range(1, self._contact_order + 1)]
+                [f"chrom_{index}" for index in range(1, contact_order + 1)]
+                + [f"start_{index}" for index in range(1, contact_order + 1)]
             ).reset_index(drop=True)
         # construct pixels and return
         return Pixels(
             pixels_sorted,
             same_chromosome=same_chromosome,
-            number_fragments=self._contact_order,
+            number_fragments=contact_order,
             binsize=self._bin_size,
             binary_labels_equal=contacts.binary_labels_equal,
             symmetry_flipped=contacts.symmetry_flipped,

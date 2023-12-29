@@ -170,17 +170,17 @@ class FileManager:
             Tuple(str, Dict[str, str]): Tuple containing the path and a dictionary of parameters.
         """
         # parse uri
-        uri = uri.split("::")
+        uri_arguments = uri.split("::")
         # validate uri
-        if len(uri) < min_fields:
+        if len(uri_arguments) < min_fields:
             raise ValueError(
                 f"Uri: {uri} is not valid. Must contain at least Path, number_fragments and binsize"
             )
-        params = dict(zip(uri_parameters, uri[1:]))
+        params = dict(zip(uri_parameters, uri_arguments[1:]))
         # rewrite metadata_combi parameter
         if "metadata_combi" in params.keys() and params["metadata_combi"] != "None":
             params["metadata_combi"] = str(tuple(params["metadata_combi"]))
-        return uri[0], params
+        return uri_arguments[0], params
 
     def _fuzzy_match_parameters(
         self,
@@ -245,8 +245,8 @@ class FileManager:
             parsed_parameters, metadata
         )
         # rewrite path to contain parent folder
-        pixel_path = Path(path) / pixel_path
-        df = self._parquet_reader_func(pixel_path)
+        full_pixel_path = Path(path) / pixel_path
+        df = self._parquet_reader_func(full_pixel_path)
         return Pixels(df, **matched_parameters.dict())
 
     def load_contacts(
@@ -278,8 +278,8 @@ class FileManager:
             parsed_parameters, metadata
         )
         # rewrite path to contain parent folder
-        contacts_path = Path(path) / contacts_path
-        df = self._parquet_reader_func(contacts_path)
+        full_contacts_path = Path(path) / contacts_path
+        df = self._parquet_reader_func(full_contacts_path)
         return Contacts(df, **matched_parameters.dict())
 
     @staticmethod

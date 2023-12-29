@@ -152,7 +152,7 @@ class Snipper:
     def _add_end_position(
         self,
         df: duckdb.DuckDBPyRelation,
-        bin_size: int,
+        bin_size: Optional[int],
         position_fields: Dict[int, List[str]],
     ) -> duckdb.DuckDBPyRelation:
         """Adds an end position column to the dataframe"""

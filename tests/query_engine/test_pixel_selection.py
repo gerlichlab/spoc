@@ -2,7 +2,6 @@
 import dask.dataframe as dd
 import duckdb
 import numpy as np
-import pandas as pd
 import pytest
 
 from spoc.io import DUCKDB_CONNECTION

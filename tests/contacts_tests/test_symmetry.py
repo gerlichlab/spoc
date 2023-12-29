@@ -2,9 +2,7 @@
 # pylint: disable=redefined-outer-name
 # pylint: disable=unused-import
 import dask.dataframe as dd
-import numpy as np
 import pandas as pd
-import pandera as pa
 import pytest
 
 from spoc.contacts import ContactManipulator

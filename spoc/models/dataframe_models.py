@@ -65,6 +65,9 @@ class GenomicDataSchema(Protocol):
     def get_schema(self) -> pa.DataFrameSchema:
         """Return the schema of the underlying data"""
 
+    def get_binsize(self) -> Optional[int]:
+        """Returns the binsize of the genomic data"""
+
 
 class QueryStepDataSchema:
     """Implements GenomicDataSchema for query steps
@@ -103,6 +106,10 @@ class QueryStepDataSchema:
     def get_schema(self) -> pa.DataFrameSchema:
         """Return the schema of the underlying data"""
         return self._schema
+
+    def get_binsize(self) -> Optional[int]:
+        """Returns the binsize of the genomic data"""
+        return None
 
 
 # schemas for higher order contacts
@@ -221,6 +228,10 @@ class ContactSchema:
             return data_frame
         return self._schema.validate(data_frame)
 
+    def get_binsize(self) -> Optional[int]:
+        """Returns the binsize of the genomic data"""
+        return None
+
 
 class PixelSchema:
     """Dynamic schema for N-way pixels
@@ -303,7 +314,7 @@ class PixelSchema:
             i: ["chrom", f"start_{i}"] for i in range(1, self._number_fragments + 1)
         }
 
-    def get_binsize(self) -> int:
+    def get_binsize(self) -> Optional[int]:
         """Returns the binsize of the genomic data"""
         return self._binsize
 
@@ -328,6 +339,6 @@ class PixelSchema:
 class DataMode(Enum):
     """Enum for data mode"""
 
-    PANDAS: auto = "pandas"
-    DASK: auto = "dask"
-    DUCKDB: auto = "duckdb"
+    PANDAS = auto()
+    DASK = auto()
+    DUCKDB = auto()
