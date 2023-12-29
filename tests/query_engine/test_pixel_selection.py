@@ -1,12 +1,15 @@
 """Tests for the pixel selection"""
-import pytest
-import pandas as pd
-import numpy as np
 import dask.dataframe as dd
 import duckdb
-from spoc.query_engine import BasicQuery, Anchor, Snipper
-from spoc.pixels import Pixels
+import numpy as np
+import pandas as pd
+import pytest
+
 from spoc.io import DUCKDB_CONNECTION
+from spoc.pixels import Pixels
+from spoc.query_engine import Anchor
+from spoc.query_engine import BasicQuery
+from spoc.query_engine import Snipper
 
 
 @pytest.fixture(name="pixels_dask")

@@ -1,11 +1,14 @@
 """Console script for spoc."""
 import sys
+
 import click
+
 from spoc.contacts import ContactManipulator
-from spoc.fragments import FragmentAnnotator, FragmentExpander
+from spoc.contacts import Contacts
+from spoc.fragments import FragmentAnnotator
+from spoc.fragments import FragmentExpander
 from spoc.io import FileManager
 from spoc.pixels import GenomicBinner
-from spoc.contacts import Contacts
 
 
 @click.group()

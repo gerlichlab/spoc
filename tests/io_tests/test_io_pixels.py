@@ -1,13 +1,15 @@
 """This file tests the io module for pixels"""
 # pylint: disable=redefined-outer-name
-import tempfile
-import os
 import json
+import os
 import shutil
+import tempfile
 from pathlib import Path
-import pytest
-import pandas as pd
+
 import dask.dataframe as dd
+import pandas as pd
+import pytest
+
 from spoc.io import FileManager
 from spoc.models.file_parameter_models import PixelParameters
 from spoc.pixels import Pixels

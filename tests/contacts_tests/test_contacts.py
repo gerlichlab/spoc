@@ -1,8 +1,7 @@
 """Tests for the contacts module."""
-
 # pylint: disable=redefined-outer-name
-import pytest
 import pandas as pd
+import pytest
 
 from spoc import contacts
 

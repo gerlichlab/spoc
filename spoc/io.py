@@ -1,22 +1,25 @@
 """Persisting functionality of spoc that manages writing to and reading from the filesystem."""
-
-import pickle
-from typing import Dict, Union, List, Optional, Tuple
-from hashlib import md5
-import os
 import json
+import os
+import pickle
+from hashlib import md5
 from pathlib import Path
-import pandas as pd
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Tuple
+from typing import Union
+
 import dask.dataframe as dd
 import duckdb
+import pandas as pd
+
 from spoc.contacts import Contacts
-from spoc.pixels import Pixels
-from spoc.models.file_parameter_models import (
-    ContactsParameters,
-    PixelParameters,
-    GlobalParameters,
-)
 from spoc.fragments import Fragments
+from spoc.models.file_parameter_models import ContactsParameters
+from spoc.models.file_parameter_models import GlobalParameters
+from spoc.models.file_parameter_models import PixelParameters
+from spoc.pixels import Pixels
 
 # Instantiate one duckdb connection to be used for all duckdb relations
 DUCKDB_CONNECTION = duckdb.connect(database=":memory:")

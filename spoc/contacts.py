@@ -1,15 +1,22 @@
 """Managing multi-way contacts."""
-
 from __future__ import annotations  # needed for self reference in type hints
-from itertools import permutations, product
-from typing import List, Optional, Dict
-import pandas as pd
+
+from itertools import permutations
+from itertools import product
+from typing import Dict
+from typing import List
+from typing import Optional
+
 import dask.dataframe as dd
-import numpy as np
-import pandera as pa
 import duckdb
-from spoc.models.dataframe_models import ContactSchema, DataFrame, GenomicDataSchema
+import numpy as np
+import pandas as pd
+import pandera as pa
+
+from spoc.models.dataframe_models import ContactSchema
+from spoc.models.dataframe_models import DataFrame
 from spoc.models.dataframe_models import DataMode
+from spoc.models.dataframe_models import GenomicDataSchema
 from spoc.models.file_parameter_models import ContactsParameters
 
 

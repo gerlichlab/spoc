@@ -1,17 +1,18 @@
 """This part of spoc is responsible for binned,
 higher order contacts in the form of 'genomic pixels'"""
-from typing import Optional, List
-import pandas as pd
+from typing import List
+from typing import Optional
+
 import dask.dataframe as dd
 import duckdb
-from spoc.models.dataframe_models import (
-    DataMode,
-    PixelSchema,
-    DataFrame,
-    GenomicDataSchema,
-)
-from spoc.models.file_parameter_models import PixelParameters
+import pandas as pd
+
 from spoc.contacts import Contacts
+from spoc.models.dataframe_models import DataFrame
+from spoc.models.dataframe_models import DataMode
+from spoc.models.dataframe_models import GenomicDataSchema
+from spoc.models.dataframe_models import PixelSchema
+from spoc.models.file_parameter_models import PixelParameters
 
 
 class Pixels:

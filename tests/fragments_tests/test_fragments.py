@@ -1,13 +1,12 @@
 """Tests for the fragments module."""
-
 # pylint: disable=redefined-outer-name
-import pytest
-import pandas as pd
-import numpy as np
 import dask.dataframe as dd
+import numpy as np
+import pandas as pd
+import pytest
 
-from spoc import fragments
 from spoc import contacts
+from spoc import fragments
 
 
 @pytest.fixture

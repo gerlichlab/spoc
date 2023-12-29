@@ -1,12 +1,14 @@
 """This file tests the io module for contacts"""
 # pylint: disable=redefined-outer-name
-import tempfile
-import os
 import json
+import os
 import shutil
+import tempfile
 from pathlib import Path
-import pytest
+
 import dask.dataframe as dd
+import pytest
+
 from spoc.contacts import Contacts
 from spoc.io import FileManager
 from spoc.models.file_parameter_models import ContactsParameters

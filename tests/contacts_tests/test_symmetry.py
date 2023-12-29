@@ -1,13 +1,14 @@
 """Tests for dealing with symmetry flipping for labelled and unlabelled contacts."""
 # pylint: disable=redefined-outer-name
 # pylint: disable=unused-import
-
-import pytest
+import dask.dataframe as dd
+import numpy as np
 import pandas as pd
 import pandera as pa
-import numpy as np
-import dask.dataframe as dd
-from spoc.contacts import Contacts, ContactManipulator
+import pytest
+
+from spoc.contacts import ContactManipulator
+from spoc.contacts import Contacts
 
 
 @pytest.mark.parametrize(

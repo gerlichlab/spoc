@@ -1,12 +1,18 @@
 """Dataframe models"""
-
-from enum import Enum, auto
-from typing import Iterable, Union, Dict, Protocol, List, Optional
 import copy
-import pandera as pa
-import pandas as pd
+from enum import auto
+from enum import Enum
+from typing import Dict
+from typing import Iterable
+from typing import List
+from typing import Optional
+from typing import Protocol
+from typing import Union
+
 import dask.dataframe as dd
 import duckdb
+import pandas as pd
+import pandera as pa
 
 # Define dataframe type
 

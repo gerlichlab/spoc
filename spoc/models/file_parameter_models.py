@@ -1,6 +1,9 @@
 """This file contains data classes for parameters
 of spoc data structures"""
-from typing import Optional, Tuple, List
+from typing import List
+from typing import Optional
+from typing import Tuple
+
 from pydantic import BaseModel
 
 

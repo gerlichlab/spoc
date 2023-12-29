@@ -1,11 +1,14 @@
 """Tests for contact selection"""
-import pytest
-import pandas as pd
 import dask.dataframe as dd
 import duckdb
-from spoc.query_engine import BasicQuery, Anchor, Snipper
+import pandas as pd
+import pytest
+
 from spoc.contacts import Contacts
 from spoc.io import DUCKDB_CONNECTION
+from spoc.query_engine import Anchor
+from spoc.query_engine import BasicQuery
+from spoc.query_engine import Snipper
 
 
 @pytest.fixture(name="example_2d_contacts_pandas")

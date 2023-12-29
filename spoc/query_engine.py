@@ -1,15 +1,20 @@
 """This file contains the classes making up the query engine."""
-from typing import Any, Protocol, List, Union, Optional, Dict
-import duckdb
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Protocol
+from typing import Union
+
 import dask.dataframe as dd
+import duckdb
 import pandas as pd
 from pydantic import BaseModel
-from spoc.models.dataframe_models import (
-    GenomicDataSchema,
-    RegionSchema,
-    QueryStepDataSchema,
-)
+
 from spoc.io import DUCKDB_CONNECTION
+from spoc.models.dataframe_models import GenomicDataSchema
+from spoc.models.dataframe_models import QueryStepDataSchema
+from spoc.models.dataframe_models import RegionSchema
 
 
 class GenomicData(Protocol):

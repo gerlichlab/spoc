@@ -1,17 +1,17 @@
 """Tests for CLI of spoc"""
 # pylint: disable=redefined-outer-name
-
-import shutil
 import os
-import pytest
-import pandas as pd
-from pandas.testing import assert_frame_equal
+import shutil
+
 import numpy as np
+import pandas as pd
+import pytest
 from click.testing import CliRunner
+from pandas.testing import assert_frame_equal
 
 from spoc import cli
-from spoc.io import FileManager
 from spoc.contacts import Contacts
+from spoc.io import FileManager
 from spoc.models import dataframe_models
 from spoc.pixels import Pixels
 
