@@ -56,7 +56,9 @@ class Pixels:
         can be a pandas or dask dataframe or a path. Caveat is that
         if pixels are a path, source data is not validated."""
         self._schema = PixelSchema(
-            number_fragments=number_fragments, same_chromosome=same_chromosome
+            number_fragments=number_fragments,
+            same_chromosome=same_chromosome,
+            binsize=binsize,
         )
         self._same_chromosome = same_chromosome
         self._number_fragments = number_fragments

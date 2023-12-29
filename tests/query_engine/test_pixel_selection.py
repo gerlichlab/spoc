@@ -1,72 +1,12 @@
 """Tests for the pixel selection"""
 import pytest
 import pandas as pd
+import numpy as np
 import dask.dataframe as dd
 import duckdb
 from spoc.query_engine import BasicQuery, Anchor, Snipper
 from spoc.pixels import Pixels
 from spoc.io import DUCKDB_CONNECTION
-
-
-@pytest.fixture(name="pixel_dataframe")
-def pixel_dataframe_fixture():
-    """A dataframe containing pixels"""
-    return pd.DataFrame(
-        {
-            "chrom": ["chr1"] * 4,
-            "start_1": [180, 180, 750, 400],
-            "start_2": [300, 180, 300, 750],
-            "count": [1, 2, 3, 4],  # contact count is id
-        }
-    )
-
-
-@pytest.fixture(name="single_region")
-def single_region_fixture():
-    """Single region"""
-    return pd.DataFrame(
-        {
-            "chrom": ["chr1"],
-            "start": [150],
-            "end": [200],
-        }
-    )
-
-
-@pytest.fixture(name="single_region_2")
-def single_region_2_fixture():
-    """Single region"""
-    return pd.DataFrame(
-        {
-            "chrom": ["chr1"],
-            "start": [700],
-            "end": [800],
-        }
-    )
-
-
-@pytest.fixture(name="multi_region")
-def multi_region_fixture():
-    """Multi region"""
-    return pd.DataFrame(
-        {
-            "chrom": ["chr1", "chr1"],
-            "start": [150, 700],
-            "end": [200, 800],
-        }
-    )
-
-
-@pytest.fixture(name="multi_region_2")
-def multi_region_2_fixture():
-    """Multi region"""
-    return pd.DataFrame(
-        {
-            "chrom": ["chr1", "chr1"],
-            "start": [150, 180],
-            "end": [200, 220],
-        }
-    )
 
 
 @pytest.fixture(name="pixels_dask")
@@ -132,9 +72,16 @@ def test_any_anchor_region_returns_correct_pixels(
     # execution
     query = BasicQuery(query_plan=query_plan)
     result = query.query(pixels)
-    # test
+    # test correct selection
     assert result.load_result().shape[0] == 2
     assert sorted(result.load_result()["count"].tolist()) == sorted([1, 2])
+    # test addition of end columns
+    assert np.allclose(
+        result.load_result()["start_1"] + 10_000, result.load_result()["end_1"]
+    )
+    assert np.allclose(
+        result.load_result()["start_2"] + 10_000, result.load_result()["end_2"]
+    )
 
 
 @pytest.mark.parametrize(

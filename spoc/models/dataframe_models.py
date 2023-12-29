@@ -1,7 +1,7 @@
 """Dataframe models"""
 
 from enum import Enum, auto
-from typing import Iterable, Union, Dict, Protocol, List
+from typing import Iterable, Union, Dict, Protocol, List, Optional
 import copy
 import pandera as pa
 import pandas as pd
@@ -224,9 +224,15 @@ class PixelSchema:
         same_chromosome (bool, optional): Whether the fragments are on the same chromosome. Defaults to True.
     """
 
-    def __init__(self, number_fragments: int = 3, same_chromosome: bool = True) -> None:
+    def __init__(
+        self,
+        number_fragments: int = 3,
+        same_chromosome: bool = True,
+        binsize: Optional[int] = None,
+    ) -> None:
         self._number_fragments = number_fragments
         self._same_chromosome = same_chromosome
+        self._binsize = binsize
         self._schema = pa.DataFrameSchema(
             dict(
                 self._get_constant_fields(),
@@ -290,6 +296,10 @@ class PixelSchema:
         return {
             i: ["chrom", f"start_{i}"] for i in range(1, self._number_fragments + 1)
         }
+
+    def get_binsize(self) -> int:
+        """Returns the binsize of the genomic data"""
+        return self._binsize
 
     def get_contact_order(self) -> int:
         """Returns the order of the genomic data"""

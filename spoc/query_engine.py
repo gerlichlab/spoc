@@ -123,38 +123,45 @@ class Snipper:
         else:
             subset_positions = list(position_fields.values())
         for fields in subset_positions:
-            # check two or three-way definition of fields
-            if len(fields) == 3:
-                chrom, start, end = fields
-                output_string = f"""(data.{chrom} = regions.region_chrom and
-                                     (data.{start} between regions.region_start and regions.region_end or 
-                                       data.{end} between regions.region_start and regions.region_end))"""
-            else:
-                chrom, start = fields
-                output_string = f"""(data.chrom = regions.region_chrom and data.{start} between regions.region_start and regions.region_end)"""
+            chrom, start, end = fields
+            output_string = f"""(data.{chrom} = regions.region_chrom and
+                                    (data.{start} between regions.region_start and regions.region_end or 
+                                    data.{end} between regions.region_start and regions.region_end))"""
             query_strings.append(output_string)
         return join_string.join(query_strings)
 
     def _get_transformed_schema(
-        self, data_schema: GenomicDataSchema
+        self,
+        df: duckdb.DuckDBPyRelation,
+        input_schema: GenomicDataSchema,
+        position_fields: Dict[int, List[str]],
     ) -> GenomicDataSchema:
-        """Returns the schema of the transformed data.
-
-        Args:
-            data_schema (GenomicDataSchema): The input data schema.
-
-        Returns:
-            GenomicDataSchema: The schema of the transformed data.
-        """
-        # get columns of input schema
-        input_columns = list(data_schema.get_schema().columns.keys())
-        # add region columns
-        region_columns = list(self._regions.columns)
+        """Returns the schema of the transformed data."""
         # construct schema
         return QueryStepDataSchema(
-            columns=region_columns + input_columns,
-            position_fields=data_schema.get_position_fields(),
-            contact_order=data_schema.get_contact_order(),
+            columns=df.columns,
+            position_fields=position_fields,
+            contact_order=input_schema.get_contact_order(),
+        )
+
+    def _add_end_position(
+        self,
+        df: duckdb.DuckDBPyRelation,
+        bin_size: int,
+        position_fields: Dict[int, List[str]],
+    ) -> duckdb.DuckDBPyRelation:
+        """Adds an end position column to the dataframe"""
+        position_columns = set([j for i in position_fields.values() for j in i])
+        non_position_columns = [
+            column for column in df.columns if column not in position_columns
+        ]
+        new_position_clause = [
+            f"data.chrom as chrom_{position}, data.start_{position} as start_{position}, data.start_{position} + {bin_size} as end_{position}"
+            for position in position_fields.keys()
+        ]
+        # add end position
+        return df.set_alias("data").project(
+            ",".join(new_position_clause + non_position_columns)
         )
 
     def __repr__(self) -> str:
@@ -172,11 +179,22 @@ class Snipper:
         regions = self._convert_to_duckdb(self._regions)
         # get position columns and construct filter
         position_fields = input_schema.get_position_fields()
+        # add end position if not present
+        if len(position_fields[1]) == 2:
+            genomic_df = self._add_end_position(
+                genomic_df, input_schema.get_binsize(), position_fields
+            )
+            position_fields = {
+                position: [f"chrom_{position}", f"start_{position}", f"end_{position}"]
+                for position in position_fields.keys()
+            }
         # construct query
         df = genomic_df.set_alias("data").join(
             regions.set_alias("regions"), self._contstruct_filter(position_fields)
         )
-        return QueryResult(df, self._get_transformed_schema(input_schema))
+        return QueryResult(
+            df, self._get_transformed_schema(df, input_schema, position_fields)
+        )
 
 
 class MappedRegionFilter:
@@ -210,13 +228,9 @@ class RegionOffsetTransformation:
     """Adds offset columns for each position field relative
     to required region_columns."""
 
-    def __init__(self, round_to: int = None) -> None:
+    def __init__(self, use_mid_point: bool = True) -> None:
         """Initialize the transformation."""
-        if round_to is None:
-            round_to = 1
-        elif round_to < 1:
-            raise ValueError("round_to must be at least 1.")
-        self._round_to = round_to
+        self._use_mid_point = use_mid_point
 
     def validate(self, data_schema: GenomicDataSchema) -> None:
         """Validate the transformation against the data schema"""
@@ -236,16 +250,26 @@ class RegionOffsetTransformation:
         transform_strings = [f"data.{column}" for column in genomic_df.columns]
         # create transform columns
         for position_field, fields in position_fields.items():
-            # check two or three-way definition of fields
-            if len(fields) == 3:
-                _, start, end = fields
-                output_string = f"""(FLOOR(data.{start}/{self._round_to}) - FLOOR(regions.region_start/{self._round_to})) as start_offset_{position_field},
-                                       (FLOOR(data.{end}/{self._round_to}) - FLOOR(regions.region_end/{self._round_to})) as end_offset_{position_field}"""
+            _, start, end = fields
+            if self._use_mid_point:
+                output_string = f"""(FLOOR((data.{start} + data.{end})/2) - FLOOR((data.region_start + data.region_end)/2))
+                                         as offset_{position_field}"""
             else:
-                _, start = fields
-                output_string = f"(FLOOR(data.{start}/{self._round_to}) - FLOOR(regions.region_start/{self._round_to})) as start_offset_{position_field}"
+                output_string = f"""data.{start} - data.region_start as start_offset_{position_field},
+                                    data.{end} - data.region_end as end_offset_{position_field}"""
             transform_strings.append(output_string)
         return ",".join(transform_strings)
+
+    def _get_transformed_schema(
+        self, df: duckdb.DuckDBPyRelation, input_schema: GenomicDataSchema
+    ) -> GenomicDataSchema:
+        """Returns the schema of the transformed data."""
+        # construct schema
+        return QueryStepDataSchema(
+            columns=df.columns,
+            position_fields=input_schema.get_position_fields(),
+            contact_order=input_schema.get_contact_order(),
+        )
 
     def __call__(self, genomic_data: GenomicData) -> Any:
         """Apply the transformation to the data"""
@@ -262,7 +286,7 @@ class RegionOffsetTransformation:
         df = genomic_df.set_alias("data").project(
             self._create_transform_columns(genomic_df, position_fields)
         )
-        return QueryResult(df, self._get_transformed_schema(input_schema))
+        return QueryResult(df, self._get_transformed_schema(df, input_schema))
 
 
 class QueryResult:
