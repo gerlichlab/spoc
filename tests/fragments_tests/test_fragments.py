@@ -9,12 +9,6 @@ import dask.dataframe as dd
 from spoc import fragments
 from spoc import contacts
 
-# pytlint: disable=unused-import
-from ..fixtures.symmetry import (
-    unlabelled_contacts_2d,
-    labelled_binary_contacts_2d_sorted,
-)
-
 
 @pytest.fixture
 def triplet_expander():

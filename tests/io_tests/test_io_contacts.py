@@ -10,7 +10,6 @@ import dask.dataframe as dd
 from spoc.contacts import Contacts
 from spoc.io import FileManager
 from spoc.models.file_parameter_models import ContactsParameters
-from ..fixtures.symmetry import unlabelled_contacts_2d, labelled_binary_contacts_2d
 
 
 def _create_tmp_dir():
