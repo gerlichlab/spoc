@@ -1,4 +1,5 @@
 """This file contains the classes making up the query engine."""
+from enum import Enum
 from typing import Any
 from typing import Dict
 from typing import List
@@ -207,26 +208,95 @@ class MappedRegionFilter:
     of contacts or pixels."""
 
 
-class Aggregation:
-    """Aggregation of contacts or pixels"""
+class AggregationFunction(Enum):
+    """Enum for aggregation functions."""
 
-    # TODO: think about how to specify aggregation
-    def __init__(self, data: GenomicData) -> None:
-        self._data = data
+    SUM: str = "SUM"
+    AVG: str = "AVG"
+    COUNT: str = "COUNT"
+
+
+class OffsetAggregation:
+    """Aggregation based on offsets from a region. Uses all available offsets."""
+
+    def __init__(
+        self, value_column: str, function: AggregationFunction = AggregationFunction.AVG
+    ) -> None:
+        """Initialize the aggregation."""
+        self._function = function
+        self._value_column = value_column
+
+    def validate(self, data_schema: GenomicDataSchema) -> None:
+        """Validate the aggregation against the data schema"""
+        # check that at leastl one offset field is present
+        if "offset_1" not in data_schema.get_schema().columns:
+            raise ValueError("No offset fields in data schema.")
+        # check that value column is present
+        if self._value_column not in data_schema.get_schema().columns:
+            raise ValueError("Value column not in data schema.")
+
+    def _get_transformed_schema(
+        self,
+        df: duckdb.DuckDBPyRelation,
+        input_schema: GenomicDataSchema,
+        position_fields: Dict[int, List[str]],
+    ) -> GenomicDataSchema:
+        """Returns the schema of the transformed data."""
+        # construct schema
+        return QueryStepDataSchema(
+            columns=df.columns,
+            position_fields=position_fields,
+            contact_order=input_schema.get_contact_order(),
+        )
+
+    def _aggregate_offsets(
+        self, df: duckdb.DuckDBPyRelation, position_fields: Dict[int, List[str]]
+    ) -> duckdb.DuckDBPyRelation:
+        """Aggregates the offsets."""
+        # get offset columns
+        offset_columns = [f"offset_{position}" for position in position_fields.keys()]
+        # construct aggregation
+        if self._function == AggregationFunction.COUNT:
+            aggregation_string = f"COUNT(*) as {self._value_column}"
+        else:
+            aggregation_string = (
+                f"{self._function.name}({self._value_column}) as {self._value_column}"
+            )
+        df = df.set_alias("data").aggregate(
+            ",".join(offset_columns + [aggregation_string]),
+        )
+        return df
+
+    def __call__(self, genomic_data: GenomicData) -> GenomicData:
+        """Apply the aggregation to the data"""
+        # get input schema
+        input_schema = genomic_data.get_schema()
+        # bring input to duckdb dataframe
+        if isinstance(genomic_data.data, duckdb.DuckDBPyRelation):
+            genomic_df = genomic_data.data
+        else:
+            genomic_df = duckdb.from_df(genomic_data.data, connection=DUCKDB_CONNECTION)
+        # get position columns
+        position_fields = input_schema.get_position_fields()
+        # construct transformation
+        df = self._aggregate_offsets(genomic_df, position_fields)
+        return QueryResult(
+            df, self._get_transformed_schema(df, input_schema, position_fields)
+        )
+
+
+class OrderReduction:
+    """Reduction of contcts/pixels order using a reduction function."""
+
+    def __init__(self, function: AggregationFunction = AggregationFunction.AVG) -> None:
+        """Initialize the aggregation."""
+        self._function = function
 
     def validate(self, data_schema: GenomicDataSchema) -> None:
         """Validate the aggregation against the data schema"""
 
-
-class Transformation:
-    """Transformation of contacts or pixels"""
-
-    # TODO: think about how to specify transformation
-    def __init__(self, data: GenomicData) -> None:
-        self._data = data
-
-    def validate(self, data_schema: GenomicDataSchema) -> None:
-        """Validate the transformation against the data schema"""
+    def __call__(self, *args: Any, **kwds: Any) -> Any:
+        """Apply the aggregation to the data"""
 
 
 class RegionOffsetTransformation:
@@ -276,7 +346,7 @@ class RegionOffsetTransformation:
             contact_order=input_schema.get_contact_order(),
         )
 
-    def __call__(self, genomic_data: GenomicData) -> Any:
+    def __call__(self, genomic_data: GenomicData) -> GenomicData:
         """Apply the transformation to the data"""
         # get input schema
         input_schema = genomic_data.get_schema()

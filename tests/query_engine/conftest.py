@@ -4,6 +4,11 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
+from spoc.contacts import Contacts
+from spoc.pixels import Pixels
+from spoc.query_engine import Anchor
+from spoc.query_engine import Snipper
+
 
 @pytest.fixture(name="example_2d_df")
 def example_2d_df_fixture():
@@ -88,3 +93,45 @@ def multi_region_2_fixture():
             "end": [200, 220],
         },
     )
+
+
+@pytest.fixture(name="contacts_without_regions")
+def contacts_without_regions_fixture(example_2d_df):
+    """Example 2d contacts"""
+    return Contacts(example_2d_df)
+
+
+@pytest.fixture(name="pixels_without_regions")
+def pixels_wihtout_regions_fixture(pixel_dataframe):
+    """Pixels without regions"""
+    return Pixels(pixel_dataframe, number_fragments=2, binsize=10)
+
+
+@pytest.fixture(name="contacts_with_single_region")
+def contacts_with_single_region_fixture(contacts_without_regions, single_region):
+    """Contacts with single region"""
+    return Snipper(single_region, anchor_mode=Anchor(mode="ANY"))(
+        contacts_without_regions,
+    )
+
+
+@pytest.fixture(name="contacts_with_multiple_regions")
+def contacts_with_multiple_regions_fixture(contacts_without_regions, multi_region):
+    """Contacts with multiple regions"""
+    return Snipper(multi_region, anchor_mode=Anchor(mode="ANY"))(
+        contacts_without_regions,
+    )
+
+
+@pytest.fixture(name="pixels_with_single_region")
+def pixels_with_single_region_fixture(pixels_without_regions, single_region):
+    """Pixels with single region"""
+    return Snipper(single_region, anchor_mode=Anchor(mode="ANY"))(
+        pixels_without_regions,
+    )
+
+
+@pytest.fixture(name="pixels_with_multiple_regions")
+def pixels_with_multiple_regions_fixture(pixels_without_regions, multi_region):
+    """Pixels with multiple regions"""
+    return Snipper(multi_region, anchor_mode=Anchor(mode="ANY"))(pixels_without_regions)
