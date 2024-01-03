@@ -4,6 +4,13 @@ import pytest
 from spoc.query_engine import AggregationFunction
 from spoc.query_engine import BasicQuery
 from spoc.query_engine import OffsetAggregation
+from spoc.query_engine import RegionOffsetTransformation
+
+
+@pytest.fixture(name="pixels_without_value_column")
+def pixels_without_value_column_fixture(pixels_with_single_region):
+    """Pixels with single region"""
+    return RegionOffsetTransformation()(pixels_with_single_region)
 
 
 @pytest.mark.parametrize(
@@ -17,7 +24,7 @@ from spoc.query_engine import OffsetAggregation
         "pixels_with_multiple_regions",
     ],
 )
-def test_incompatible_input_rejected(genomic_data_fixture, request):
+def test_input_wo_offset_rejected(genomic_data_fixture, request):
     """Test that the validation fails for incorrect inputs."""
     genomic_data = request.getfixturevalue(genomic_data_fixture)
     with pytest.raises(ValueError):
@@ -29,6 +36,20 @@ def test_incompatible_input_rejected(genomic_data_fixture, request):
             ],
         )
         query.query(genomic_data)
+
+
+def test_input_wo_data_column_rejected(pixels_without_value_column):
+    """Test that the validation fails for incorrect inputs."""
+    with pytest.raises(ValueError):
+        query = BasicQuery(
+            query_plan=[
+                OffsetAggregation(
+                    value_column="test_column_does_no_exist",
+                    function=AggregationFunction.AVG,
+                ),
+            ],
+        )
+        query.query(pixels_without_value_column)
 
 
 def test_aggregation_succeds_on_correct_inputs():
