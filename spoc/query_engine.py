@@ -259,11 +259,13 @@ class OffsetAggregation:
         if self._function == AggregationFunction.COUNT:
             aggregation_string = f"COUNT(*) as {self._value_column}"
         else:
-            aggregation_string = (
-                f"{self._function.name}({self._value_column}) as {self._value_column}"
+            aggregation_string = f"{self._function.name}({self._value_column}) as {self._value_column}_{self._function.name.lower()}"
+        df = (
+            df.set_alias("data")
+            .aggregate(
+                ",".join(offset_columns + [aggregation_string]),
             )
-        df = df.set_alias("data").aggregate(
-            ",".join(offset_columns + [aggregation_string]),
+            .order(",".join(offset_columns))
         )
         return df
 
