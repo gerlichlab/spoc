@@ -10,6 +10,7 @@ from spoc.query_engine import AggregationFunction
 from spoc.query_engine import Anchor
 from spoc.query_engine import BasicQuery
 from spoc.query_engine import OffsetAggregation
+from spoc.query_engine import OffsetMode
 from spoc.query_engine import RegionOffsetTransformation
 from spoc.query_engine import Snipper
 
@@ -24,7 +25,7 @@ def pixels_with_offset_fixture(pixels_with_single_region):
 def complete_synthetic_pixels_df_fixture():
     """Pixels that span two regions densely"""
     np.random.seed(42)
-    # region_1
+    # genomic region_1
     pixels_1 = [
         {
             "chrom": tup[0],
@@ -40,7 +41,7 @@ def complete_synthetic_pixels_df_fixture():
             np.arange(900_000, 1_150_000, 50_000),
         )
     ]
-    # region_2
+    # genomic region_2
     pixels_2 = [
         {
             "chrom": tup[0],
@@ -63,7 +64,7 @@ def complete_synthetic_pixels_df_fixture():
 def incomplete_synthetic_pixels_df_fixture():
     """Pixels that span two regions sparsely"""
     np.random.seed(42)
-    # region 1
+    # genomic region 1
     pixels_1 = [
         {
             "chrom": tup[0],
@@ -79,7 +80,7 @@ def incomplete_synthetic_pixels_df_fixture():
             np.arange(900_000, 1_000_000, 50_000),
         )
     ]
-    # region_2
+    # genomic region_2
     pixels_2 = [
         {
             "chrom": tup[0],
@@ -106,6 +107,19 @@ def single_region():
             "chrom": ["chr1"],
             "start": [900_000],
             "end": [1_100_000],
+        },
+        index=[0],
+    )
+
+
+@pytest.fixture
+def single_region_not_binaligned():
+    """Single region that is not aligned to the bin size"""
+    return pd.DataFrame(
+        {
+            "chrom": ["chr1"],
+            "start": [920_000],
+            "end": [1_120_000],
         },
         index=[0],
     )
@@ -167,10 +181,13 @@ def test_input_wo_data_column_rejected(pixels_with_offset):
     [
         (AggregationFunction.COUNT, "count", "single_region"),
         (AggregationFunction.COUNT, "count", "two_regions"),
+        (AggregationFunction.COUNT, "count", "single_region_not_binaligned"),
         (AggregationFunction.SUM, "sum", "single_region"),
         (AggregationFunction.SUM, "sum", "two_regions"),
+        (AggregationFunction.SUM, "sum", "single_region_not_binaligned"),
         (AggregationFunction.AVG, "mean", "single_region"),
         (AggregationFunction.AVG, "mean", "two_regions"),
+        (AggregationFunction.AVG, "mean", "single_region_not_binaligned"),
     ],
 )
 def test_aggregations_on_dense_input(
@@ -182,12 +199,12 @@ def test_aggregations_on_dense_input(
 ):
     """Test sum aggregation on dense input."""
     # setup (pixels here are points to make the test easier)
-    pixels = Pixels(complete_synthetic_pixels_df, binsize=0, number_fragments=3)
+    pixels = Pixels(complete_synthetic_pixels_df, binsize=50_000, number_fragments=3)
     region = request.getfixturevalue(region_fixture)
     mapped_pixels = BasicQuery(
         query_plan=[
             Snipper(region, anchor_mode=Anchor(mode="ANY")),
-            RegionOffsetTransformation(),
+            RegionOffsetTransformation(offset_mode=OffsetMode.LEFT),
         ],
     ).query(pixels)
     mapped_pixels_df = mapped_pixels.load_result()
@@ -206,7 +223,9 @@ def test_aggregations_on_dense_input(
     # execute aggregation
     query = BasicQuery(
         query_plan=[
-            OffsetAggregation(value_column="count", function=aggregation_spoc),
+            OffsetAggregation(
+                value_column="count", function=aggregation_spoc, densify_output=False
+            ),
         ],
     )
     actual_aggregation = query.query(mapped_pixels).load_result()
@@ -222,10 +241,13 @@ def test_aggregations_on_dense_input(
     [
         (AggregationFunction.COUNT, "count", "single_region"),
         (AggregationFunction.COUNT, "count", "two_regions"),
+        (AggregationFunction.COUNT, "count", "single_region_not_binaligned"),
         (AggregationFunction.SUM, "sum", "single_region"),
         (AggregationFunction.SUM, "sum", "two_regions"),
+        (AggregationFunction.SUM, "sum", "single_region_not_binaligned"),
         (AggregationFunction.AVG, "mean", "single_region"),
         (AggregationFunction.AVG, "mean", "two_regions"),
+        (AggregationFunction.AVG, "mean", "single_region_not_binaligned"),
     ],
 )
 def test_aggregations_on_sparse_input(
@@ -236,13 +258,13 @@ def test_aggregations_on_sparse_input(
     request,
 ):
     """Test sum aggregation on dense input."""
-    # setup (pixels here are points to make the test easier)
-    pixels = Pixels(incomplete_synthetic_pixels_df, binsize=0, number_fragments=3)
+    # setup
+    pixels = Pixels(incomplete_synthetic_pixels_df, binsize=50_000, number_fragments=3)
     region = request.getfixturevalue(region_fixture)
     mapped_pixels = BasicQuery(
         query_plan=[
             Snipper(region, anchor_mode=Anchor(mode="ANY")),
-            RegionOffsetTransformation(),
+            RegionOffsetTransformation(offset_mode=OffsetMode.LEFT),
         ],
     ).query(pixels)
     mapped_pixels_df = mapped_pixels.load_result()
@@ -261,7 +283,9 @@ def test_aggregations_on_sparse_input(
     # execute aggregation
     query = BasicQuery(
         query_plan=[
-            OffsetAggregation(value_column="count", function=aggregation_spoc),
+            OffsetAggregation(
+                value_column="count", function=aggregation_spoc, densify_output=True
+            ),
         ],
     )
     actual_aggregation = query.query(mapped_pixels).load_result()

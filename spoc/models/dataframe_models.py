@@ -78,10 +78,12 @@ class QueryStepDataSchema:
         columns: List[str],
         position_fields: Dict[int, List[str]],
         contact_order: int,
+        binsize: Optional[int] = None,
     ) -> None:
         self._columns = columns
         self._contact_order = contact_order
         self._position_fields = position_fields
+        self._binsize = binsize
         self._schema = pa.DataFrameSchema(
             {column: pa.Column() for column in columns},
             coerce=True,
@@ -109,7 +111,7 @@ class QueryStepDataSchema:
 
     def get_binsize(self) -> Optional[int]:
         """Returns the binsize of the genomic data"""
-        return None
+        return self._binsize
 
 
 # schemas for higher order contacts

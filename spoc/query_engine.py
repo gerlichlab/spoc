@@ -1,5 +1,6 @@
 """This file contains the classes making up the query engine."""
 from enum import Enum
+from itertools import product
 from typing import Any
 from typing import Dict
 from typing import List
@@ -9,6 +10,7 @@ from typing import Union
 
 import dask.dataframe as dd
 import duckdb
+import numpy as np
 import pandas as pd
 from pydantic import BaseModel
 
@@ -148,6 +150,7 @@ class Snipper:
             columns=df.columns,
             position_fields=position_fields,
             contact_order=input_schema.get_contact_order(),
+            binsize=input_schema.get_binsize(),
         )
 
     def _add_end_position(
@@ -220,11 +223,21 @@ class OffsetAggregation:
     """Aggregation based on offsets from a region. Uses all available offsets."""
 
     def __init__(
-        self, value_column: str, function: AggregationFunction = AggregationFunction.AVG
+        self,
+        value_column: str,
+        function: AggregationFunction = AggregationFunction.AVG,
+        densify_output: bool = True,
     ) -> None:
-        """Initialize the aggregation."""
+        """Initialize the aggregation.
+
+        Args:
+            value_column (str): The name of the column to be aggregated.
+            function (AggregationFunction, optional): The aggregation function to be applied. Defaults to AggregationFunction.AVG.
+            densify_output (bool, optional): Whether to densify the output. Defaults to True. This requires a binsize value to be set in the data schema.
+        """
         self._function = function
         self._value_column = value_column
+        self._densify_output = densify_output
 
     def validate(self, data_schema: GenomicDataSchema) -> None:
         """Validate the aggregation against the data schema"""
@@ -234,6 +247,10 @@ class OffsetAggregation:
         # check that value column is present
         if self._value_column not in data_schema.get_schema().columns:
             raise ValueError("Value column not in data schema.")
+        if self._densify_output and data_schema.get_binsize() is None:
+            raise ValueError(
+                "No binsize specified in data schema. This is required for densifying the output."
+            )
 
     def _get_transformed_schema(
         self,
@@ -247,6 +264,7 @@ class OffsetAggregation:
             columns=df.columns,
             position_fields=position_fields,
             contact_order=input_schema.get_contact_order(),
+            binsize=input_schema.get_binsize(),
         )
 
     def _aggregate_offsets(
@@ -257,7 +275,9 @@ class OffsetAggregation:
         offset_columns = [f"offset_{position}" for position in position_fields.keys()]
         # construct aggregation
         if self._function == AggregationFunction.COUNT:
-            aggregation_string = f"COUNT(*) as {self._value_column}"
+            aggregation_string = (
+                f"COUNT(*) as {self._value_column}_{self._function.name.lower()}"
+            )
         else:
             aggregation_string = f"{self._function.name}({self._value_column}) as {self._value_column}_{self._function.name.lower()}"
         df = (
@@ -266,6 +286,64 @@ class OffsetAggregation:
                 ",".join(offset_columns + [aggregation_string]),
             )
             .order(",".join(offset_columns))
+        )
+        return df
+
+    def _create_empty_dense_output(
+        self,
+        windowsize: int,
+        input_schema: GenomicDataSchema,
+    ) -> duckdb.DuckDBPyRelation:
+        """Create dense value columns for all offsets."""
+        binsize: Optional[int] = input_schema.get_binsize()
+        if binsize is None:
+            raise ValueError("No binsize specified in data schema.")
+        int_binsize: int = binsize
+        # create combinations of offsets
+        offset_combinations = pd.DataFrame(
+            product(
+                np.arange(
+                    -(np.floor(windowsize / int_binsize) * int_binsize),
+                    (np.floor(windowsize / int_binsize) * int_binsize) + 1,
+                    int_binsize,
+                ),
+                repeat=len(input_schema.get_position_fields()),
+            ),
+            columns=[f"offset_{i+1}" for i in range(input_schema.get_contact_order())],
+        )
+        # fill value
+        if (
+            self._function == AggregationFunction.COUNT
+            or self._function == AggregationFunction.SUM
+        ):
+            offset_combinations["fill_value"] = 0
+        else:
+            offset_combinations["fill_value"] = np.nan
+        return duckdb.from_df(offset_combinations, connection=DUCKDB_CONNECTION)
+
+    def _fill_empty_output(
+        self,
+        df: duckdb.DuckDBPyRelation,
+        empty_dense_output: duckdb.DuckDBPyRelation,
+        position_fields: Dict[int, List[str]],
+    ) -> duckdb.DuckDBPyRelation:
+        """Fill empty output with values from dense output."""
+        # get offset columns
+        offset_columns = [f"offset_{i}" for i in position_fields.keys()]
+        # construct join and coalesce output
+        df = (
+            df.set_alias("data")
+            .join(
+                empty_dense_output.set_alias("empty_dense_output"),
+                ",".join(offset_columns),
+                how="right",
+            )
+            .project(
+                ",".join(offset_columns)
+                + f", COALESCE(data.{self._value_column}_{self._function.name.lower()}, empty_dense_output.fill_value) as {self._value_column}"
+            )
+            .set_alias("filled")
+            .order(",".join([f"filled.{col}" for col in offset_columns]))
         )
         return df
 
@@ -282,6 +360,16 @@ class OffsetAggregation:
         position_fields = input_schema.get_position_fields()
         # construct transformation
         df = self._aggregate_offsets(genomic_df, position_fields)
+        if self._densify_output:
+            # Take maximum windowsize of regions
+            windowsize = (
+                genomic_df.aggregate("MAX(region_end - region_start)").df().iloc[0, 0]
+                // 2
+            )
+            empty_dense_output = self._create_empty_dense_output(
+                windowsize, input_schema
+            )
+            df = self._fill_empty_output(df, empty_dense_output, position_fields)
         return QueryResult(
             df, self._get_transformed_schema(df, input_schema, position_fields)
         )
@@ -301,13 +389,29 @@ class OrderReduction:
         """Apply the aggregation to the data"""
 
 
+class OffsetMode(Enum):
+    """Enum for offset modes."""
+
+    LEFT: str = "ANY"
+    RIGHT: str = "ALL"
+    BOTH: str = "BOTH"
+    MIDPOINT: str = "MIDPOINT"
+
+
 class RegionOffsetTransformation:
     """Adds offset columns for each position field relative
     to required region_columns."""
 
-    def __init__(self, use_mid_point: bool = True) -> None:
-        """Initialize the transformation."""
-        self._use_mid_point = use_mid_point
+    def __init__(self, offset_mode: OffsetMode = OffsetMode.LEFT) -> None:
+        """Initialize the transformation.
+
+        Args:
+            offset_mode (OffsetMode): The offset mode to be used. Defaults to OffsetMode.MIDPOINT.
+                                      Specifies how the offset is calculated relative to the region midpoint.
+                                      Note that the offset is always calculated relative to the midpoint of the region.
+                                      If a binsize is specificed in the data schema, this needs to be set to LEFT.
+        """
+        self._offset_mode = offset_mode
 
     def validate(self, data_schema: GenomicDataSchema) -> None:
         """Validate the transformation against the data schema"""
@@ -318,22 +422,41 @@ class RegionOffsetTransformation:
         required_columns = ["region_chrom", "region_start", "region_end"]
         if not all(column in schema_columns for column in required_columns):
             raise ValueError("No region columns in data schema.")
+        if (
+            self._offset_mode != OffsetMode.LEFT
+            and data_schema.get_binsize() is not None
+        ):
+            raise ValueError(
+                "Binsize specified in data schema, but offset mode is not set to LEFT."
+            )
 
     def _create_transform_columns(
-        self, genomic_df: duckdb.DuckDBPyRelation, position_fields: Dict[int, List[str]]
+        self, genomic_df: duckdb.DuckDBPyRelation, input_schema: GenomicDataSchema
     ) -> duckdb.DuckDBPyRelation:
         """Creates the transform columns for the given position fields"""
+        # position fields
+        position_fields = input_schema.get_position_fields()
         # get existing columns
         transform_strings = [f"data.{column}" for column in genomic_df.columns]
+        # check whether binsize is specified
+        if input_schema.get_binsize() is not None:
+            binsize = input_schema.get_binsize()
+        else:
+            binsize = 1
         # create transform columns
         for position_field, fields in position_fields.items():
             _, start, end = fields
-            if self._use_mid_point:
+            if self._offset_mode == OffsetMode.MIDPOINT:
                 output_string = f"""(FLOOR((data.{start} + data.{end})/2) - FLOOR((data.region_start + data.region_end)/2))
                                          as offset_{position_field}"""
-            else:
-                output_string = f"""data.{start} - data.region_start as start_offset_{position_field},
-                                    data.{end} - data.region_end as end_offset_{position_field}"""
+            if self._offset_mode == OffsetMode.LEFT:
+                output_string = f"""data.{start} - FLOOR((FLOOR(data.region_start/{binsize}) * {binsize} 
+                                    + FLOOR(data.region_end/{binsize}) * {binsize})/2) as offset_{position_field}"""
+            if self._offset_mode == OffsetMode.RIGHT:
+                output_string = f"""data.{end} - FLOOR((data.region_start + data.region_end)/2) as offset_{position_field}"""
+            if self._offset_mode == OffsetMode.BOTH:
+                output_string = f"""data.{start} - FLOOR((data.region_start + data.region_end)/2) as start_offset_{position_field},
+                                    data.{end} - FLOOR((data.region_start + data.region_end)/2) as end_offset_{position_field}"""
             transform_strings.append(output_string)
         return ",".join(transform_strings)
 
@@ -346,6 +469,7 @@ class RegionOffsetTransformation:
             columns=df.columns,
             position_fields=input_schema.get_position_fields(),
             contact_order=input_schema.get_contact_order(),
+            binsize=input_schema.get_binsize(),
         )
 
     def __call__(self, genomic_data: GenomicData) -> GenomicData:
@@ -357,11 +481,9 @@ class RegionOffsetTransformation:
             genomic_df = genomic_data.data
         else:
             genomic_df = duckdb.from_df(genomic_data.data, connection=DUCKDB_CONNECTION)
-        # get position columns
-        position_fields = input_schema.get_position_fields()
         # construct transformation
         df = genomic_df.set_alias("data").project(
-            self._create_transform_columns(genomic_df, position_fields)
+            self._create_transform_columns(genomic_df, input_schema)
         )
         return QueryResult(df, self._get_transformed_schema(df, input_schema))
 
