@@ -67,13 +67,19 @@ class Snipper:
     It provides methods to validate the filter against a data schema,
     convert data to a duckdb relation, construct a filter string,
     and apply the filter to the data.
-
-    Attributes:
-        _regions (pd.DataFrame): The regions to be used for filtering.
-        _anchor_mode (Anchor): The anchor mode for filtering.
     """
 
     def __init__(self, regions: pd.DataFrame, anchor_mode: Anchor) -> None:
+        """
+        Initialize the QueryEngine object.
+
+        Args:
+            regions (pd.DataFrame): A DataFrame containing the regions data.
+            anchor_mode (Anchor): The anchor mode to be used.
+
+        Returns:
+            None
+        """
         # add ids to regions if they don't exist
         if "id" not in regions.columns:
             regions["id"] = range(len(regions))
@@ -140,36 +146,37 @@ class Snipper:
 
     def _get_transformed_schema(
         self,
-        df: duckdb.DuckDBPyRelation,
+        data_frame: duckdb.DuckDBPyRelation,
         input_schema: GenomicDataSchema,
         position_fields: Dict[int, List[str]],
     ) -> GenomicDataSchema:
         """Returns the schema of the transformed data."""
         # construct schema
         return QueryStepDataSchema(
-            columns=df.columns,
+            columns=data_frame.columns,
             position_fields=position_fields,
             contact_order=input_schema.get_contact_order(),
             binsize=input_schema.get_binsize(),
+            region_number=len(self._regions),
         )
 
     def _add_end_position(
         self,
-        df: duckdb.DuckDBPyRelation,
+        data_frame: duckdb.DuckDBPyRelation,
         bin_size: Optional[int],
         position_fields: Dict[int, List[str]],
     ) -> duckdb.DuckDBPyRelation:
         """Adds an end position column to the dataframe"""
-        position_columns = set([j for i in position_fields.values() for j in i])
+        position_columns = {j for i in position_fields.values() for j in i}
         non_position_columns = [
-            column for column in df.columns if column not in position_columns
+            column for column in data_frame.columns if column not in position_columns
         ]
         new_position_clause = [
             f"data.chrom as chrom_{position}, data.start_{position} as start_{position}, data.start_{position} + {bin_size} as end_{position}"
             for position in position_fields.keys()
         ]
         # add end position
-        return df.set_alias("data").project(
+        return data_frame.set_alias("data").project(
             ",".join(new_position_clause + non_position_columns)
         )
 
@@ -198,23 +205,26 @@ class Snipper:
                 for position in position_fields.keys()
             }
         # construct query
-        df = genomic_df.set_alias("data").join(
+        snipped_df = genomic_df.set_alias("data").join(
             regions.set_alias("regions"), self._contstruct_filter(position_fields)
         )
         return QueryResult(
-            df, self._get_transformed_schema(df, input_schema, position_fields)
+            snipped_df,
+            self._get_transformed_schema(snipped_df, input_schema, position_fields),
         )
 
 
-class MappedRegionFilter:
-    """Filter for filtering mapped regions
-    of contacts or pixels."""
-
-
 class AggregationFunction(Enum):
-    """Enum for aggregation functions."""
+    """Enum for aggregation functions.
+    Options are:
+        SUM: Sum of values.
+        AVG_WITH_EMPTY: Average of values, empty values are counted as 0.
+        AVG: Average of values, empty values are not counted.
+        COUNT: Number of values.
+    """
 
     SUM: str = "SUM"
+    AVG_WITH_EMPTY: str = "AVG_WITH_EMPTY"
     AVG: str = "AVG"
     COUNT: str = "COUNT"
 
@@ -233,7 +243,8 @@ class OffsetAggregation:
         Args:
             value_column (str): The name of the column to be aggregated.
             function (AggregationFunction, optional): The aggregation function to be applied. Defaults to AggregationFunction.AVG.
-            densify_output (bool, optional): Whether to densify the output. Defaults to True. This requires a binsize value to be set in the data schema.
+            densify_output (bool, optional): Whether to densify the output. Defaults to True.
+                                             This requires a binsize value to be set in the data schema.
         """
         self._function = function
         self._value_column = value_column
@@ -254,23 +265,25 @@ class OffsetAggregation:
 
     def _get_transformed_schema(
         self,
-        df: duckdb.DuckDBPyRelation,
+        data_frame: duckdb.DuckDBPyRelation,
         input_schema: GenomicDataSchema,
         position_fields: Dict[int, List[str]],
     ) -> GenomicDataSchema:
         """Returns the schema of the transformed data."""
         # construct schema
         return QueryStepDataSchema(
-            columns=df.columns,
+            columns=data_frame.columns,
             position_fields=position_fields,
             contact_order=input_schema.get_contact_order(),
             binsize=input_schema.get_binsize(),
         )
 
     def _aggregate_offsets(
-        self, df: duckdb.DuckDBPyRelation, position_fields: Dict[int, List[str]]
+        self, data_frame: duckdb.DuckDBPyRelation, input_schema: GenomicDataSchema
     ) -> duckdb.DuckDBPyRelation:
         """Aggregates the offsets."""
+        # get position fields
+        position_fields = input_schema.get_position_fields()
         # get offset columns
         offset_columns = [f"offset_{position}" for position in position_fields.keys()]
         # construct aggregation
@@ -278,16 +291,19 @@ class OffsetAggregation:
             aggregation_string = (
                 f"COUNT(*) as {self._value_column}_{self._function.name.lower()}"
             )
+        elif self._function == AggregationFunction.AVG_WITH_EMPTY:
+            # For average, we need to sum up the values and divide by the number of regions
+            aggregation_string = f"SUM({self._value_column})::float/{input_schema.get_region_number()} as {self._value_column}_{self._function.name.lower()}"
         else:
             aggregation_string = f"{self._function.name}({self._value_column}) as {self._value_column}_{self._function.name.lower()}"
-        df = (
-            df.set_alias("data")
+        data_frame = (
+            data_frame.set_alias("data")
             .aggregate(
                 ",".join(offset_columns + [aggregation_string]),
             )
             .order(",".join(offset_columns))
         )
-        return df
+        return data_frame
 
     def _create_empty_dense_output(
         self,
@@ -312,9 +328,10 @@ class OffsetAggregation:
             columns=[f"offset_{i+1}" for i in range(input_schema.get_contact_order())],
         )
         # fill value
-        if (
-            self._function == AggregationFunction.COUNT
-            or self._function == AggregationFunction.SUM
+        if self._function in (
+            AggregationFunction.COUNT,
+            AggregationFunction.SUM,
+            AggregationFunction.AVG_WITH_EMPTY,
         ):
             offset_combinations["fill_value"] = 0
         else:
@@ -323,7 +340,7 @@ class OffsetAggregation:
 
     def _fill_empty_output(
         self,
-        df: duckdb.DuckDBPyRelation,
+        data_frame: duckdb.DuckDBPyRelation,
         empty_dense_output: duckdb.DuckDBPyRelation,
         position_fields: Dict[int, List[str]],
     ) -> duckdb.DuckDBPyRelation:
@@ -331,8 +348,8 @@ class OffsetAggregation:
         # get offset columns
         offset_columns = [f"offset_{i}" for i in position_fields.keys()]
         # construct join and coalesce output
-        df = (
-            df.set_alias("data")
+        data_frame = (
+            data_frame.set_alias("data")
             .join(
                 empty_dense_output.set_alias("empty_dense_output"),
                 ",".join(offset_columns),
@@ -345,7 +362,7 @@ class OffsetAggregation:
             .set_alias("filled")
             .order(",".join([f"filled.{col}" for col in offset_columns]))
         )
-        return df
+        return data_frame
 
     def __call__(self, genomic_data: GenomicData) -> GenomicData:
         """Apply the aggregation to the data"""
@@ -359,7 +376,7 @@ class OffsetAggregation:
         # get position columns
         position_fields = input_schema.get_position_fields()
         # construct transformation
-        df = self._aggregate_offsets(genomic_df, position_fields)
+        aggregated_data = self._aggregate_offsets(genomic_df, input_schema)
         if self._densify_output:
             # Take maximum windowsize of regions
             windowsize = (
@@ -369,9 +386,14 @@ class OffsetAggregation:
             empty_dense_output = self._create_empty_dense_output(
                 windowsize, input_schema
             )
-            df = self._fill_empty_output(df, empty_dense_output, position_fields)
+            aggregated_data = self._fill_empty_output(
+                aggregated_data, empty_dense_output, position_fields
+            )
         return QueryResult(
-            df, self._get_transformed_schema(df, input_schema, position_fields)
+            aggregated_data,
+            self._get_transformed_schema(
+                aggregated_data, input_schema, position_fields
+            ),
         )
 
 
@@ -450,7 +472,7 @@ class RegionOffsetTransformation:
                 output_string = f"""(FLOOR((data.{start} + data.{end})/2) - FLOOR((data.region_start + data.region_end)/2))
                                          as offset_{position_field}"""
             if self._offset_mode == OffsetMode.LEFT:
-                output_string = f"""data.{start} - FLOOR((FLOOR(data.region_start/{binsize}) * {binsize} 
+                output_string = f"""data.{start} - FLOOR((FLOOR(data.region_start/{binsize}) * {binsize}
                                     + FLOOR(data.region_end/{binsize}) * {binsize})/2) as offset_{position_field}"""
             if self._offset_mode == OffsetMode.RIGHT:
                 output_string = f"""data.{end} - FLOOR((data.region_start + data.region_end)/2) as offset_{position_field}"""
@@ -461,15 +483,16 @@ class RegionOffsetTransformation:
         return ",".join(transform_strings)
 
     def _get_transformed_schema(
-        self, df: duckdb.DuckDBPyRelation, input_schema: GenomicDataSchema
+        self, data_frame: duckdb.DuckDBPyRelation, input_schema: GenomicDataSchema
     ) -> GenomicDataSchema:
         """Returns the schema of the transformed data."""
         # construct schema
         return QueryStepDataSchema(
-            columns=df.columns,
+            columns=data_frame.columns,
             position_fields=input_schema.get_position_fields(),
             contact_order=input_schema.get_contact_order(),
             binsize=input_schema.get_binsize(),
+            region_number=input_schema.get_region_number(),
         )
 
     def __call__(self, genomic_data: GenomicData) -> GenomicData:
@@ -482,10 +505,12 @@ class RegionOffsetTransformation:
         else:
             genomic_df = duckdb.from_df(genomic_data.data, connection=DUCKDB_CONNECTION)
         # construct transformation
-        df = genomic_df.set_alias("data").project(
+        transformed_df = genomic_df.set_alias("data").project(
             self._create_transform_columns(genomic_df, input_schema)
         )
-        return QueryResult(df, self._get_transformed_schema(df, input_schema))
+        return QueryResult(
+            transformed_df, self._get_transformed_schema(transformed_df, input_schema)
+        )
 
 
 class QueryResult:
@@ -517,6 +542,8 @@ class QueryResult:
         return self._schema
 
 
+# pylint: disable=too-few-public-methods
+# this is a wrapper with one task, so it only has one method
 class BasicQuery:
     """Basic query engine that runs a query plan on the data"""
 

@@ -32,3 +32,4 @@ repos:
         entry: pylint
         language: system
         types: [python]
+        args: ["--disable=C0301,W0511"]

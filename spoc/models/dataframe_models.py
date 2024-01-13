@@ -68,22 +68,30 @@ class GenomicDataSchema(Protocol):
     def get_binsize(self) -> Optional[int]:
         """Returns the binsize of the genomic data"""
 
+    def get_region_number(self) -> Optional[int]:
+        """Returns the number of regions in the genomic data
+        if present."""
+
 
 class QueryStepDataSchema:
     """Implements GenomicDataSchema for query steps
     with generic columns"""
 
+    # pylint: disable=too-many-arguments
+    # arguments needed to define the schema
     def __init__(
         self,
         columns: List[str],
         position_fields: Dict[int, List[str]],
         contact_order: int,
         binsize: Optional[int] = None,
+        region_number: Optional[int] = None,
     ) -> None:
         self._columns = columns
         self._contact_order = contact_order
         self._position_fields = position_fields
         self._binsize = binsize
+        self._region_number = region_number
         self._schema = pa.DataFrameSchema(
             {column: pa.Column() for column in columns},
             coerce=True,
@@ -112,6 +120,11 @@ class QueryStepDataSchema:
     def get_binsize(self) -> Optional[int]:
         """Returns the binsize of the genomic data"""
         return self._binsize
+
+    def get_region_number(self) -> Optional[int]:
+        """Returns the number of regions in the genomic data
+        if present."""
+        return self._region_number
 
 
 # schemas for higher order contacts
@@ -234,6 +247,11 @@ class ContactSchema:
         """Returns the binsize of the genomic data"""
         return None
 
+    def get_region_number(self) -> Optional[int]:
+        """Returns the number of regions in the genomic data
+        if present."""
+        return None
+
 
 class PixelSchema:
     """Dynamic schema for N-way pixels
@@ -319,6 +337,11 @@ class PixelSchema:
     def get_binsize(self) -> Optional[int]:
         """Returns the binsize of the genomic data"""
         return self._binsize
+
+    def get_region_number(self) -> Optional[int]:
+        """Returns the number of regions in the genomic data
+        if present."""
+        return None
 
     def get_contact_order(self) -> int:
         """Returns the order of the genomic data"""

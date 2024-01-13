@@ -99,6 +99,19 @@ def incomplete_synthetic_pixels_df_fixture():
     return pd.concat((pd.DataFrame(pixels_1), pd.DataFrame(pixels_2)))
 
 
+@pytest.fixture(name="incomplete_synthetic_pixels_dense_df")
+def incomplete_synthetic_pixels_dense_df_fixture(
+    complete_synthetic_pixels_df, incomplete_synthetic_pixels_df
+):
+    """Pixels that span two regions sparsely
+    with missing pixels filled with 0."""
+    return incomplete_synthetic_pixels_df.merge(
+        complete_synthetic_pixels_df[["chrom", "start_1", "start_2", "start_3"]],
+        on=["chrom", "start_1", "start_2", "start_3"],
+        how="outer",
+    ).fillna(0)
+
+
 @pytest.fixture
 def single_region():
     """Single region"""
@@ -236,6 +249,7 @@ def test_aggregations_on_dense_input(
     )
 
 
+# pylint: disable=too-many-arguments
 @pytest.mark.parametrize(
     "aggregation_spoc, aggregation_pandas, region_fixture",
     [
@@ -248,10 +262,14 @@ def test_aggregations_on_dense_input(
         (AggregationFunction.AVG, "mean", "single_region"),
         (AggregationFunction.AVG, "mean", "two_regions"),
         (AggregationFunction.AVG, "mean", "single_region_not_binaligned"),
+        (AggregationFunction.AVG_WITH_EMPTY, "mean", "single_region"),
+        (AggregationFunction.AVG_WITH_EMPTY, "mean", "two_regions"),
+        (AggregationFunction.AVG_WITH_EMPTY, "mean", "single_region_not_binaligned"),
     ],
 )
 def test_aggregations_on_sparse_input(
     incomplete_synthetic_pixels_df,
+    incomplete_synthetic_pixels_dense_df,
     aggregation_spoc,
     aggregation_pandas,
     region_fixture,
@@ -259,21 +277,41 @@ def test_aggregations_on_sparse_input(
 ):
     """Test sum aggregation on dense input."""
     # setup
-    pixels = Pixels(incomplete_synthetic_pixels_df, binsize=50_000, number_fragments=3)
-    region = request.getfixturevalue(region_fixture)
-    mapped_pixels = BasicQuery(
+    incomplete_pixels = Pixels(
+        incomplete_synthetic_pixels_df, binsize=50_000, number_fragments=3
+    )
+    incomplete_dense_pixels = Pixels(
+        incomplete_synthetic_pixels_dense_df, binsize=50_000, number_fragments=3
+    )
+    query_plan = BasicQuery(
         query_plan=[
-            Snipper(region, anchor_mode=Anchor(mode="ANY")),
+            Snipper(
+                request.getfixturevalue(region_fixture), anchor_mode=Anchor(mode="ANY")
+            ),
             RegionOffsetTransformation(offset_mode=OffsetMode.LEFT),
         ],
-    ).query(pixels)
-    mapped_pixels_df = mapped_pixels.load_result()
-    cat_dtype = pd.CategoricalDtype(range(-100_000, 150_000, 50_000))
-    mapped_pixels_df["offset_1"] = mapped_pixels_df["offset_1"].astype(cat_dtype)
-    mapped_pixels_df["offset_2"] = mapped_pixels_df["offset_2"].astype(cat_dtype)
-    mapped_pixels_df["offset_3"] = mapped_pixels_df["offset_3"].astype(cat_dtype)
+    )
+    mapped_pixels = query_plan.query(incomplete_pixels)
+    mapped_incomplete_dense_pixels_df = query_plan.query(
+        incomplete_dense_pixels
+    ).load_result()
+    if aggregation_spoc == AggregationFunction.AVG_WITH_EMPTY:
+        # when we test the AVG_WITH_EMPTY function, we need to use the dense pixels
+        # where missing values with 0 count are filled in
+        pixel_frame_for_expected = mapped_incomplete_dense_pixels_df
+    else:
+        pixel_frame_for_expected = mapped_pixels.load_result()
+    pixel_frame_for_expected["offset_1"] = pixel_frame_for_expected["offset_1"].astype(
+        pd.CategoricalDtype(range(-100_000, 150_000, 50_000))
+    )
+    pixel_frame_for_expected["offset_2"] = pixel_frame_for_expected["offset_2"].astype(
+        pd.CategoricalDtype(range(-100_000, 150_000, 50_000))
+    )
+    pixel_frame_for_expected["offset_3"] = pixel_frame_for_expected["offset_3"].astype(
+        pd.CategoricalDtype(range(-100_000, 150_000, 50_000))
+    )
     expected_aggregation = (
-        mapped_pixels_df.groupby(["offset_1", "offset_2", "offset_3"])
+        pixel_frame_for_expected.groupby(["offset_1", "offset_2", "offset_3"])
         .agg(count=("count", aggregation_pandas))
         .astype(float)
         .reset_index()
@@ -288,9 +326,7 @@ def test_aggregations_on_sparse_input(
             ),
         ],
     )
-    actual_aggregation = query.query(mapped_pixels).load_result()
     # test
     np.testing.assert_array_almost_equal(
-        expected_aggregation.values,
-        actual_aggregation.values,
+        expected_aggregation.values, query.query(mapped_pixels).load_result()
     )
