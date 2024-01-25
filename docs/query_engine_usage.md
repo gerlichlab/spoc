@@ -7,7 +7,7 @@ This technical document describes the spoc query engine, a set of classes that i
 Spoc's query engine consists of composable pieces that can be combined to produce an expressive query language. These pieces represent basic operations on genomic data that are easily implemented and understood on their own. This allows a great degree of flexibility, while also allowing predefined recipes that less experienced users can get started with.
 
 ### Lazy evaluation
-The spoc query engine is designed with lazy evaluation as a guiding principle. This means that data queries are only executed when they are needed to minimize loading data into memory and computational overhead. To enable this, spoc queries have a construction phase, which specifies the operations to be executed and an exection phase, that actually executes the query.
+The spoc query engine is designed with lazy evaluation as a guiding principle. This means that data queries are only executed when they are needed to minimize loading data into memory and computational overhead. To enable this, spoc queries have a construction phase, which specifies the operations to be executed and an execution phase, that actually executes the query.
 
 ## Query plans and query steps
 
@@ -19,8 +19,8 @@ The most important ingredient in this query language is a class that implements 
 This way, query steps can be combined into a query plan that specifies the analysis to be executed. Specific examples of query steps are:
 
 - **Snipper**: Implements selecting overlapping contacts or pixels for a set of genomic regions.
-- **Transformation**: Transforms one or more columns to add additional columns
-- **Aggregation**: Aggregation of data such as counting contacts per region
+- **RegionOffsetTransformation**: Adds offset of genomic positions to regions added by snipper
+- **OffsetAggregation**: Aggregates the offsets to genomic regions using an aggregation function.
 
 ### Input and output of query steps
 
@@ -90,7 +90,7 @@ result
 
 
 
-    <spoc.query_engine.QueryResult at 0x23d0367eaf0>
+    <spoc.query_engine.QueryResult at 0x1f7f89093d0>
 
 
 
@@ -133,10 +133,10 @@ df.filter(regex=r"chrom|start|end|id")
       <th>chrom_2</th>
       <th>start_2</th>
       <th>end_2</th>
-      <th>chrom</th>
-      <th>start</th>
-      <th>end</th>
-      <th>id</th>
+      <th>region_chrom</th>
+      <th>region_start</th>
+      <th>region_end</th>
+      <th>region_id</th>
     </tr>
   </thead>
   <tbody>
@@ -225,10 +225,10 @@ BasicQuery(query_plan=query_plan)\
       <th>chrom_2</th>
       <th>start_2</th>
       <th>end_2</th>
-      <th>chrom</th>
-      <th>start</th>
-      <th>end</th>
-      <th>id</th>
+      <th>region_chrom</th>
+      <th>region_start</th>
+      <th>region_end</th>
+      <th>region_id</th>
     </tr>
   </thead>
   <tbody>
@@ -307,10 +307,10 @@ BasicQuery(query_plan=query_plan)\
       <th>chrom_2</th>
       <th>start_2</th>
       <th>end_2</th>
-      <th>chrom</th>
-      <th>start</th>
-      <th>end</th>
-      <th>id</th>
+      <th>region_chrom</th>
+      <th>region_start</th>
+      <th>region_end</th>
+      <th>region_id</th>
     </tr>
   </thead>
   <tbody>
@@ -349,3 +349,386 @@ BasicQuery(query_plan=query_plan)\
 In this example, the contact overlapping both regions is duplicated.
 
 The same functionality is implemented also for the pixels class.
+
+## Calculating the offset to a target region and aggregating the result
+In this example, we calculate the offset of pixels to target regions and aggregate based on the offsets. This is a very common use case in so-called pileup analyses, where we want to investigate the average behavior around regions of interest.
+
+
+```python
+from spoc.pixels import Pixels
+from spoc.query_engine import RegionOffsetTransformation
+import pandas as pd
+import numpy as np
+from itertools import product
+```
+
+First we define a set of target pixels
+
+
+```python
+def complete_synthetic_pixels():
+    """Pixels that span two regions densely"""
+    np.random.seed(42)
+    # genomic region_1
+    pixels_1 = [
+        {
+            "chrom": tup[0],
+            "start_1": tup[1],
+            "start_2": tup[2],
+            "start_3": tup[3],
+            "count": np.random.randint(0, 10),
+        }
+        for tup in product(
+            ["chr1"],
+            np.arange(900_000, 1_150_000, 50_000),
+            np.arange(900_000, 1_150_000, 50_000),
+            np.arange(900_000, 1_150_000, 50_000),
+        )
+    ]
+    # genomic region_2
+    pixels_2 = [
+        {
+            "chrom": tup[0],
+            "start_1": tup[1],
+            "start_2": tup[2],
+            "start_3": tup[3],
+            "count": np.random.randint(0, 10),
+        }
+        for tup in product(
+            ["chr2"],
+            np.arange(900_000, 1_150_000, 50_000),
+            np.arange(900_000, 1_150_000, 50_000),
+            np.arange(900_000, 1_150_000, 50_000),
+        )
+    ]
+    return pd.concat((pd.DataFrame(pixels_1), pd.DataFrame(pixels_2)))
+```
+
+
+```python
+pixels = Pixels(complete_synthetic_pixels(), number_fragments=3, binsize=50_000)
+```
+
+Then we define the target regions we are interested in.
+
+
+```python
+target_regions = pd.DataFrame(
+        {
+            "chrom": ["chr1", "chr2"],
+            "start": [900_000, 900_000],
+            "end": [1_100_000, 1_100_000],
+        }
+    )
+```
+
+We are then interested in selecting all contacts that are contained within these pixels and then calculate the offset to them. The selection step can be done with the `Snipper` class that we described above. The offset transformation can be done with the `OffsetTransformation` query step. This query step takes an instance of genomic data that contains regions (as defined by it's schema) and calculates the offset to all position columns. All offsets are calculated with regards to the center of each assigned region. Since genomic positions are defined by a start and end,the `OffsetTransformation` query step as an `OffsetMode` parameter that defines whether we would like to calculate the offset with regard to the start of a genomic position, the end or it's center.
+
+
+```python
+query_plan = [
+    Snipper(target_regions, anchor_mode=Anchor(mode="ANY")),
+    RegionOffsetTransformation(),
+]
+```
+
+We can then execute this query plan using the BasicQuery class. This well add an offset column to the genomic dataset returned.
+
+
+```python
+BasicQuery(query_plan=query_plan)\
+    .query(pixels)\
+    .load_result()\
+    .filter(regex=r"chrom|offset")
+```
+
+
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>chrom_1</th>
+      <th>chrom_2</th>
+      <th>chrom_3</th>
+      <th>region_chrom</th>
+      <th>offset_1</th>
+      <th>offset_2</th>
+      <th>offset_3</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>chr1</td>
+      <td>chr1</td>
+      <td>chr1</td>
+      <td>chr1</td>
+      <td>-100000.0</td>
+      <td>-100000.0</td>
+      <td>-100000.0</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>chr1</td>
+      <td>chr1</td>
+      <td>chr1</td>
+      <td>chr1</td>
+      <td>-100000.0</td>
+      <td>-100000.0</td>
+      <td>-50000.0</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>chr1</td>
+      <td>chr1</td>
+      <td>chr1</td>
+      <td>chr1</td>
+      <td>-100000.0</td>
+      <td>-100000.0</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>chr1</td>
+      <td>chr1</td>
+      <td>chr1</td>
+      <td>chr1</td>
+      <td>-100000.0</td>
+      <td>-100000.0</td>
+      <td>50000.0</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>chr1</td>
+      <td>chr1</td>
+      <td>chr1</td>
+      <td>chr1</td>
+      <td>-100000.0</td>
+      <td>-100000.0</td>
+      <td>100000.0</td>
+    </tr>
+    <tr>
+      <th>...</th>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+    </tr>
+    <tr>
+      <th>245</th>
+      <td>chr2</td>
+      <td>chr2</td>
+      <td>chr2</td>
+      <td>chr2</td>
+      <td>100000.0</td>
+      <td>100000.0</td>
+      <td>-100000.0</td>
+    </tr>
+    <tr>
+      <th>246</th>
+      <td>chr2</td>
+      <td>chr2</td>
+      <td>chr2</td>
+      <td>chr2</td>
+      <td>100000.0</td>
+      <td>100000.0</td>
+      <td>-50000.0</td>
+    </tr>
+    <tr>
+      <th>247</th>
+      <td>chr2</td>
+      <td>chr2</td>
+      <td>chr2</td>
+      <td>chr2</td>
+      <td>100000.0</td>
+      <td>100000.0</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>248</th>
+      <td>chr2</td>
+      <td>chr2</td>
+      <td>chr2</td>
+      <td>chr2</td>
+      <td>100000.0</td>
+      <td>100000.0</td>
+      <td>50000.0</td>
+    </tr>
+    <tr>
+      <th>249</th>
+      <td>chr2</td>
+      <td>chr2</td>
+      <td>chr2</td>
+      <td>chr2</td>
+      <td>100000.0</td>
+      <td>100000.0</td>
+      <td>100000.0</td>
+    </tr>
+  </tbody>
+</table>
+<p>250 rows × 7 columns</p>
+</div>
+
+
+
+## Aggregating genomic data based on it's offset to a target region
+In this example, we extend the above use-case to aggregate the results based on the offset columns added. This is a common use-case to calculate aggregate statistics for different offset levels. To achieve this, we employ the same query plan as above and extend it using the `OffsetAggregation` query step.
+
+
+```python
+from spoc.query_engine import OffsetAggregation
+```
+
+The `OffsetAggregation` class requires the following parameters:
+- `value_columns`: Thie specifies the value to aggregate
+- `function`: The aggregation function to use. This is the enumerated type `AggregationFunction`
+- `densify_output`: Whether missing offset values should be filled with empty values (specific empty value depends on the aggregation function)
+
+Note that there are two different average functions available, `AVG` and `AVG_WITH_EMPTY`. `AVG` performs and average over all available columns, where as `AVG_WITH_EMPTY` counts missing offsets per regions as 0.
+
+
+```python
+query_plan = [
+    Snipper(target_regions, anchor_mode=Anchor(mode="ANY")),
+    RegionOffsetTransformation(),
+    OffsetAggregation('count'),
+]
+```
+
+
+```python
+BasicQuery(query_plan=query_plan)\
+    .query(pixels)\
+    .load_result()
+```
+
+
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>offset_1</th>
+      <th>offset_2</th>
+      <th>offset_3</th>
+      <th>count</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>-100000.0</td>
+      <td>-100000.0</td>
+      <td>-100000.0</td>
+      <td>4.5</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>-100000.0</td>
+      <td>-100000.0</td>
+      <td>-50000.0</td>
+      <td>3.0</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>-100000.0</td>
+      <td>-100000.0</td>
+      <td>0.0</td>
+      <td>5.5</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>-100000.0</td>
+      <td>-100000.0</td>
+      <td>50000.0</td>
+      <td>5.0</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>-100000.0</td>
+      <td>-100000.0</td>
+      <td>100000.0</td>
+      <td>6.0</td>
+    </tr>
+    <tr>
+      <th>...</th>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+    </tr>
+    <tr>
+      <th>120</th>
+      <td>100000.0</td>
+      <td>100000.0</td>
+      <td>-100000.0</td>
+      <td>8.0</td>
+    </tr>
+    <tr>
+      <th>121</th>
+      <td>100000.0</td>
+      <td>100000.0</td>
+      <td>-50000.0</td>
+      <td>4.5</td>
+    </tr>
+    <tr>
+      <th>122</th>
+      <td>100000.0</td>
+      <td>100000.0</td>
+      <td>0.0</td>
+      <td>4.5</td>
+    </tr>
+    <tr>
+      <th>123</th>
+      <td>100000.0</td>
+      <td>100000.0</td>
+      <td>50000.0</td>
+      <td>4.5</td>
+    </tr>
+    <tr>
+      <th>124</th>
+      <td>100000.0</td>
+      <td>100000.0</td>
+      <td>100000.0</td>
+      <td>0.0</td>
+    </tr>
+  </tbody>
+</table>
+<p>125 rows × 4 columns</p>
+</div>
+
+
