@@ -16,6 +16,10 @@ classDiagram
     class gDataSchema{
         <<Protocol>>
         +get_position_coordinates(): Maping~int~:~str~
+        +get_contact_order(): int
+        +get_schema(): pandera.DataFrameSchema
+        +get_binsize(): int
+        +get_region_number(): int
     }
 
     class QueryStep{
@@ -70,130 +74,116 @@ classDiagram
 ## Description
 
 - __gDataProtocol__: Protocol class that defines the interface of genomic data that can be accepted by `BasicQuery`. Implements a method to get it's schema as well as a parameter to get the underlying data
+- __gDataSchema__: Schema protocol that incorporates interfaces to getting information about the genomic data.
 - __BasicQuery__: Central query class that encapsulates querying an object that implements the `gDataProtocol`. Holds references to a query plan, which is a list of filters, aggregations and transformations that are executed in order and specify the filtering, aggregation and transformation operations. Is composable with other basic query instances to capture more complex queries. Performs checks on the proposed operations based on the `get_schema()` method and the requested filters and aggregations.
 - __QueryResult__: Result of a BasicQuery that implements the `gDataProtocol` and can either be computed, which manifests the query in memory, or passed to basic query again.
 - __Filter__: Interface of a filter that is accepted by `BasicQuery` and encapsulates filtering along rows of genomic data.
 - __Snipper__: A filter that filters for overlap with specific genomic regions that are passed to the constructor. Anchor refers to the way that the genomic regions are overlapped (e.g. at least one, exactly one, all, the first contact etc.)
 
-## Examples
+## Conceptual examples
 
-Example pseudocode for selected usecases.
+Example pseudocode for selected usecases that are planned to be implemented. For usecases that have already been implemented see [the usage description of the query engine](query_engine_usage.md).
 
-### Selecting a subset of contacts at a locus for display
+### Subsetting triplets (3-way contacts) on multiple overlaps
 
-```python
-from spoc.query_engine import Snipper, Anchor, BasicQuery
-from spoc.contacts import Contacts
-import pandas as pd
+This use cases has the goal of counting the number of cis-sister contacts that form a loop, while simultaneously contacting their respective loop base on the other sister chromatid. This is a very complex use case and can be broken down into smaller steps as follows:
 
-# load input
-target_region = pd.read_csv("single_test_region.bed")
-contacts = Contacts.from_uri("test_contacts.spoc::2")
+- Load a target set of contacts containing the required fragment level information
+   - In this case, we are interested in triplets that have their sister identify annotated, and where binary labels have been equated (see [data structures page for more info](data_structures.md)). We are interested both in all cis contacts (AAA labeling state) and triplets containing a trans contact (AAB labeling state) since we want to quantify the number of target triplets amongst all triplets
+- We now split the different labeling state into two analysis flows that run in a paraelel:
+- The case for AAA
+    - We perform multi-region annotation on the entire contacts, where we annotate the contacts on whether they overlap with loop bases (the two regions used are the left and the right loop bases).
+    - We filter the contacts on whether they overlap at least with one loop base
+    - We add a contact level annotation on whether a loop is present (overlap count =2)
+    - We add a contact level annotation that indicates "no-trans interaction"
+- The case for AAB
+    - We perform the same analysis as for AAA, only for the contacts AA.
+    - We add a contact level annotation on whether a loop is present (overlap count =2)
+    - We add a contact level annotation that indicates "trans interaction"
+- We concatenate the two contacts
+- We aggregate by the contact level annotations on whether a loop is present and whether a a trans-contact has been observed and count the contacts an all the 4 combinations.
 
-# specify query plan -> Select contacts where all contacts overlap the
-#                       specified region
-query_plan = [
-    Snipper(target_region, anchor_mode=Anchor(mode="ALL"))
-]
-
-# instantiate query
-query = BasicQuery(query_plan=query_plan)
-
-# execute query
-
-result = queyr.query(contacts)
-result
-#|> QueryResult
-
-result.data
-#|> duckdb.DuckDBPyrelation # not executed yet
-
-result.compute()
-#|> pd.DataFrame # executed
-```
-
-### Pileup of trans triplets
-
-#### CC by T
-
-Select 2d cis-pixels that are anchored by a trans contact
 
 ```python
 from spoc.query_engine import (
-            Snipper,
-            PointFilter,
-            Anchor, 
-            BasicQuery,
-            RegionOffsetTransformation,
-            Aggregation,
-            AggregationMode.
-            MappedRegionFilter
+    Snipper,
+    MultiAnchor,
+    Anchor,
+    BasicQuery,
+    MultiSnipper,
+    FieldLiteral,
+    Concatenate,
+    Aggregate,
+    AggregationFunction
 )
-from spoc.pixels import Pixels
-from spoc.utils import get_center_bin
+from spoc.contacts import Contacts
 import pandas as pd
 
-# load input
-target_regions = pd.read_csv("multiple_test_regions.bed")
-target_regions_mid_points = get_center_bin(target_regions, bin_size=10_000)
-# triplet pixels of AAB where binary lables have been equested and symmetry has
-# been flipped
-pixels = Pixels.from_uri("test_pixels.spoc::10000::3::AAB")
+# load contacts
 
-############################################
-#### option 1: specify entire query plan####
-############################################
+cis_triplets = Contacts.from_uri("contacts::2::AAA")
+trans_trans = Contacts.from_uri("contacts::2::AAB")
 
-query_plan = [
-    # select pixels where all bins in a triplet are contained in a region
-    Snipper(target_regions, anchor_mode=Anchor(mode="ALL", contacs=[0,1])),
-    # select pixels where the third contact overlaps a specific bin
-    MappedRegionFilter(transform=partial(get_center_bin, bin_size=10_000), anchor_mode=Anchor(mode="ALL", contacs=[2])),
-    # this transformation calculates the offset of a pixel to any containing target region
-    RegionOffsetTransformation(target_regions),
-    # this aggregation computes the sum of contacts per region and 2d coordinate
-    Aggregation(function='sum', mode=AggregationMode(['Region', 'Contact1', 'Contact2'])),
-    # this aggregation computes the average contacts per region contact1 and contact2 over all regions
-    Aggregtaion(function='average', mode=AggregationMode(['Contact1', 'Contact2']))
+# load loop bases
+
+loop_bases_left = pd.read_csv('loop_base_left.bed', sep="\t")
+loop_bases_right = pd.read_csv('loop_base_right.bed', sep="\t")
+
+# analysis cis_triplets
+
+query_plan_cis = [
+    MultiSnipper(
+        regions=[loop_bases_left, loop_bases_right], # Regions to overlap
+        add_overlap_columns=False, # Whether to add the regions as additional columns
+        anchor=MultiAnchor(
+            fragment_mode="ANY",
+            region_mode="ANY", positions=[0,1,2]
+        ), # At least one fragment needs to overlap at least one region
+    ),
+    FieldLiteral(field_name="is_trans", value=False)
 ]
 
-# instantiate query
-query = BasicQuery(query_plan=query_plan)
+cis_filtered = BasicQuery(query_plan_cis)\
+                        .query(cis_triplets)
 
-# execute query
+# analysis trans_triplets
 
-result = queyr.query(contacts)
-result
-#|> QueryResult
-
-############################################
-#### option 2: compose pieces           ####
-############################################
-
-query_plan_1 = [
-    Snipper(target_regions, anchor_mode=Anchor(mode="ALL", contacs=[0,1])),
-    MappedRegionFilter(transform=partial(get_center_bin, bin_size=10_000), anchor_mode=Anchor(mode="ALL", contacs=[2])),
-    RegionOffsetTransformation(target_regions),
-    Aggregation(function='sum', mode=AggregationMode(['Region', 'Contact1', 'Contact2'])),
+query_plan_trans = [
+    MultiSnipper(
+        regions=[loop_bases_left, loop_bases_right], # Regions to overlap
+        add_overlap_columns=False, # Whether to add the regions as additional columns
+        anchor=MultiAnchor(
+            fragment_mode="ANY",
+            region_mode="ANY", positions=[0,1]
+        ), # At least one fragment needs to overlap at least one region
+    ),
+    FieldLiteral(field_name="is_trans", value=True)
 ]
 
-query1 = BasicQuery(query_plan=query_plan_1)
+trans_filtered = BasicQuery(query_plan_trans)\
+                        .query(trans_triplets)
 
-query_plan_2 = [
-    Aggregtaion(function='average', mode=AggregationMode(['Contact1', 'Contact2']))
+
+# merge contacts and aggregate
+
+query_plan_aggregate = [
+    Concatenate(trans_filtered),
+    Aggregate(fields=['overlap_count', 'is_trans'], function=AggregationFunction.Count)
 ]
 
-query2 = BasicQuery(query_plan=query_plan_2)
+result = BasicQuery(query_plan_aggregate)\
+                  .query(cis_filtered)\
+                  .load_result()
+>
+-----------------------------------
+| overlap_count | is_trans | count |
+|---------------|----------|-------|
+| 1             | 0        | 1000  |
+| 1             | 1        | 5000  |
+| 2             | 0        | 100   |
+| 2             | 1        | 50000 |
+-----------------------------------
 
-# composing queries concatenates query plans
-
-composed_query = query1.compose_with(query2)
-composed_query.query_plan
-#|> query_plan = [
-#|>    Snipper(target_regions, anchor_mode=Anchor(mode="ALL", contacs=[0,1])),
-#|>     MappedRegionFilter(transform=partial(get_center_bin, bin_size=10_000), anchor_mode=Anchor(mode="ALL", contacs=[2])),
-#|>    RegionOffsetTransformation(target_regions),
-#|>    Aggregation(function='sum', mode=AggregationMode(['Region', 'Contact1', 'Contact2'])),
-#|>    Aggregtaion(function='average', mode=AggregationMode(['Contact1', 'Contact2']))
-#|> ]
 ```
+
+
