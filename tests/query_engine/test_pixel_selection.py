@@ -17,14 +17,14 @@ def pixels_dask_fixture(pixel_dataframe):
     return Pixels(
         dd.from_pandas(pixel_dataframe, npartitions=2),
         number_fragments=2,
-        binsize=10_000,
+        binsize=10,
     )
 
 
 @pytest.fixture(name="pixels_pandas")
 def pixels_pandas_fixture(pixel_dataframe):
     """A pandas dataframe containing pixels"""
-    return Pixels(pixel_dataframe, number_fragments=2, binsize=10_000)
+    return Pixels(pixel_dataframe, number_fragments=2, binsize=10)
 
 
 @pytest.fixture(name="pixels_duckdb")
@@ -33,7 +33,7 @@ def pixels_duckdb_fixture(pixel_dataframe):
     return Pixels(
         duckdb.from_df(pixel_dataframe, DUCKDB_CONNECTION),
         number_fragments=2,
-        binsize=10_000,
+        binsize=10,
     )
 
 
@@ -78,10 +78,10 @@ def test_any_anchor_region_returns_correct_pixels(
     assert sorted(result.load_result()["count"].tolist()) == sorted([1, 2])
     # test addition of end columns
     assert np.allclose(
-        result.load_result()["start_1"] + 10_000, result.load_result()["end_1"]
+        result.load_result()["start_1"] + 10, result.load_result()["end_1"]
     )
     assert np.allclose(
-        result.load_result()["start_2"] + 10_000, result.load_result()["end_2"]
+        result.load_result()["start_2"] + 10, result.load_result()["end_2"]
     )
 
 

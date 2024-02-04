@@ -139,8 +139,12 @@ class Snipper:
         for fields in subset_positions:
             chrom, start, end = fields
             output_string = f"""(data.{chrom} = regions.region_chrom and
-                                    (data.{start} between regions.region_start and regions.region_end or 
-                                    data.{end} between regions.region_start and regions.region_end))"""
+                                    (
+                                        data.{start} between regions.region_start and regions.region_end or 
+                                        data.{end} between regions.region_start and regions.region_end or
+                                        regions.region_start between data.{start} and data.{end}
+                                    )
+                                )"""
             query_strings.append(output_string)
         return join_string.join(query_strings)
 
