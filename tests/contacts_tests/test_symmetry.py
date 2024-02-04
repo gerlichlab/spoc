@@ -1,45 +1,12 @@
 """Tests for dealing with symmetry flipping for labelled and unlabelled contacts."""
 # pylint: disable=redefined-outer-name
 # pylint: disable=unused-import
-
-import pytest
-import pandas as pd
-import pandera as pa
-import numpy as np
 import dask.dataframe as dd
-from spoc.contacts import Contacts, ContactManipulator
-from ..fixtures.symmetry import (
-    unlabelled_contacts_2d,
-    unlabelled_contacts_2d_flipped,
-    unlabelled_contacts_3d,
-    unlabelled_contacts_3d_flipped,
-    labelled_binary_contacts_2d,
-    labelled_binary_contacts_2d_sorted,
-    labelled_binary_contacts_3d,
-    labelled_binary_contacts_3d_sorted,
-    binary_contacts_not_equated_2d,
-    binary_contacts_not_equated_3d,
-    binary_contacts_not_equated_4d,
-    binary_contacts_equated_2d,
-    binary_contacts_equated_3d,
-    binary_contacts_equated_4d,
-    labelled_binary_contacts_2d_unflipped,
-    labelled_binary_contacts_2d_flipped,
-    labelled_binary_contacts_3d_unflipped,
-    labelled_binary_contacts_3d_unflipped_example2,
-    labelled_binary_contacts_3d_flipped,
-    labelled_binary_contacts_3d_flipped_example2,
-    unlabelled_contacts_diff_chrom_2d,
-    unlabelled_contacts_diff_chrom_3d,
-    unlabelled_contacts_diff_chrom_4d,
-    unlabelled_contacts_diff_chrom_3d_flipped,
-    unlabelled_contacts_diff_chrom_2d_flipped,
-    unlabelled_contacts_diff_chrom_4d_flipped,
-    labelled_binary_contacts_diff_chrom_2d,
-    labelled_binary_contacts_diff_chrom_2d_flipped,
-    labelled_binary_contacts_diff_chrom_3d,
-    labelled_binary_contacts_diff_chrom_3d_flipped,
-)
+import pandas as pd
+import pytest
+
+from spoc.contacts import ContactManipulator
+from spoc.contacts import Contacts
 
 
 @pytest.mark.parametrize(

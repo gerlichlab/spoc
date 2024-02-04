@@ -1,16 +1,9 @@
 """Tests for the contacts module."""
-
 # pylint: disable=redefined-outer-name
-import pytest
 import pandas as pd
+import pytest
 
 from spoc import contacts
-
-# pytlint: disable=unused-import
-from ..fixtures.symmetry import (
-    unlabelled_contacts_2d,
-    labelled_binary_contacts_2d_sorted,
-)
 
 
 @pytest.fixture

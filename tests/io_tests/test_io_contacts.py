@@ -1,17 +1,18 @@
 """This file tests the io module for contacts"""
 # pylint: disable=redefined-outer-name
-import tempfile
-import os
 import json
+import os
 import shutil
+import tempfile
 from pathlib import Path
-import pytest
+
 import dask.dataframe as dd
+import pytest
+
 from spoc.contacts import Contacts
 from spoc.io import FileManager
 from spoc.models.dataframe_models import DataMode
 from spoc.models.file_parameter_models import ContactsParameters
-from ..fixtures.symmetry import unlabelled_contacts_2d, labelled_binary_contacts_2d
 
 
 def _create_tmp_dir():
@@ -307,7 +308,7 @@ def test_load_contacts_from_uri_fails_without_required_parameters(df, params, re
         file_name = tmpdirname + "/" + "test.parquet"
         FileManager().write_contacts(file_name, contacts)
         # try loading without required parameters
-        with pytest.raises(ValueError) as e:
+        with pytest.raises(ValueError):
             Contacts.from_uri(file_name)
 
 
@@ -428,5 +429,5 @@ def test_load_contacts_from_uri_fails_with_ambiguous_specification(df, params, r
         FileManager().write_contacts(file_name, contacts)
         FileManager().write_contacts(file_name, contacts2)
         # load contacts
-        with pytest.raises(ValueError) as e:
+        with pytest.raises(ValueError):
             Contacts.from_uri(file_name + "::" + uri)

@@ -1,8 +1,10 @@
 """Fixtures for testing symmetry.py"""
 # pylint: disable=redefined-outer-name
-import pytest
-import pandas as pd
+from __future__ import annotations
+
 import dask.dataframe as dd
+import pandas as pd
+import pytest
 
 
 @pytest.fixture
@@ -23,7 +25,7 @@ def unlabelled_contacts_2d():
             "mapping_quality_2": [10, 10, 10],
             "align_score_2": [10, 10, 10],
             "align_base_qscore_2": [10, 10, 10],
-        }
+        },
     )
 
 
@@ -56,7 +58,7 @@ def unlabelled_contacts_3d():
             "mapping_quality_3": [10, 10, 5],
             "align_score_3": [10, 10, 5],
             "align_base_qscore_3": [10, 10, 5],
-        }
+        },
     )
 
 
@@ -83,7 +85,7 @@ def unlabelled_contacts_2d_flipped():
             "mapping_quality_2": [10, 10, 15],
             "align_score_2": [10, 10, 15],
             "align_base_qscore_2": [10, 10, 15],
-        }
+        },
     )
 
 
@@ -111,7 +113,7 @@ def unlabelled_contacts_3d_flipped():
             "mapping_quality_3": [10, 10, 15],
             "align_score_3": [10, 10, 15],
             "align_base_qscore_3": [10, 10, 15],
-        }
+        },
     )
 
 
@@ -135,7 +137,7 @@ def labelled_binary_contacts_2d():
             "align_score_2": [10, 10, 15],
             "align_base_qscore_2": [10, 10, 15],
             "metadata_2": ["B", "A", "A"],
-        }
+        },
     )
 
 
@@ -159,7 +161,7 @@ def labelled_binary_contacts_2d_sorted():
             "align_score_2": [10, 10, 15],
             "align_base_qscore_2": [10, 10, 15],
             "metadata_2": ["B", "B", "A"],
-        }
+        },
     )
 
 
@@ -190,7 +192,7 @@ def labelled_binary_contacts_3d():
             "align_score_3": [10, 10, 15],
             "align_base_qscore_3": [10, 10, 15],
             "metadata_3": ["B", "A", "A"],
-        }
+        },
     )
 
 
@@ -221,7 +223,7 @@ def labelled_binary_contacts_3d_sorted():
             "align_score_3": [10, 10, 15],
             "align_base_qscore_3": [10, 10, 15],
             "metadata_3": ["B", "B", "A"],
-        }
+        },
     )
 
 
@@ -245,7 +247,7 @@ def binary_contacts_not_equated_2d():
             "align_score_2": [10, 10, 15],
             "align_base_qscore_2": [10, 10, 15],
             "metadata_2": ["B", "B", "A"],
-        }
+        },
     )
 
 
@@ -276,7 +278,7 @@ def binary_contacts_not_equated_3d():
             "align_score_3": [10, 10, 15],
             "align_base_qscore_3": [10, 10, 15],
             "metadata_3": ["B", "B", "B"],
-        }
+        },
     )
 
 
@@ -314,7 +316,7 @@ def binary_contacts_not_equated_4d():
             "align_score_4": [10, 10, 15],
             "align_base_qscore_4": [10, 10, 15],
             "metadata_4": ["B", "B", "B"],
-        }
+        },
     )
 
 
@@ -338,7 +340,7 @@ def binary_contacts_equated_2d():
             "align_score_2": [10, 10, 15],
             "align_base_qscore_2": [10, 10, 15],
             "metadata_2": ["A", "B", "A"],
-        }
+        },
     )
 
 
@@ -369,7 +371,7 @@ def binary_contacts_equated_3d():
             "align_score_3": [10, 10, 15],
             "align_base_qscore_3": [10, 10, 15],
             "metadata_3": ["B", "B", "A"],
-        }
+        },
     )
 
 
@@ -407,7 +409,7 @@ def binary_contacts_equated_4d():
             "align_score_4": [10, 10, 15],
             "align_base_qscore_4": [10, 10, 15],
             "metadata_4": ["B", "B", "A"],
-        }
+        },
     )
 
 
@@ -431,7 +433,7 @@ def labelled_binary_contacts_2d_unflipped():
             "align_score_2": [10, 10, 15],
             "align_base_qscore_2": [10, 10, 15],
             "metadata_2": ["B", "B", "A"],
-        }
+        },
     )
 
 
@@ -462,7 +464,7 @@ def labelled_binary_contacts_3d_unflipped():
             "align_score_3": [10, 10, 15, 14],
             "align_base_qscore_3": [10, 10, 15, 14],
             "metadata_3": ["B", "B", "B", "A"],
-        }
+        },
     )
 
 
@@ -493,7 +495,7 @@ def labelled_binary_contacts_3d_unflipped_example2():
             "align_score_3": [10, 10, 14],
             "align_base_qscore_3": [10, 10, 14],
             "metadata_3": ["B", "B", "A"],
-        }
+        },
     )
 
 
@@ -517,7 +519,7 @@ def labelled_binary_contacts_2d_flipped():
             "align_score_2": [10, 10, 10],
             "align_base_qscore_2": [10, 10, 10],
             "metadata_2": ["B", "B", "A"],
-        }
+        },
     )
 
 
@@ -548,7 +550,7 @@ def labelled_binary_contacts_3d_flipped():
             "align_score_3": [10, 10, 15, 20],
             "align_base_qscore_3": [10, 10, 15, 20],
             "metadata_3": ["B", "B", "B", "A"],
-        }
+        },
     )
 
 
@@ -579,7 +581,7 @@ def labelled_binary_contacts_3d_flipped_example2():
             "align_score_3": [10, 10, 14],
             "align_base_qscore_3": [10, 10, 14],
             "metadata_3": ["B", "B", "A"],
-        }
+        },
     )
 
 
@@ -601,7 +603,7 @@ def unlabelled_contacts_diff_chrom_2d():
             "mapping_quality_2": [10, 10, 10],
             "align_score_2": [10, 10, 10],
             "align_base_qscore_2": [10, 10, 10],
-        }
+        },
     )
 
 
@@ -629,7 +631,7 @@ def unlabelled_contacts_diff_chrom_3d():
             "mapping_quality_3": [10, 10, 5],
             "align_score_3": [10, 10, 5],
             "align_base_qscore_3": [10, 10, 5],
-        }
+        },
     )
 
 
@@ -663,7 +665,7 @@ def unlabelled_contacts_diff_chrom_4d():
             "mapping_quality_4": [10, 10, 10],
             "align_score_4": [10, 10, 10],
             "align_base_qscore_4": [10, 10, 10],
-        }
+        },
     )
 
 
@@ -697,7 +699,7 @@ def unlabelled_contacts_diff_chrom_4d_flipped():
             "mapping_quality_4": [10, 10, 10],
             "align_score_4": [10, 10, 10],
             "align_base_qscore_4": [10, 10, 10],
-        }
+        },
     )
 
 
@@ -725,7 +727,7 @@ def unlabelled_contacts_diff_chrom_3d_flipped():
             "mapping_quality_3": [10, 10, 15],
             "align_score_3": [10, 10, 15],
             "align_base_qscore_3": [10, 10, 15],
-        }
+        },
     )
 
 
@@ -747,7 +749,7 @@ def unlabelled_contacts_diff_chrom_2d_flipped():
             "mapping_quality_2": [10, 10, 15],
             "align_score_2": [10, 10, 15],
             "align_base_qscore_2": [10, 10, 15],
-        }
+        },
     )
 
 
@@ -771,7 +773,7 @@ def labelled_binary_contacts_diff_chrom_2d():
             "align_score_2": [10, 10, 15],
             "align_base_qscore_2": [10, 10, 15],
             "metadata_2": ["B", "B", "A"],
-        }
+        },
     )
 
 
@@ -795,7 +797,7 @@ def labelled_binary_contacts_diff_chrom_2d_flipped():
             "align_score_2": [10, 10, 15],
             "align_base_qscore_2": [10, 10, 15],
             "metadata_2": ["B", "B", "A"],
-        }
+        },
     )
 
 
@@ -826,7 +828,7 @@ def labelled_binary_contacts_diff_chrom_3d():
             "align_score_3": [10, 10, 15, 14],
             "align_base_qscore_3": [10, 10, 15, 14],
             "metadata_3": ["B", "B", "B", "A"],
-        }
+        },
     )
 
 
@@ -857,5 +859,5 @@ def labelled_binary_contacts_diff_chrom_3d_flipped():
             "align_score_3": [10, 10, 15, 20],
             "align_base_qscore_3": [10, 10, 15, 20],
             "metadata_3": ["B", "B", "B", "A"],
-        }
+        },
     )

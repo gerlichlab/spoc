@@ -1,12 +1,18 @@
 """Dataframe models"""
-
-from enum import Enum, auto
-from typing import Iterable, Union, Dict, Protocol, List
 import copy
-import pandera as pa
-import pandas as pd
+from enum import auto
+from enum import Enum
+from typing import Dict
+from typing import Iterable
+from typing import List
+from typing import Optional
+from typing import Protocol
+from typing import Union
+
 import dask.dataframe as dd
 import duckdb
+import pandas as pd
+import pandera as pa
 
 # Define dataframe type
 
@@ -33,13 +39,13 @@ FragmentSchema = pa.DataFrameSchema(
 
 RegionSchema = pa.DataFrameSchema(
     {
-        "id": pa.Column(),
-        "chrom": pa.Column(str),
-        "start": pa.Column(int),
-        "end": pa.Column(int),
+        "region_id": pa.Column(),
+        "region_chrom": pa.Column(str),
+        "region_start": pa.Column(int),
+        "region_end": pa.Column(int),
     },
     coerce=True,
-    unique=["id"],
+    unique=["region_id"],
 )
 
 # Protocol for genomic data
@@ -59,20 +65,33 @@ class GenomicDataSchema(Protocol):
     def get_schema(self) -> pa.DataFrameSchema:
         """Return the schema of the underlying data"""
 
+    def get_binsize(self) -> Optional[int]:
+        """Returns the binsize of the genomic data"""
+
+    def get_region_number(self) -> Optional[int]:
+        """Returns the number of regions in the genomic data
+        if present."""
+
 
 class QueryStepDataSchema:
     """Implements GenomicDataSchema for query steps
     with generic columns"""
 
+    # pylint: disable=too-many-arguments
+    # arguments needed to define the schema
     def __init__(
         self,
         columns: List[str],
         position_fields: Dict[int, List[str]],
         contact_order: int,
+        binsize: Optional[int] = None,
+        region_number: Optional[int] = None,
     ) -> None:
         self._columns = columns
         self._contact_order = contact_order
         self._position_fields = position_fields
+        self._binsize = binsize
+        self._region_number = region_number
         self._schema = pa.DataFrameSchema(
             {column: pa.Column() for column in columns},
             coerce=True,
@@ -97,6 +116,15 @@ class QueryStepDataSchema:
     def get_schema(self) -> pa.DataFrameSchema:
         """Return the schema of the underlying data"""
         return self._schema
+
+    def get_binsize(self) -> Optional[int]:
+        """Returns the binsize of the genomic data"""
+        return self._binsize
+
+    def get_region_number(self) -> Optional[int]:
+        """Returns the number of regions in the genomic data
+        if present."""
+        return self._region_number
 
 
 # schemas for higher order contacts
@@ -215,6 +243,15 @@ class ContactSchema:
             return data_frame
         return self._schema.validate(data_frame)
 
+    def get_binsize(self) -> Optional[int]:
+        """Returns the binsize of the genomic data"""
+        return None
+
+    def get_region_number(self) -> Optional[int]:
+        """Returns the number of regions in the genomic data
+        if present."""
+        return None
+
 
 class PixelSchema:
     """Dynamic schema for N-way pixels
@@ -224,9 +261,15 @@ class PixelSchema:
         same_chromosome (bool, optional): Whether the fragments are on the same chromosome. Defaults to True.
     """
 
-    def __init__(self, number_fragments: int = 3, same_chromosome: bool = True) -> None:
+    def __init__(
+        self,
+        number_fragments: int = 3,
+        same_chromosome: bool = True,
+        binsize: Optional[int] = None,
+    ) -> None:
         self._number_fragments = number_fragments
         self._same_chromosome = same_chromosome
+        self._binsize = binsize
         self._schema = pa.DataFrameSchema(
             dict(
                 self._get_constant_fields(),
@@ -293,8 +336,18 @@ class PixelSchema:
             }
         else:
             return {
-                i: [f"chrom_{i}", f"start_{i}"] for i in range(1, self._number_fragments + 1)
+                i: [f"chrom_{i}", f"start_{i}"]
+                for i in range(1, self._number_fragments + 1)
             }
+
+    def get_binsize(self) -> Optional[int]:
+        """Returns the binsize of the genomic data"""
+        return self._binsize
+
+    def get_region_number(self) -> Optional[int]:
+        """Returns the number of regions in the genomic data
+        if present."""
+        return None
 
     def get_contact_order(self) -> int:
         """Returns the order of the genomic data"""
@@ -317,6 +370,6 @@ class PixelSchema:
 class DataMode(Enum):
     """Enum for data mode"""
 
-    PANDAS: auto = "pandas"
-    DASK: auto = "dask"
-    DUCKDB: auto = "duckdb"
+    PANDAS = auto()
+    DASK = auto()
+    DUCKDB = auto()

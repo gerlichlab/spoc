@@ -1,17 +1,17 @@
 """Tests for CLI of spoc"""
 # pylint: disable=redefined-outer-name
-
-import shutil
 import os
-import pytest
-import pandas as pd
-from pandas.testing import assert_frame_equal
+import shutil
+
 import numpy as np
+import pandas as pd
+import pytest
 from click.testing import CliRunner
+from pandas.testing import assert_frame_equal
 
 from spoc import cli
-from spoc.io import FileManager
 from spoc.contacts import Contacts
+from spoc.io import FileManager
 from spoc.models import dataframe_models
 from spoc.pixels import Pixels
 
@@ -189,7 +189,9 @@ def test_merge_contacts_works_with_compatible_contacts(mergable_triplet_files):
     # check number of files
     assert len(FileManager().list_contacts(output_path)) == 1
     # check content of file
-    labelled_fragments = Contacts.from_uri(f"{output_path}::3", mode=dataframe_models.DataMode.PANDAS).data
+    labelled_fragments = Contacts.from_uri(
+        f"{output_path}::3", mode=dataframe_models.DataMode.PANDAS
+    ).data
     assert len(labelled_fragments) == 8
     first_half = labelled_fragments.iloc[:4, :].reset_index(drop=True)
     second_half = labelled_fragments.iloc[4:, :].reset_index(drop=True)
@@ -219,5 +221,7 @@ def test_bin_contacts(good_triplet_file_for_pixels, expected_pixels):
     output_path = "tmp/test_output5.parquet"
     runner.invoke(cli.bin_contacts, [good_triplet_file_for_pixels, output_path])
     # check content of file
-    pixels = Pixels.from_uri(f"{output_path}::3::10000", mode=dataframe_models.DataMode.PANDAS)
+    pixels = Pixels.from_uri(
+        f"{output_path}::3::10000", mode=dataframe_models.DataMode.PANDAS
+    )
     np.array_equal(pixels.data.values, expected_pixels.values)

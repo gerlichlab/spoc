@@ -1,82 +1,13 @@
 """Tests for contact selection"""
-import pytest
-import pandas as pd
 import dask.dataframe as dd
 import duckdb
-from spoc.query_engine import BasicQuery, Anchor, Snipper
+import pytest
+
 from spoc.contacts import Contacts
 from spoc.io import DUCKDB_CONNECTION
-
-
-@pytest.fixture(name="example_2d_df")
-def example_2d_df_fixture():
-    """Example 2d contacts"""
-    return pd.DataFrame(
-        {
-            "chrom_1": ["chr1", "chr1", "chr1", "chr1"],
-            "start_1": [100, 100, 750, 400],
-            "end_1": [200, 200, 780, 500],
-            "mapping_quality_1": [30, 30, 30, 30],
-            "align_score_1": [100, 100, 100, 100],
-            "align_base_qscore_1": [100, 100, 100, 100],
-            "chrom_2": ["chr1", "chr1", "chr1", "chr1"],
-            "start_2": [300, 100, 300, 750],
-            "end_2": [400, 200, 400, 780],
-            "mapping_quality_2": [30, 30, 30, 30],
-            "align_score_2": [100, 100, 100, 100],
-            "align_base_qscore_2": [100, 100, 100, 100],
-            "read_name": ["read1", "read2", "read3", "read4"],  # read name serves as id
-            "read_length": [100, 100, 100, 100],
-        }
-    )
-
-
-@pytest.fixture(name="single_region")
-def single_region_fixture():
-    """Single region"""
-    return pd.DataFrame(
-        {
-            "chrom": ["chr1"],
-            "start": [150],
-            "end": [200],
-        }
-    )
-
-
-@pytest.fixture(name="single_region_2")
-def single_region_2_fixture():
-    """Single region"""
-    return pd.DataFrame(
-        {
-            "chrom": ["chr1"],
-            "start": [700],
-            "end": [800],
-        }
-    )
-
-
-@pytest.fixture(name="multi_region")
-def multi_region_fixture():
-    """Multi region"""
-    return pd.DataFrame(
-        {
-            "chrom": ["chr1", "chr1"],
-            "start": [150, 700],
-            "end": [200, 800],
-        }
-    )
-
-
-@pytest.fixture(name="multi_region_2")
-def multi_region_2_fixture():
-    """Multi region"""
-    return pd.DataFrame(
-        {
-            "chrom": ["chr1", "chr1"],
-            "start": [150, 180],
-            "end": [200, 220],
-        }
-    )
+from spoc.query_engine import Anchor
+from spoc.query_engine import BasicQuery
+from spoc.query_engine import Snipper
 
 
 @pytest.fixture(name="example_2d_contacts_pandas")

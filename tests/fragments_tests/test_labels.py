@@ -1,11 +1,10 @@
 """Tests for label functionality"""
 # pylint: disable=redefined-outer-name
-
-import pytest
+import dask.dataframe as dd
+import numpy as np
 import pandas as pd
 import pandera as pa
-import numpy as np
-import dask.dataframe as dd
+import pytest
 
 from spoc import fragments
 

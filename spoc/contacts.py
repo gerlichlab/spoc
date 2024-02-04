@@ -1,15 +1,22 @@
 """Managing multi-way contacts."""
-
 from __future__ import annotations  # needed for self reference in type hints
-from itertools import permutations, product
-from typing import List, Optional, Dict
-import pandas as pd
+
+from itertools import permutations
+from itertools import product
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Tuple
+
 import dask.dataframe as dd
-import numpy as np
-import pandera as pa
 import duckdb
-from spoc.models.dataframe_models import ContactSchema, DataFrame, GenomicDataSchema
+import numpy as np
+import pandas as pd
+
+from spoc.models.dataframe_models import ContactSchema
+from spoc.models.dataframe_models import DataFrame
 from spoc.models.dataframe_models import DataMode
+from spoc.models.dataframe_models import GenomicDataSchema
 from spoc.models.file_parameter_models import ContactsParameters
 
 
@@ -117,7 +124,7 @@ class Contacts:
                 output.update(self.data[f"metadata_{i+1}"].unique())
             else:
                 raise ValueError("Label values not supported for duckdb!")
-        return output
+        return list(output)
 
     def get_chromosome_values(self) -> List[str]:
         """Returns all chromosome values"""
@@ -130,7 +137,7 @@ class Contacts:
                 output.update(self.data[f"chrom_{i+1}"].unique())
             else:
                 raise ValueError("Chromosome values not supported for duckdb!")
-        return output
+        return list(output)
 
     @property
     def data(self):
@@ -387,7 +394,7 @@ class ContactManipulator:
 
     def _generate_binary_label_mapping(
         self, label_values: List[str], number_fragments: int
-    ) -> Dict[str, str]:
+    ) -> Dict[Tuple[str, ...], Tuple[str, ...]]:
         sorted_labels = sorted(label_values)
         mapping = {}
         for i in range(number_fragments + 1):

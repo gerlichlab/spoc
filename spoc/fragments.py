@@ -1,14 +1,18 @@
 """This part of spoc is responsible for dealing aligned fragments that
 have not yet been converted to contacts. It deals with label information
 as well as expanding fragments to contacts."""
-
-from typing import Dict, Union
 from itertools import combinations
-import pandas as pd
+from typing import Dict
+from typing import Union
+
 import dask.dataframe as dd
 import numpy as np
-from .models.dataframe_models import FragmentSchema, ContactSchema, DataFrame
+import pandas as pd
+
 from .contacts import Contacts
+from .models.dataframe_models import ContactSchema
+from .models.dataframe_models import DataFrame
+from .models.dataframe_models import FragmentSchema
 
 
 class Fragments:
