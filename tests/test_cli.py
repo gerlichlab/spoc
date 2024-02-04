@@ -189,7 +189,7 @@ def test_merge_contacts_works_with_compatible_contacts(mergable_triplet_files):
     # check number of files
     assert len(FileManager().list_contacts(output_path)) == 1
     # check content of file
-    labelled_fragments = Contacts.from_uri(f"{output_path}::3", mode="pandas").data
+    labelled_fragments = Contacts.from_uri(f"{output_path}::3", mode=dataframe_models.DataMode.PANDAS).data
     assert len(labelled_fragments) == 8
     first_half = labelled_fragments.iloc[:4, :].reset_index(drop=True)
     second_half = labelled_fragments.iloc[4:, :].reset_index(drop=True)

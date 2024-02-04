@@ -36,8 +36,10 @@ class FileManager:
             self._parquet_reader_func = partial(duckdb.read_parquet, connection=DUCKDB_CONNECTION)
         elif data_mode == DataMode.DASK:
             self._parquet_reader_func = dd.read_parquet
-        else:
+        elif data_mode == DataMode.PANDAS:
             self._parquet_reader_func = pd.read_parquet
+        else:
+            raise ValueError(f"Data mode {data_mode} not supported!")
 
     @staticmethod
     def write_label_library(path: str, data: Dict[str, bool]) -> None:
