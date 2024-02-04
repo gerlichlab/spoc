@@ -9,6 +9,7 @@ import pytest
 import pandas as pd
 import dask.dataframe as dd
 from spoc.io import FileManager
+from spoc.models.dataframe_models import DataMode
 from spoc.models.file_parameter_models import PixelParameters
 from spoc.pixels import Pixels
 
@@ -124,7 +125,7 @@ def test_read_pixels_as_pandas_df(example_pixels_w_metadata):
     pixels_dir, expected_parameters, paths, dataframes = example_pixels_w_metadata
     # read metadata
     for path, expected, df in zip(paths, expected_parameters, dataframes):
-        pixels = FileManager(use_dask=False).load_pixels(pixels_dir, expected)
+        pixels = FileManager(DataMode.PANDAS).load_pixels(pixels_dir, expected)
         assert pixels.get_global_parameters() == expected
         assert pixels.data.equals(df)
 
@@ -134,7 +135,7 @@ def test_read_pixels_as_dask_df(example_pixels_w_metadata):
     pixels_dir, expected_parameters, paths, dataframes = example_pixels_w_metadata
     # read metadata
     for path, expected, df in zip(paths, expected_parameters, dataframes):
-        pixels = FileManager(use_dask=True).load_pixels(pixels_dir, expected)
+        pixels = FileManager(DataMode.DASK).load_pixels(pixels_dir, expected)
         assert pixels.get_global_parameters() == expected
         assert pixels.data.compute().equals(df)
 

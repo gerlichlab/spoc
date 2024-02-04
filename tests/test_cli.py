@@ -219,5 +219,5 @@ def test_bin_contacts(good_triplet_file_for_pixels, expected_pixels):
     output_path = "tmp/test_output5.parquet"
     runner.invoke(cli.bin_contacts, [good_triplet_file_for_pixels, output_path])
     # check content of file
-    pixels = Pixels.from_uri(f"{output_path}::3::10000", mode="pandas")
+    pixels = Pixels.from_uri(f"{output_path}::3::10000", mode=dataframe_models.DataMode.PANDAS)
     np.array_equal(pixels.data.values, expected_pixels.values)

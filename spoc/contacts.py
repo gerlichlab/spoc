@@ -70,7 +70,7 @@ class Contacts:
         self.symmetry_flipped = symmetry_flipped
 
     @staticmethod
-    def from_uri(uri, mode="pandas"):
+    def from_uri(uri, mode=DataMode.PANDAS):
         """Construct contacts from uri.
         Will match parameters based on the following order:
 
@@ -84,7 +84,7 @@ class Contacts:
         # import here to avoid circular imports
         from spoc.io import FileManager
 
-        return FileManager(use_dask=mode == "dask").load_contacts(uri)
+        return FileManager(mode).load_contacts(uri)
 
     def get_global_parameters(self) -> ContactsParameters:
         """Returns global parameters"""

@@ -12,6 +12,7 @@ from spoc.models.dataframe_models import (
 )
 from spoc.models.file_parameter_models import PixelParameters
 from spoc.contacts import Contacts
+from spoc.models.dataframe_models import DataMode
 
 
 class Pixels:
@@ -77,7 +78,7 @@ class Pixels:
         self._data = self._schema.validate(pixel_source)
 
     @staticmethod
-    def from_uri(uri, mode="path") -> "Pixels":
+    def from_uri(uri, mode=DataMode.PANDAS) -> "Pixels":
         """Construct pixels from uri.
         Will match parameters based on the following order:
 
@@ -101,8 +102,7 @@ class Pixels:
         # pylint: disable=import-outside-toplevel
         from spoc.io import FileManager
 
-        # TODO: add duckdb readmode to FileManager
-        return FileManager(use_dask=mode == "dask").load_pixels(uri)
+        return FileManager(mode).load_pixels(uri)
 
     def get_global_parameters(self) -> PixelParameters:
         """Returns global parameters of pixels

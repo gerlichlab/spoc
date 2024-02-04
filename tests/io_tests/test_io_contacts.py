@@ -9,6 +9,7 @@ import pytest
 import dask.dataframe as dd
 from spoc.contacts import Contacts
 from spoc.io import FileManager
+from spoc.models.dataframe_models import DataMode
 from spoc.models.file_parameter_models import ContactsParameters
 from ..fixtures.symmetry import unlabelled_contacts_2d, labelled_binary_contacts_2d
 
@@ -98,7 +99,7 @@ def test_read_contacts_as_pandas_df(example_contacts_w_metadata):
     contacts_dir, expected_parameters, paths, dataframes = example_contacts_w_metadata
     # read metadata
     for path, expected, df in zip(paths, expected_parameters, dataframes):
-        contacts = FileManager(use_dask=False).load_contacts(contacts_dir, expected)
+        contacts = FileManager().load_contacts(contacts_dir, expected)
         assert contacts.get_global_parameters() == expected
         assert contacts.data.equals(df)
 
@@ -108,7 +109,7 @@ def test_read_contacts_as_dask_df(example_contacts_w_metadata):
     contacts_dir, expected_parameters, paths, dataframes = example_contacts_w_metadata
     # read metadata
     for path, expected, df in zip(paths, expected_parameters, dataframes):
-        contacts = FileManager(use_dask=True).load_contacts(contacts_dir, expected)
+        contacts = FileManager(DataMode.DASK).load_contacts(contacts_dir, expected)
         assert contacts.get_global_parameters() == expected
         assert contacts.data.compute().equals(df)
 

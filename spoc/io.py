@@ -8,8 +8,10 @@ import json
 from pathlib import Path
 import pandas as pd
 import dask.dataframe as dd
+from functools import partial
 import duckdb
 from spoc.contacts import Contacts
+from spoc.models.dataframe_models import DataMode
 from spoc.pixels import Pixels
 from spoc.models.file_parameter_models import (
     ContactsParameters,
@@ -26,11 +28,13 @@ class FileManager:
     """Is responsible for loading and writing files
 
     Args:
-        use_dask (bool, optional): Whether to use Dask for reading Parquet files. Defaults to False.
+        data_mode (DataMode, optional): Data mode. Defaults to DataMode.PANDAS.
     """
 
-    def __init__(self, use_dask: bool = False) -> None:
-        if use_dask:
+    def __init__(self, data_mode: DataMode = DataMode.PANDAS) -> None:
+        if data_mode == DataMode.DUCKDB:
+            self._parquet_reader_func = partial(duckdb.read_parquet, connection=DUCKDB_CONNECTION)
+        elif data_mode == DataMode.DASK:
             self._parquet_reader_func = dd.read_parquet
         else:
             self._parquet_reader_func = pd.read_parquet
