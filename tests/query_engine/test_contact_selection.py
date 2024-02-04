@@ -104,7 +104,6 @@ def example_2d_contacts_duckdb_fixture(example_2d_df):
     "contact_fixture",
     [
         "example_2d_contacts_pandas",
-        "example_2d_contacts_dask",
         "example_2d_contacts_duckdb",
     ],
 )

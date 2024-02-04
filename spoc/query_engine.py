@@ -39,7 +39,7 @@ class Anchor(BaseModel):
     """Represents an anchor.
 
     Attributes:
-        mode (str): The mode of the anchor.
+        mode (str): The mode of the anchor. (Can be "ANY" or "ALL")
         anchors (Optional[List[int]]): The list of anchor values (optional).
     """
 
@@ -86,7 +86,7 @@ class Snipper:
 
     def _convert_to_duckdb(
         self,
-        data: Union[pd.DataFrame, dd.DataFrame, duckdb.DuckDBPyRelation],
+        data: Union[pd.DataFrame, dd.DataFrame],
     ) -> duckdb.DuckDBPyRelation:
         """
         Converts the data to a duckdb relation.
@@ -211,14 +211,14 @@ class QueryResult:
 
     def __init__(
         self,
-        data: Union[pd.DataFrame, dd.DataFrame, duckdb.DuckDBPyRelation],
+        data: Union[pd.DataFrame, duckdb.DuckDBPyRelation],
         schema: GenomicDataSchema,
     ) -> None:
         self._data = data
         self._schema = schema
 
     @property
-    def data(self) -> Union[pd.DataFrame, dd.DataFrame, duckdb.DuckDBPyRelation]:
+    def data(self) -> Union[pd.DataFrame, duckdb.DuckDBPyRelation]:
         """Returns the result as a dataframe object, either in memory or as a relation object"""
         return self._data
 
@@ -226,8 +226,6 @@ class QueryResult:
         """Loads the result into memory"""
         if isinstance(self._data, duckdb.DuckDBPyRelation):
             return self._data.to_df()
-        if isinstance(self._data, dd.DataFrame):
-            return self._data.compute()
         return self._data
 
     def get_schema(self) -> GenomicDataSchema:

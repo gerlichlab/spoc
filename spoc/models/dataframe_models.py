@@ -287,9 +287,14 @@ class PixelSchema:
     def get_position_fields(self) -> Dict[int, List[str]]:
         """Returns the position fields as a dictionary
         of framgent index to the respective fields"""
-        return {
-            i: ["chrom", f"start_{i}"] for i in range(1, self._number_fragments + 1)
-        }
+        if self._same_chromosome:
+            return {
+                i: ["chrom", f"start_{i}"] for i in range(1, self._number_fragments + 1)
+            }
+        else:
+            return {
+                i: [f"chrom_{i}", f"start_{i}"] for i in range(1, self._number_fragments + 1)
+            }
 
     def get_contact_order(self) -> int:
         """Returns the order of the genomic data"""

@@ -102,7 +102,6 @@ def pixels_duckdb_fixture(pixel_dataframe):
     "pixels_fixture",
     [
         "pixels_pandas",
-        "pixels_dask",
         "pixels_duckdb",
     ],
 )
