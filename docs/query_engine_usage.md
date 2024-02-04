@@ -18,8 +18,8 @@ The most important ingredient in this query language is a class that implements 
 
 This way, query steps can be combined into a query plan that specifies the analysis to be executed. Specific examples of query steps are:
 
-- **Snipper**: Implements selecting overlapping contacts or pixels for a set of genomic regions.
-- **RegionOffsetTransformation**: Adds offset of genomic positions to regions added by snipper
+- **Overlap**: Implements selecting overlapping contacts or pixels for a set of genomic regions.
+- **RegionOffsetTransformation**: Adds offset of genomic positions to regions added by Overlap
 - **OffsetAggregation**: Aggregates the offsets to genomic regions using an aggregation function.
 
 ### Input and output of query steps
@@ -32,7 +32,7 @@ A query step takes as input a class that implements the `GenomicData` protocol. 
 
 ### Composition of query steps
 
-To allow specifying complex queries, query steps need to be combined. This is done using the `BasicQuery` class. It takes a query plan (a list of `QueryStep` instances) as input, exposes the `query` method, which takes input data, validates all query steps and adds them to the resulting `QueryResult` instance that is returned.
+To allow specifying complex queries, query steps need to be combined. This is done using the `Query` class. It takes a query plan (a list of `QueryStep` instances) as input, exposes the `query` method, which takes input data, validates all query steps and adds them to the resulting `QueryResult` instance that is returned.
 
 ### Manifestation of results
 
@@ -45,7 +45,7 @@ In this example, we want to select a subset of genomic contacts at a single loca
 
 
 ```python
-from spoc.query_engine import Snipper, Anchor, BasicQuery
+from spoc.query_engine import Overlap, Anchor, Query
 from spoc.contacts import Contacts
 import pandas as pd
 
@@ -63,12 +63,12 @@ target_region = pd.DataFrame({
 })
 ```
 
-First, we want to select all contacts where any of the fragments constituting the contact overlaps the target region. To perform this action, we use the Snipper class and pass the target region as well as an instance of the `Anchor` class. The `Anchor` dataclass allows us to specify how we want to filter contacts for region overlap. It has two attributes `mode` and `anchors`. `Anchors` indicates the positions we want to filter on (default is all positions) and `mode` specifies whether we require all positions to overlap or any position to overlap. So for example, if we want all of our two-way contacts for which any of the positions overlap, we would use `Anchor(mode='ANY', anchors=[1,2])`.
+First, we want to select all contacts where any of the fragments constituting the contact overlaps the target region. To perform this action, we use the Overlap class and pass the target region as well as an instance of the `Anchor` class. The `Anchor` dataclass allows us to specify how we want to filter contacts for region overlap. It has two attributes `mode` and `anchors`. `Anchors` indicates the positions we want to filter on (default is all positions) and `mode` specifies whether we require all positions to overlap or any position to overlap. So for example, if we want all of our two-way contacts for which any of the positions overlap, we would use `Anchor(mode='ANY', anchors=[1,2])`.
 
 
 ```python
-query_plan = [
-    Snipper(target_region, anchor_mode=Anchor(mode="ANY", anchors=[1,2]))
+query_steps = [
+    Overlap(target_region, anchor_mode=Anchor(mode="ANY", anchors=[1,2]))
 ]
 ```
 
@@ -76,21 +76,21 @@ A query plan is a list of qury steps that can be used in the basic query class
 
 
 ```python
-query = BasicQuery(query_plan=query_plan)
+query = Query(query_steps=query_steps)
 ```
 
 The `.query` method executes the query plan and retuns a `QueryResult` object
 
 
 ```python
-result = query.query(contacts)
+result = query.build(contacts)
 result
 ```
 
 
 
 
-    <spoc.query_engine.QueryResult at 0x1f7f89093d0>
+    <spoc.query_engine.QueryPlan at 0x20385e3e1f0>
 
 
 
@@ -98,7 +98,7 @@ The `.load_result` method of the `QueryResult` object can be executed using `.lo
 
 
 ```python
-df = result.load_result()
+df = result.compute()
 print(type(df))
 df.filter(regex=r"chrom|start|end|id")
 ```
@@ -189,12 +189,12 @@ We can also restrict the positions to filter on, by passing different anchor par
 
 
 ```python
-query_plan = [
-    Snipper(target_region, anchor_mode=Anchor(mode="ANY", anchors=[1]))
+query_steps = [
+    Overlap(target_region, anchor_mode=Anchor(mode="ANY", anchors=[1]))
 ]
-BasicQuery(query_plan=query_plan)\
-    .query(contacts)\
-    .load_result()\
+Query(query_steps=query_steps)\
+    .build(contacts)\
+    .compute()\
     .filter(regex=r"chrom|start|end|id")
 ```
 
@@ -256,7 +256,7 @@ This time, only the first contact overlaps.
 The same functionality is implemented also for the Pixels class
 
 ## Selecting a subset of contacts at multiple genomic regions
-The Snipper class is also capable of selecting contacts at multiple genomic regions. Here, the behavior of `Snipper` deviates from a simple filter, because if a given contact overlaps with multiple regions, it will be returned multiple times.
+The Overlap class is also capable of selecting contacts at multiple genomic regions. Here, the behavior of `Overlap` deviates from a simple filter, because if a given contact overlaps with multiple regions, it will be returned multiple times.
 
 Specify target regions
 
@@ -271,12 +271,12 @@ target_regions = pd.DataFrame({
 
 
 ```python
-query_plan = [
-    Snipper(target_regions, anchor_mode=Anchor(mode="ANY", anchors=[1]))
+query_steps = [
+    Overlap(target_regions, anchor_mode=Anchor(mode="ANY", anchors=[1]))
 ]
-BasicQuery(query_plan=query_plan)\
-    .query(contacts)\
-    .load_result()\
+Query(query_steps=query_steps)\
+    .build(contacts)\
+    .compute()\
     .filter(regex=r"chrom|start|end|id")
 ```
 
@@ -422,23 +422,23 @@ target_regions = pd.DataFrame(
     )
 ```
 
-We are then interested in selecting all contacts that are contained within these pixels and then calculate the offset to them. The selection step can be done with the `Snipper` class that we described above. The offset transformation can be done with the `OffsetTransformation` query step. This query step takes an instance of genomic data that contains regions (as defined by it's schema) and calculates the offset to all position columns. All offsets are calculated with regards to the center of each assigned region. Since genomic positions are defined by a start and end,the `OffsetTransformation` query step as an `OffsetMode` parameter that defines whether we would like to calculate the offset with regard to the start of a genomic position, the end or it's center.
+We are then interested in selecting all contacts that are contained within these pixels and then calculate the offset to them. The selection step can be done with the `Overlap` class that we described above. The offset transformation can be done with the `OffsetTransformation` query step. This query step takes an instance of genomic data that contains regions (as defined by it's schema) and calculates the offset to all position columns. All offsets are calculated with regards to the center of each assigned region. Since genomic positions are defined by a start and end,the `OffsetTransformation` query step as an `OffsetMode` parameter that defines whether we would like to calculate the offset with regard to the start of a genomic position, the end or it's center.
 
 
 ```python
-query_plan = [
-    Snipper(target_regions, anchor_mode=Anchor(mode="ANY")),
+query_steps = [
+    Overlap(target_regions, anchor_mode=Anchor(mode="ANY")),
     RegionOffsetTransformation(),
 ]
 ```
 
-We can then execute this query plan using the BasicQuery class. This well add an offset column to the genomic dataset returned.
+We can then execute this query plan using the Query class. This well add an offset column to the genomic dataset returned.
 
 
 ```python
-BasicQuery(query_plan=query_plan)\
-    .query(pixels)\
-    .load_result()\
+Query(query_steps=query_steps)\
+    .build(pixels)\
+    .compute()\
     .filter(regex=r"chrom|offset")
 ```
 
@@ -608,7 +608,7 @@ Note that there are two different average functions available, `AVG` and `AVG_WI
 
 ```python
 query_plan = [
-    Snipper(target_regions, anchor_mode=Anchor(mode="ANY")),
+    Overlap(target_regions, anchor_mode=Anchor(mode="ANY")),
     RegionOffsetTransformation(),
     OffsetAggregation('count'),
 ]
@@ -616,9 +616,9 @@ query_plan = [
 
 
 ```python
-BasicQuery(query_plan=query_plan)\
-    .query(pixels)\
-    .load_result()
+Query(query_steps=query_steps)\
+    .build(pixels)\
+    .compute()
 ```
 
 

@@ -28,25 +28,25 @@ classDiagram
         -__call__() gDataProtocol
     }
 
-    class BasicQuery
-        BasicQuery: +List~QueryStep~ query_plan
-        BasicQuery: +compose_with(BasicQuery) BasicQuery
-        BasicQuery: +query(gDataProtocol)
+    class Query
+        Query: +List~QueryStep~ query_plan
+        Query: +compose_with(Query) Query
+        Query: +query(gDataProtocol)
 
-    BasicQuery --> QueryResult : query result
-    BasicQuery "1" --* "*" Snipper
-    BasicQuery "1" --* "*" Aggregation
-    BasicQuery "1" --* "*" Transformation
-    gDataProtocol --> BasicQuery : takes input
+    Query --> QueryResult : query result
+    Query "1" --* "*" Overlap
+    Query "1" --* "*" Aggregation
+    Query "1" --* "*" Transformation
+    gDataProtocol --> Query : takes input
     gDataProtocol ..|> Pixels : realization
     gDataProtocol ..|> Contacts : realization
     gDataProtocol ..|> QueryResult : realization
-    QueryStep ..|> Snipper
+    QueryStep ..|> Overlap
     QueryStep ..|> Transformation
     QueryStep ..|> Aggregation
 
 
-    class Snipper {
+    class Overlap {
         +pd.DataFrame~Regions~
         +String anchor_mode
         +validate_schema(schema)
@@ -73,12 +73,12 @@ classDiagram
 
 ## Description
 
-- __gDataProtocol__: Protocol class that defines the interface of genomic data that can be accepted by `BasicQuery`. Implements a method to get it's schema as well as a parameter to get the underlying data
+- __gDataProtocol__: Protocol class that defines the interface of genomic data that can be accepted by `Query`. Implements a method to get it's schema as well as a parameter to get the underlying data
 - __gDataSchema__: Schema protocol that incorporates interfaces to getting information about the genomic data.
-- __BasicQuery__: Central query class that encapsulates querying an object that implements the `gDataProtocol`. Holds references to a query plan, which is a list of filters, aggregations and transformations that are executed in order and specify the filtering, aggregation and transformation operations. Is composable with other basic query instances to capture more complex queries. Performs checks on the proposed operations based on the `get_schema()` method and the requested filters and aggregations.
-- __QueryResult__: Result of a BasicQuery that implements the `gDataProtocol` and can either be computed, which manifests the query in memory, or passed to basic query again.
-- __Filter__: Interface of a filter that is accepted by `BasicQuery` and encapsulates filtering along rows of genomic data.
-- __Snipper__: A filter that filters for overlap with specific genomic regions that are passed to the constructor. Anchor refers to the way that the genomic regions are overlapped (e.g. at least one, exactly one, all, the first contact etc.)
+- __Query__: Central query class that encapsulates querying an object that implements the `gDataProtocol`. Holds references to a query plan, which is a list of filters, aggregations and transformations that are executed in order and specify the filtering, aggregation and transformation operations. Is composable with other basic query instances to capture more complex queries. Performs checks on the proposed operations based on the `get_schema()` method and the requested filters and aggregations.
+- __QueryResult__: Result of a Query that implements the `gDataProtocol` and can either be computed, which manifests the query in memory, or passed to basic query again.
+- __Filter__: Interface of a filter that is accepted by `Query` and encapsulates filtering along rows of genomic data.
+- __Overlap__: A filter that filters for overlap with specific genomic regions that are passed to the constructor. Anchor refers to the way that the genomic regions are overlapped (e.g. at least one, exactly one, all, the first contact etc.)
 
 ## Conceptual examples
 
@@ -106,11 +106,11 @@ This use cases has the goal of counting the number of cis-sister contacts that f
 
 ```python
 from spoc.query_engine import (
-    Snipper,
+    Overlap,
     MultiAnchor,
     Anchor,
-    BasicQuery,
-    MultiSnipper,
+    Query,
+    MultiOverlap,
     FieldLiteral,
     Concatenate,
     Aggregate,
@@ -132,7 +132,7 @@ loop_bases_right = pd.read_csv('loop_base_right.bed', sep="\t")
 # analysis cis_triplets
 
 query_plan_cis = [
-    MultiSnipper(
+    MultiOverlap(
         regions=[loop_bases_left, loop_bases_right], # Regions to overlap
         add_overlap_columns=False, # Whether to add the regions as additional columns
         anchor=MultiAnchor(
@@ -143,13 +143,13 @@ query_plan_cis = [
     FieldLiteral(field_name="is_trans", value=False)
 ]
 
-cis_filtered = BasicQuery(query_plan_cis)\
+cis_filtered = Query(query_plan_cis)\
                         .query(cis_triplets)
 
 # analysis trans_triplets
 
 query_plan_trans = [
-    MultiSnipper(
+    MultiOverlap(
         regions=[loop_bases_left, loop_bases_right], # Regions to overlap
         add_overlap_columns=False, # Whether to add the regions as additional columns
         anchor=MultiAnchor(
@@ -160,7 +160,7 @@ query_plan_trans = [
     FieldLiteral(field_name="is_trans", value=True)
 ]
 
-trans_filtered = BasicQuery(query_plan_trans)\
+trans_filtered = Query(query_plan_trans)\
                         .query(trans_triplets)
 
 
@@ -171,7 +171,7 @@ query_plan_aggregate = [
     Aggregate(fields=['overlap_count', 'is_trans'], function=AggregationFunction.Count)
 ]
 
-result = BasicQuery(query_plan_aggregate)\
+result = Query(query_plan_aggregate)\
                   .query(cis_filtered)\
                   .load_result()
 >

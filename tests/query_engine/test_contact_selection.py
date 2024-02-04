@@ -6,8 +6,8 @@ import pytest
 from spoc.contacts import Contacts
 from spoc.io import DUCKDB_CONNECTION
 from spoc.query_engine import Anchor
-from spoc.query_engine import BasicQuery
-from spoc.query_engine import Snipper
+from spoc.query_engine import Overlap
+from spoc.query_engine import Query
 
 
 @pytest.fixture(name="example_2d_contacts_pandas")
@@ -41,9 +41,9 @@ def example_2d_contacts_duckdb_fixture(example_2d_df):
 def test_no_filter_returns_all_contacts(contact_fixture, request):
     """Test that no filter returns all contacts"""
     contacts = request.getfixturevalue(contact_fixture)
-    query = BasicQuery(query_plan=[])
-    result = query.query(contacts)
-    assert result.load_result().shape[0] == 4
+    query = Query(query_steps=[])
+    result = query.build(contacts)
+    assert result.compute().shape[0] == 4
 
 
 @pytest.mark.parametrize(
@@ -60,13 +60,13 @@ def test_any_anchor_region_returns_correct_contacts(
     """Test that any anchor region returns correct contacts"""
     # setup
     contacts = request.getfixturevalue(contact_fixture)
-    query_plan = [Snipper(regions=single_region, anchor_mode=Anchor(mode="ANY"))]
+    query_plan = [Overlap(regions=single_region, anchor_mode=Anchor(mode="ANY"))]
     # execution
-    query = BasicQuery(query_plan=query_plan)
-    result = query.query(contacts)
+    query = Query(query_steps=query_plan)
+    result = query.build(contacts)
     # test
-    assert result.load_result().shape[0] == 2
-    assert sorted(result.load_result().read_name.tolist()) == sorted(["read1", "read2"])
+    assert result.compute().shape[0] == 2
+    assert sorted(result.compute().read_name.tolist()) == sorted(["read1", "read2"])
 
 
 @pytest.mark.parametrize(
@@ -83,13 +83,13 @@ def test_all_anchor_regions_returns_correct_contacts(
     """Test that all anchor regions returns correct contacts"""
     # setup
     contacts = request.getfixturevalue(contact_fixture)
-    query_plan = [Snipper(regions=single_region, anchor_mode=Anchor(mode="ALL"))]
+    query_plan = [Overlap(regions=single_region, anchor_mode=Anchor(mode="ALL"))]
     # execution
-    query = BasicQuery(query_plan=query_plan)
-    result = query.query(contacts)
+    query = Query(query_steps=query_plan)
+    result = query.build(contacts)
     # test
-    assert result.load_result().shape[0] == 1
-    assert sorted(result.load_result().read_name.tolist()) == sorted(["read2"])
+    assert result.compute().shape[0] == 1
+    assert sorted(result.compute().read_name.tolist()) == sorted(["read2"])
 
 
 @pytest.mark.parametrize(
@@ -115,16 +115,16 @@ def test_specific_anchor_regions_returns_correct_contacts(
     # setup
     contacts = request.getfixturevalue(contact_fixture)
     query_plan = [
-        Snipper(
+        Overlap(
             regions=single_region_2, anchor_mode=Anchor(mode="ALL", anchors=anchors)
         )
     ]
     # execution
-    query = BasicQuery(query_plan=query_plan)
-    result = query.query(contacts)
+    query = Query(query_steps=query_plan)
+    result = query.build(contacts)
     # test
-    assert result.load_result().shape[0] == len(expected_reads)
-    assert sorted(result.load_result().read_name.tolist()) == sorted(expected_reads)
+    assert result.compute().shape[0] == len(expected_reads)
+    assert sorted(result.compute().read_name.tolist()) == sorted(expected_reads)
 
 
 @pytest.mark.parametrize(
@@ -141,13 +141,13 @@ def test_any_anchor_region_returns_correct_contacts_multi_region(
     """Test that any anchor region returns correct contacts"""
     # setup
     contacts = request.getfixturevalue(contact_fixture)
-    query_plan = [Snipper(regions=multi_region, anchor_mode=Anchor(mode="ANY"))]
+    query_plan = [Overlap(regions=multi_region, anchor_mode=Anchor(mode="ANY"))]
     # execution
-    query = BasicQuery(query_plan=query_plan)
-    result = query.query(contacts)
+    query = Query(query_steps=query_plan)
+    result = query.build(contacts)
     # test
-    assert result.load_result().shape[0] == 4
-    assert sorted(result.load_result().read_name.tolist()) == sorted(
+    assert result.compute().shape[0] == 4
+    assert sorted(result.compute().read_name.tolist()) == sorted(
         ["read1", "read2", "read3", "read4"]
     )
 
@@ -166,13 +166,13 @@ def test_all_anchor_regions_returns_correct_contacts_multi_region(
     """Test that all anchor regions returns correct contacts"""
     # setup
     contacts = request.getfixturevalue(contact_fixture)
-    query_plan = [Snipper(regions=multi_region, anchor_mode=Anchor(mode="ALL"))]
+    query_plan = [Overlap(regions=multi_region, anchor_mode=Anchor(mode="ALL"))]
     # execution
-    query = BasicQuery(query_plan=query_plan)
-    result = query.query(contacts)
+    query = Query(query_steps=query_plan)
+    result = query.build(contacts)
     # test
-    assert result.load_result().shape[0] == 1
-    assert sorted(result.load_result().read_name.tolist()) == sorted(["read2"])
+    assert result.compute().shape[0] == 1
+    assert sorted(result.compute().read_name.tolist()) == sorted(["read2"])
 
 
 @pytest.mark.parametrize(
@@ -192,13 +192,13 @@ def test_contacts_duplicated_for_multiple_overlapping_regions(
     """
     # setup
     contacts = request.getfixturevalue(contact_fixture)
-    query_plan = [Snipper(regions=multi_region_2, anchor_mode=Anchor(mode="ALL"))]
+    query_plan = [Overlap(regions=multi_region_2, anchor_mode=Anchor(mode="ALL"))]
     # execution
-    query = BasicQuery(query_plan=query_plan)
-    result = query.query(contacts)
+    query = Query(query_steps=query_plan)
+    result = query.build(contacts)
     # test
-    assert result.load_result().shape[0] == 2
-    assert sorted(result.load_result().read_name.tolist()) == sorted(["read2", "read2"])
+    assert result.compute().shape[0] == 2
+    assert sorted(result.compute().read_name.tolist()) == sorted(["read2", "read2"])
 
 
 @pytest.mark.parametrize(
@@ -226,14 +226,14 @@ def test_specific_anchor_regions_returns_correct_contacts_multi_region(
     # setup
     contacts = request.getfixturevalue(contact_fixture)
     query_plan = [
-        Snipper(regions=multi_region, anchor_mode=Anchor(mode="ALL", anchors=anchors))
+        Overlap(regions=multi_region, anchor_mode=Anchor(mode="ALL", anchors=anchors))
     ]
     # execution
-    query = BasicQuery(query_plan=query_plan)
-    result = query.query(contacts)
+    query = Query(query_steps=query_plan)
+    result = query.build(contacts)
     # test
-    assert result.load_result().shape[0] == len(expected_reads)
-    assert sorted(result.load_result().read_name.tolist()) == sorted(expected_reads)
+    assert result.compute().shape[0] == len(expected_reads)
+    assert sorted(result.compute().read_name.tolist()) == sorted(expected_reads)
 
 
 # validation problems
@@ -254,8 +254,8 @@ def test_specific_anchor_region_not_in_contacts_raises_error(
     # setup
     contacts = request.getfixturevalue(contact_fixture)
     query_plan = [
-        Snipper(regions=single_region, anchor_mode=Anchor(mode="ALL", anchors=[3]))
+        Overlap(regions=single_region, anchor_mode=Anchor(mode="ALL", anchors=[3]))
     ]
     with pytest.raises(ValueError):
-        query = BasicQuery(query_plan=query_plan)
-        query.query(contacts)
+        query = Query(query_steps=query_plan)
+        query.build(contacts)

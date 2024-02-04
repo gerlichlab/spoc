@@ -38,7 +38,7 @@ class QueryStep(Protocol):
     def validate(self, data_schema: GenomicDataSchema) -> None:
         """Validate the query step against the data schema"""
 
-    def __call__(self, *args: Any, **kwds: Any) -> "QueryResult":
+    def __call__(self, *args: Any, **kwds: Any) -> "QueryPlan":
         """Apply the query step to the data"""
 
 
@@ -61,9 +61,9 @@ class Anchor(BaseModel):
         return self.__repr__()
 
 
-class Snipper:
+class Overlap:
     """
-    This class represents a snipper used for contact selection.
+    This class represents an overlap calculation used for contact and pixel selection.
     It provides methods to validate the filter against a data schema,
     convert data to a duckdb relation, construct a filter string,
     and apply the filter to the data.
@@ -71,7 +71,7 @@ class Snipper:
 
     def __init__(self, regions: pd.DataFrame, anchor_mode: Anchor) -> None:
         """
-        Initialize the QueryEngine object.
+        Initialize the Overlap object.
 
         Args:
             regions (pd.DataFrame): A DataFrame containing the regions data.
@@ -185,7 +185,7 @@ class Snipper:
         )
 
     def __repr__(self) -> str:
-        return f"Snipper(anchor_mode={self._anchor_mode})"
+        return f"Overlap(anchor_mode={self._anchor_mode})"
 
     def __call__(self, genomic_data: GenomicData) -> GenomicData:
         """Apply the filter to the data"""
@@ -212,7 +212,7 @@ class Snipper:
         snipped_df = genomic_df.set_alias("data").join(
             regions.set_alias("regions"), self._contstruct_filter(position_fields)
         )
-        return QueryResult(
+        return QueryPlan(
             snipped_df,
             self._get_transformed_schema(snipped_df, input_schema, position_fields),
         )
@@ -393,7 +393,7 @@ class OffsetAggregation:
             aggregated_data = self._fill_empty_output(
                 aggregated_data, empty_dense_output, position_fields
             )
-        return QueryResult(
+        return QueryPlan(
             aggregated_data,
             self._get_transformed_schema(
                 aggregated_data, input_schema, position_fields
@@ -512,12 +512,12 @@ class RegionOffsetTransformation:
         transformed_df = genomic_df.set_alias("data").project(
             self._create_transform_columns(genomic_df, input_schema)
         )
-        return QueryResult(
+        return QueryPlan(
             transformed_df, self._get_transformed_schema(transformed_df, input_schema)
         )
 
 
-class QueryResult:
+class QueryPlan:
     """Result of a query"""
 
     def __init__(
@@ -533,7 +533,7 @@ class QueryResult:
         """Returns the result as a dataframe object, either in memory or as a relation object"""
         return self._data
 
-    def load_result(self) -> pd.DataFrame:
+    def compute(self) -> pd.DataFrame:
         """Loads the result into memory"""
         if isinstance(self._data, duckdb.DuckDBPyRelation):
             return self._data.to_df()
@@ -546,20 +546,20 @@ class QueryResult:
 
 # pylint: disable=too-few-public-methods
 # this is a wrapper with one task, so it only has one method
-class BasicQuery:
+class Query:
     """Basic query engine that runs a query plan on the data"""
 
-    def __init__(self, query_plan: List[QueryStep]) -> None:
-        self._query_plan = query_plan
+    def __init__(self, query_steps: List[QueryStep]) -> None:
+        self._query_steps = query_steps
 
-    def query(self, input_data: GenomicData) -> QueryResult:
+    def build(self, input_data: GenomicData) -> QueryPlan:
         """Runs the query on the data and returns the result"""
         # instantiate query result
-        query_result = QueryResult(input_data.data, input_data.get_schema())
+        query_plan = QueryPlan(input_data.data, input_data.get_schema())
         # run query
-        for step in self._query_plan:
+        for step in self._query_steps:
             # validate schema
-            step.validate(query_result.get_schema())
+            step.validate(query_plan.get_schema())
             # apply step
-            query_result = step(query_result)
-        return query_result
+            query_plan = step(query_plan)
+        return query_plan

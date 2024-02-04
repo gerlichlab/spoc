@@ -4,8 +4,8 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from spoc.query_engine import BasicQuery
 from spoc.query_engine import OffsetMode
+from spoc.query_engine import Query
 from spoc.query_engine import RegionOffsetTransformation
 
 
@@ -20,12 +20,12 @@ def test_incompatible_input_rejected(genomic_data_fixture, request):
     """Tests that incompatible input raises a ValueError"""
     genomic_data = request.getfixturevalue(genomic_data_fixture)
     with pytest.raises(ValueError):
-        query = BasicQuery(
-            query_plan=[
+        query = Query(
+            query_steps=[
                 RegionOffsetTransformation(OffsetMode.MIDPOINT),
             ],
         )
-        query.query(genomic_data)
+        query.build(genomic_data)
 
 
 @pytest.mark.parametrize(
@@ -35,12 +35,12 @@ def test_incompatible_input_rejected(genomic_data_fixture, request):
 def test_offset_calculated_correctly_contacts(genomic_data_fixture, request):
     """Tests that the offset is calculated correctly for contacts"""
     genomic_data = request.getfixturevalue(genomic_data_fixture)
-    query = BasicQuery(
-        query_plan=[
+    query = Query(
+        query_steps=[
             RegionOffsetTransformation(OffsetMode.MIDPOINT),
         ],
     )
-    result = query.query(genomic_data).load_result()
+    result = query.build(genomic_data).compute()
     # check that the offset is correct
     region_midpoints = (result["region_start"] + result["region_end"]) // 2
     position_1_midpoint = (result["start_1"] + result["end_1"]) // 2
@@ -62,13 +62,13 @@ def test_offset_calculated_correctly_contacts(genomic_data_fixture, request):
 def test_offset_midpoint_rejected_pixels(genomic_data_fixture, request):
     """Tests that the offset calculation is rejected with midpoint offset mode for pixels."""
     genomic_data = request.getfixturevalue(genomic_data_fixture)
-    query = BasicQuery(
-        query_plan=[
+    query = Query(
+        query_steps=[
             RegionOffsetTransformation(OffsetMode.MIDPOINT),
         ],
     )
     with pytest.raises(ValueError):
-        query.query(genomic_data)
+        query.build(genomic_data)
 
 
 @pytest.mark.parametrize(
@@ -78,12 +78,12 @@ def test_offset_midpoint_rejected_pixels(genomic_data_fixture, request):
 def test_offset_pixels(genomic_data_fixture, request):
     """Tests offset calculation succeeds for pixels with offsetmode left."""
     genomic_data = request.getfixturevalue(genomic_data_fixture)
-    query = BasicQuery(
-        query_plan=[
+    query = Query(
+        query_steps=[
             RegionOffsetTransformation(OffsetMode.LEFT),
         ],
     )
-    result = query.query(genomic_data).load_result()
+    result = query.build(genomic_data).compute()
     # check that the offset is correct
     region_midpoints = (result["region_start"] + result["region_end"]) // 2
     position_1_midpoint = result["start_1"]

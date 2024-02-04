@@ -8,11 +8,11 @@ import pytest
 from spoc.pixels import Pixels
 from spoc.query_engine import AggregationFunction
 from spoc.query_engine import Anchor
-from spoc.query_engine import BasicQuery
 from spoc.query_engine import OffsetAggregation
 from spoc.query_engine import OffsetMode
+from spoc.query_engine import Overlap
+from spoc.query_engine import Query
 from spoc.query_engine import RegionOffsetTransformation
-from spoc.query_engine import Snipper
 
 
 @pytest.fixture(name="pixels_with_offset")
@@ -165,28 +165,28 @@ def test_input_wo_offset_rejected(genomic_data_fixture, request):
     """Test that the validation fails for incorrect inputs."""
     genomic_data = request.getfixturevalue(genomic_data_fixture)
     with pytest.raises(ValueError):
-        query = BasicQuery(
-            query_plan=[
+        query = Query(
+            query_steps=[
                 OffsetAggregation(
                     value_column="value", function=AggregationFunction.COUNT
                 ),
             ],
         )
-        query.query(genomic_data)
+        query.build(genomic_data)
 
 
 def test_input_wo_data_column_rejected(pixels_with_offset):
     """Test that the validation fails for incorrect inputs."""
     with pytest.raises(ValueError):
-        query = BasicQuery(
-            query_plan=[
+        query = Query(
+            query_steps=[
                 OffsetAggregation(
                     value_column="test_column_does_no_exist",
                     function=AggregationFunction.AVG,
                 ),
             ],
         )
-        query.query(pixels_with_offset)
+        query.build(pixels_with_offset)
 
 
 @pytest.mark.parametrize(
@@ -214,13 +214,13 @@ def test_aggregations_on_dense_input(
     # setup (pixels here are points to make the test easier)
     pixels = Pixels(complete_synthetic_pixels_df, binsize=50_000, number_fragments=3)
     region = request.getfixturevalue(region_fixture)
-    mapped_pixels = BasicQuery(
-        query_plan=[
-            Snipper(region, anchor_mode=Anchor(mode="ANY")),
+    mapped_pixels = Query(
+        query_steps=[
+            Overlap(region, anchor_mode=Anchor(mode="ANY")),
             RegionOffsetTransformation(offset_mode=OffsetMode.LEFT),
         ],
-    ).query(pixels)
-    mapped_pixels_df = mapped_pixels.load_result()
+    ).build(pixels)
+    mapped_pixels_df = mapped_pixels.compute()
     cat_dtype = pd.CategoricalDtype(range(-100_000, 150_000, 50_000))
     mapped_pixels_df["offset_1"] = mapped_pixels_df["offset_1"].astype(cat_dtype)
     mapped_pixels_df["offset_2"] = mapped_pixels_df["offset_2"].astype(cat_dtype)
@@ -234,14 +234,14 @@ def test_aggregations_on_dense_input(
         .sort_values(["offset_1", "offset_2", "offset_3"])
     )
     # execute aggregation
-    query = BasicQuery(
-        query_plan=[
+    query = Query(
+        query_steps=[
             OffsetAggregation(
                 value_column="count", function=aggregation_spoc, densify_output=False
             ),
         ],
     )
-    actual_aggregation = query.query(mapped_pixels).load_result()
+    actual_aggregation = query.build(mapped_pixels).compute()
     # test
     np.testing.assert_array_almost_equal(
         expected_aggregation.values,
@@ -283,24 +283,24 @@ def test_aggregations_on_sparse_input(
     incomplete_dense_pixels = Pixels(
         incomplete_synthetic_pixels_dense_df, binsize=50_000, number_fragments=3
     )
-    query_plan = BasicQuery(
-        query_plan=[
-            Snipper(
+    query_plan = Query(
+        query_steps=[
+            Overlap(
                 request.getfixturevalue(region_fixture), anchor_mode=Anchor(mode="ANY")
             ),
             RegionOffsetTransformation(offset_mode=OffsetMode.LEFT),
         ],
     )
-    mapped_pixels = query_plan.query(incomplete_pixels)
-    mapped_incomplete_dense_pixels_df = query_plan.query(
+    mapped_pixels = query_plan.build(incomplete_pixels)
+    mapped_incomplete_dense_pixels_df = query_plan.build(
         incomplete_dense_pixels
-    ).load_result()
+    ).compute()
     if aggregation_spoc == AggregationFunction.AVG_WITH_EMPTY:
         # when we test the AVG_WITH_EMPTY function, we need to use the dense pixels
         # where missing values with 0 count are filled in
         pixel_frame_for_expected = mapped_incomplete_dense_pixels_df
     else:
-        pixel_frame_for_expected = mapped_pixels.load_result()
+        pixel_frame_for_expected = mapped_pixels.compute()
     pixel_frame_for_expected["offset_1"] = pixel_frame_for_expected["offset_1"].astype(
         pd.CategoricalDtype(range(-100_000, 150_000, 50_000))
     )
@@ -319,8 +319,8 @@ def test_aggregations_on_sparse_input(
         .sort_values(["offset_1", "offset_2", "offset_3"])
     )
     # execute aggregation
-    query = BasicQuery(
-        query_plan=[
+    query = Query(
+        query_steps=[
             OffsetAggregation(
                 value_column="count", function=aggregation_spoc, densify_output=True
             ),
@@ -328,5 +328,5 @@ def test_aggregations_on_sparse_input(
     )
     # test
     np.testing.assert_array_almost_equal(
-        expected_aggregation.values, query.query(mapped_pixels).load_result()
+        expected_aggregation.values, query.build(mapped_pixels).compute()
     )

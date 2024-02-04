@@ -7,7 +7,7 @@ import pytest
 from spoc.contacts import Contacts
 from spoc.pixels import Pixels
 from spoc.query_engine import Anchor
-from spoc.query_engine import Snipper
+from spoc.query_engine import Overlap
 
 
 @pytest.fixture(name="example_2d_df")
@@ -110,7 +110,7 @@ def pixels_wihtout_regions_fixture(pixel_dataframe):
 @pytest.fixture(name="contacts_with_single_region")
 def contacts_with_single_region_fixture(contacts_without_regions, single_region):
     """Contacts with single region"""
-    return Snipper(single_region, anchor_mode=Anchor(mode="ANY"))(
+    return Overlap(single_region, anchor_mode=Anchor(mode="ANY"))(
         contacts_without_regions,
     )
 
@@ -118,7 +118,7 @@ def contacts_with_single_region_fixture(contacts_without_regions, single_region)
 @pytest.fixture(name="contacts_with_multiple_regions")
 def contacts_with_multiple_regions_fixture(contacts_without_regions, multi_region):
     """Contacts with multiple regions"""
-    return Snipper(multi_region, anchor_mode=Anchor(mode="ANY"))(
+    return Overlap(multi_region, anchor_mode=Anchor(mode="ANY"))(
         contacts_without_regions,
     )
 
@@ -126,7 +126,7 @@ def contacts_with_multiple_regions_fixture(contacts_without_regions, multi_regio
 @pytest.fixture(name="pixels_with_single_region")
 def pixels_with_single_region_fixture(pixels_without_regions, single_region):
     """Pixels with single region"""
-    return Snipper(single_region, anchor_mode=Anchor(mode="ANY"))(
+    return Overlap(single_region, anchor_mode=Anchor(mode="ANY"))(
         pixels_without_regions,
     )
 
@@ -134,4 +134,4 @@ def pixels_with_single_region_fixture(pixels_without_regions, single_region):
 @pytest.fixture(name="pixels_with_multiple_regions")
 def pixels_with_multiple_regions_fixture(pixels_without_regions, multi_region):
     """Pixels with multiple regions"""
-    return Snipper(multi_region, anchor_mode=Anchor(mode="ANY"))(pixels_without_regions)
+    return Overlap(multi_region, anchor_mode=Anchor(mode="ANY"))(pixels_without_regions)

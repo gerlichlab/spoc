@@ -7,8 +7,8 @@ import pytest
 from spoc.io import DUCKDB_CONNECTION
 from spoc.pixels import Pixels
 from spoc.query_engine import Anchor
-from spoc.query_engine import BasicQuery
-from spoc.query_engine import Snipper
+from spoc.query_engine import Overlap
+from spoc.query_engine import Query
 
 
 @pytest.fixture(name="pixels_dask")
@@ -50,9 +50,9 @@ def pixels_duckdb_fixture(pixel_dataframe):
 def test_no_filter_returns_all_pixels(pixels_fixture, request):
     """Test that no filter returns all pixels"""
     pixels = request.getfixturevalue(pixels_fixture)
-    query = BasicQuery(query_plan=[])
-    result = query.query(pixels)
-    assert result.load_result().shape[0] == 4
+    query = Query(query_steps=[])
+    result = query.build(pixels)
+    assert result.compute().shape[0] == 4
 
 
 @pytest.mark.parametrize(
@@ -69,20 +69,16 @@ def test_any_anchor_region_returns_correct_pixels(
     """Test that any anchor region returns correct pixels"""
     # setup
     pixels = request.getfixturevalue(pixels_fixture)
-    query_plan = [Snipper(regions=single_region, anchor_mode=Anchor(mode="ANY"))]
+    query_plan = [Overlap(regions=single_region, anchor_mode=Anchor(mode="ANY"))]
     # execution
-    query = BasicQuery(query_plan=query_plan)
-    result = query.query(pixels)
+    query = Query(query_steps=query_plan)
+    result = query.build(pixels)
     # test correct selection
-    assert result.load_result().shape[0] == 2
-    assert sorted(result.load_result()["count"].tolist()) == sorted([1, 2])
+    assert result.compute().shape[0] == 2
+    assert sorted(result.compute()["count"].tolist()) == sorted([1, 2])
     # test addition of end columns
-    assert np.allclose(
-        result.load_result()["start_1"] + 10, result.load_result()["end_1"]
-    )
-    assert np.allclose(
-        result.load_result()["start_2"] + 10, result.load_result()["end_2"]
-    )
+    assert np.allclose(result.compute()["start_1"] + 10, result.compute()["end_1"])
+    assert np.allclose(result.compute()["start_2"] + 10, result.compute()["end_2"])
 
 
 @pytest.mark.parametrize(
@@ -99,13 +95,13 @@ def test_all_anchor_regions_returns_correct_pixels(
     """Test that all anchor regions returns correct pixels"""
     # setup
     pixels = request.getfixturevalue(pixels_fixture)
-    query_plan = [Snipper(regions=single_region, anchor_mode=Anchor(mode="ALL"))]
+    query_plan = [Overlap(regions=single_region, anchor_mode=Anchor(mode="ALL"))]
     # execution
-    query = BasicQuery(query_plan=query_plan)
-    result = query.query(pixels)
+    query = Query(query_steps=query_plan)
+    result = query.build(pixels)
     # test
-    assert result.load_result().shape[0] == 1
-    assert sorted(result.load_result()["count"].tolist()) == sorted([2])
+    assert result.compute().shape[0] == 1
+    assert sorted(result.compute()["count"].tolist()) == sorted([2])
 
 
 @pytest.mark.parametrize(
@@ -131,16 +127,16 @@ def test_specific_anchor_regions_returns_correct_pixels(
     # setup
     pixels = request.getfixturevalue(pixel_fixture)
     query_plan = [
-        Snipper(
+        Overlap(
             regions=single_region_2, anchor_mode=Anchor(mode="ALL", anchors=anchors)
         )
     ]
     # execution
-    query = BasicQuery(query_plan=query_plan)
-    result = query.query(pixels)
+    query = Query(query_steps=query_plan)
+    result = query.build(pixels)
     # test
-    assert result.load_result().shape[0] == len(expected_reads)
-    assert sorted(result.load_result()["count"].tolist()) == sorted(expected_reads)
+    assert result.compute().shape[0] == len(expected_reads)
+    assert sorted(result.compute()["count"].tolist()) == sorted(expected_reads)
 
 
 @pytest.mark.parametrize(
@@ -157,13 +153,13 @@ def test_any_anchor_region_returns_correct_pixels_multi_region(
     """Test that any anchor region returns correct pixels"""
     # setup
     pixels = request.getfixturevalue(pixels_fixture)
-    query_plan = [Snipper(regions=multi_region, anchor_mode=Anchor(mode="ANY"))]
+    query_plan = [Overlap(regions=multi_region, anchor_mode=Anchor(mode="ANY"))]
     # execution
-    query = BasicQuery(query_plan=query_plan)
-    result = query.query(pixels)
+    query = Query(query_steps=query_plan)
+    result = query.build(pixels)
     # test
-    assert result.load_result().shape[0] == 4
-    assert sorted(result.load_result()["count"].tolist()) == sorted([1, 2, 3, 4])
+    assert result.compute().shape[0] == 4
+    assert sorted(result.compute()["count"].tolist()) == sorted([1, 2, 3, 4])
 
 
 @pytest.mark.parametrize(
@@ -180,13 +176,13 @@ def test_all_anchor_regions_returns_correct_pixels_multi_region(
     """Test that all anchor regions returns correct pixels"""
     # setup
     pixels = request.getfixturevalue(pixels_fixture)
-    query_plan = [Snipper(regions=multi_region, anchor_mode=Anchor(mode="ALL"))]
+    query_plan = [Overlap(regions=multi_region, anchor_mode=Anchor(mode="ALL"))]
     # execution
-    query = BasicQuery(query_plan=query_plan)
-    result = query.query(pixels)
+    query = Query(query_steps=query_plan)
+    result = query.build(pixels)
     # test
-    assert result.load_result().shape[0] == 1
-    assert sorted(result.load_result()["count"].tolist()) == sorted([2])
+    assert result.compute().shape[0] == 1
+    assert sorted(result.compute()["count"].tolist()) == sorted([2])
 
 
 @pytest.mark.parametrize(
@@ -206,13 +202,13 @@ def test_pixels_duplicated_for_multiple_overlapping_regions(
     """
     # setup
     pixels = request.getfixturevalue(pixels_fixture)
-    query_plan = [Snipper(regions=multi_region_2, anchor_mode=Anchor(mode="ALL"))]
+    query_plan = [Overlap(regions=multi_region_2, anchor_mode=Anchor(mode="ALL"))]
     # execution
-    query = BasicQuery(query_plan=query_plan)
-    result = query.query(pixels)
+    query = Query(query_steps=query_plan)
+    result = query.build(pixels)
     # test
-    assert result.load_result().shape[0] == 2
-    assert sorted(result.load_result()["count"].tolist()) == sorted([2, 2])
+    assert result.compute().shape[0] == 2
+    assert sorted(result.compute()["count"].tolist()) == sorted([2, 2])
 
 
 @pytest.mark.parametrize(
@@ -238,14 +234,14 @@ def test_specific_anchor_regions_returns_correct_pixels_multi_region(
     # setup
     pixels = request.getfixturevalue(pixels_fixture)
     query_plan = [
-        Snipper(regions=multi_region, anchor_mode=Anchor(mode="ALL", anchors=anchors))
+        Overlap(regions=multi_region, anchor_mode=Anchor(mode="ALL", anchors=anchors))
     ]
     # execution
-    query = BasicQuery(query_plan=query_plan)
-    result = query.query(pixels)
+    query = Query(query_steps=query_plan)
+    result = query.build(pixels)
     # test
-    assert result.load_result().shape[0] == len(expected_reads)
-    assert sorted(result.load_result()["count"].tolist()) == sorted(expected_reads)
+    assert result.compute().shape[0] == len(expected_reads)
+    assert sorted(result.compute()["count"].tolist()) == sorted(expected_reads)
 
 
 # validation problems
@@ -266,8 +262,8 @@ def test_specific_anchor_region_not_in_pixels_raises_error(
     # setup
     pixels = request.getfixturevalue(pixels_fixture)
     query_plan = [
-        Snipper(regions=single_region, anchor_mode=Anchor(mode="ALL", anchors=[3]))
+        Overlap(regions=single_region, anchor_mode=Anchor(mode="ALL", anchors=[3]))
     ]
     with pytest.raises(ValueError):
-        query = BasicQuery(query_plan=query_plan)
-        query.query(pixels)
+        query = Query(query_steps=query_plan)
+        query.build(pixels)
