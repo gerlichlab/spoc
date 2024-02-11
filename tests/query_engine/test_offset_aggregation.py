@@ -252,6 +252,71 @@ def test_aggregations_on_dense_input(
     )
 
 
+@pytest.mark.parametrize(
+    "aggregation_spoc, aggregation_pandas, region_fixture",
+    [
+        (AggregationFunction.COUNT, "count", "single_region"),
+        (AggregationFunction.COUNT, "count", "two_regions"),
+        (AggregationFunction.COUNT, "count", "single_region_not_binaligned"),
+        ("COUNT", "count", "single_region_not_binaligned"),
+        (AggregationFunction.SUM, "sum", "single_region"),
+        (AggregationFunction.SUM, "sum", "two_regions"),
+        (AggregationFunction.SUM, "sum", "single_region_not_binaligned"),
+        ("SUM", "sum", "single_region_not_binaligned"),
+        (AggregationFunction.AVG, "mean", "single_region"),
+        (AggregationFunction.AVG, "mean", "two_regions"),
+        (AggregationFunction.AVG, "mean", "single_region_not_binaligned"),
+        ("AVG", "mean", "single_region_not_binaligned"),
+    ],
+)
+def test_aggregations_on_dense_input_with_reduced_dimensionality(
+    complete_synthetic_pixels_df,
+    aggregation_spoc,
+    aggregation_pandas,
+    region_fixture,
+    request,
+):
+    """Test sum aggregation on dense input."""
+    # setup (pixels here are points to make the test easier)
+    pixels = Pixels(complete_synthetic_pixels_df, binsize=50_000, number_fragments=3)
+    region = request.getfixturevalue(region_fixture)
+    mapped_pixels = Query(
+        query_steps=[
+            Overlap(region, anchor_mode=Anchor(mode="ANY")),
+            RegionOffsetTransformation(offset_mode=OffsetMode.LEFT),
+        ],
+    ).build(pixels)
+    mapped_pixels_df = mapped_pixels.compute()
+    cat_dtype = pd.CategoricalDtype(range(-100_000, 150_000, 50_000))
+    mapped_pixels_df["offset_1"] = mapped_pixels_df["offset_1"].astype(cat_dtype)
+    mapped_pixels_df["offset_2"] = mapped_pixels_df["offset_2"].astype(cat_dtype)
+    expected_aggregation = (
+        mapped_pixels_df.groupby(["offset_1", "offset_2"])
+        .agg(count=("count", aggregation_pandas))
+        .astype(float)
+        .reset_index()
+        .rename(columns={"count": f"count_{aggregation_pandas}"})
+        .sort_values(["offset_1", "offset_2"])
+    )
+    # execute aggregation
+    query = Query(
+        query_steps=[
+            OffsetAggregation(
+                value_column="count",
+                function=aggregation_spoc,
+                densify_output=False,
+                position_list=[1, 2],
+            ),
+        ],
+    )
+    actual_aggregation = query.build(mapped_pixels).compute()
+    # test
+    np.testing.assert_array_almost_equal(
+        expected_aggregation.values,
+        actual_aggregation.values,
+    )
+
+
 # pylint: disable=too-many-arguments
 @pytest.mark.parametrize(
     "aggregation_spoc, aggregation_pandas, region_fixture",
@@ -326,6 +391,95 @@ def test_aggregations_on_sparse_input(
         query_steps=[
             OffsetAggregation(
                 value_column="count", function=aggregation_spoc, densify_output=True
+            ),
+        ],
+    )
+    # test
+    np.testing.assert_array_almost_equal(
+        expected_aggregation.values, query.build(mapped_pixels).compute()
+    )
+
+
+# pylint: disable=too-many-arguments
+@pytest.mark.parametrize(
+    "aggregation_spoc, aggregation_pandas, region_fixture",
+    [
+        (AggregationFunction.COUNT, "count", "single_region"),
+        (AggregationFunction.COUNT, "count", "two_regions"),
+        (AggregationFunction.COUNT, "count", "single_region_not_binaligned"),
+        (AggregationFunction.SUM, "sum", "single_region"),
+        (AggregationFunction.SUM, "sum", "two_regions"),
+        (AggregationFunction.SUM, "sum", "single_region_not_binaligned"),
+        (AggregationFunction.AVG, "mean", "single_region"),
+        (AggregationFunction.AVG, "mean", "two_regions"),
+        (AggregationFunction.AVG, "mean", "single_region_not_binaligned"),
+        # for aggregation function with empty, we need to sum up and divide by region number
+        # just taking the mean with take the mean with respect to every triplet pixel
+        (AggregationFunction.AVG_WITH_EMPTY, lambda s: s.sum(), "single_region"),
+        (AggregationFunction.AVG_WITH_EMPTY, lambda s: s.sum() / 2, "two_regions"),
+        (
+            AggregationFunction.AVG_WITH_EMPTY,
+            lambda s: s.sum(),
+            "single_region_not_binaligned",
+        ),
+    ],
+)
+def test_aggregations_on_sparse_input_with_reduced_dimensionality(
+    incomplete_synthetic_pixels_df,
+    incomplete_synthetic_pixels_dense_df,
+    aggregation_spoc,
+    aggregation_pandas,
+    region_fixture,
+    request,
+):
+    """Test aggregation on sparse input with reduced dimensionality."""
+    # setup
+    incomplete_pixels = Pixels(
+        incomplete_synthetic_pixels_df, binsize=50_000, number_fragments=3
+    )
+    incomplete_dense_pixels = Pixels(
+        incomplete_synthetic_pixels_dense_df, binsize=50_000, number_fragments=3
+    )
+    query_plan = Query(
+        query_steps=[
+            Overlap(
+                request.getfixturevalue(region_fixture), anchor_mode=Anchor(mode="ANY")
+            ),
+            RegionOffsetTransformation(offset_mode=OffsetMode.LEFT),
+        ],
+    )
+    mapped_pixels = query_plan.build(incomplete_pixels)
+    mapped_incomplete_dense_pixels_df = query_plan.build(
+        incomplete_dense_pixels
+    ).compute()
+    if aggregation_spoc == AggregationFunction.AVG_WITH_EMPTY:
+        # when we test the AVG_WITH_EMPTY function, we need to use the dense pixels
+        # where missing values with 0 count are filled in
+        pixel_frame_for_expected = mapped_incomplete_dense_pixels_df
+    else:
+        pixel_frame_for_expected = mapped_pixels.compute()
+    pixel_frame_for_expected["offset_1"] = pixel_frame_for_expected["offset_1"].astype(
+        pd.CategoricalDtype(range(-100_000, 150_000, 50_000))
+    )
+    pixel_frame_for_expected["offset_2"] = pixel_frame_for_expected["offset_2"].astype(
+        pd.CategoricalDtype(range(-100_000, 150_000, 50_000))
+    )
+    expected_aggregation = (
+        pixel_frame_for_expected.groupby(["offset_1", "offset_2"])
+        .agg(count=("count", aggregation_pandas))
+        .astype(float)
+        .reset_index()
+        .rename(columns={"count": f"count_{aggregation_pandas}"})
+        .sort_values(["offset_1", "offset_2"])
+    )
+    # execute aggregation
+    query = Query(
+        query_steps=[
+            OffsetAggregation(
+                value_column="count",
+                function=aggregation_spoc,
+                densify_output=True,
+                position_list=[1, 2],
             ),
         ],
     )

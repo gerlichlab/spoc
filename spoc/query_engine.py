@@ -2,12 +2,14 @@
 from enum import Enum
 from itertools import product
 from typing import Any
+from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Protocol
-from typing import Union
 from typing import Tuple
+from typing import TypeVar
+from typing import Union
 
 import dask.dataframe as dd
 import duckdb
@@ -21,12 +23,16 @@ from spoc.models.dataframe_models import QueryStepDataSchema
 from spoc.models.dataframe_models import RegionSchema
 
 
-def convert_string_to_enum(enum_class: Enum, string: str) -> Enum:
+T = TypeVar("T")
+
+
+def convert_string_to_enum(enum_class: Callable[[str], T], string: str) -> T:
     """Converts a string to an enum value"""
     try:
         return enum_class(string.upper())
-    except ValueError:
-        raise ValueError(f"Invalid value for {enum_class.__name__}: {string}")
+    except ValueError as exc:
+        raise ValueError(f"Invalid value for {enum_class.__name__}: {string}") from exc
+
 
 class GenomicData(Protocol):
     """Protocol for genomic data
@@ -77,7 +83,9 @@ class Overlap:
     and apply the filter to the data.
     """
 
-    def __init__(self, regions: pd.DataFrame, anchor_mode: Union[Anchor,Tuple[str,List[int]]]) -> None:
+    def __init__(
+        self, regions: pd.DataFrame, anchor_mode: Union[Anchor, Tuple[str, List[int]]]
+    ) -> None:
         """
         Initialize the Overlap object.
 
@@ -250,8 +258,9 @@ class OffsetAggregation:
     def __init__(
         self,
         value_column: str,
-        function: Union[AggregationFunction,str] = AggregationFunction.AVG,
+        function: Union[AggregationFunction, str] = AggregationFunction.AVG,
         densify_output: bool = True,
+        position_list: Optional[List[int]] = None,
     ) -> None:
         """Initialize the aggregation.
 
@@ -260,18 +269,27 @@ class OffsetAggregation:
             function (Union[AggregationFunction,str]): The aggregation function to be applied. Defaults to AggregationFunction.AVG.
             densify_output (bool, optional): Whether to densify the output. Defaults to True.
                                              This requires a binsize value to be set in the data schema.
+            position_list (Optional[List[int]]): The list of positions to use for aggregations, starting with 1. Defaults to using all positions.
         """
         if isinstance(function, str):
-            function = convert_string_to_enum(AggregationFunction, function)
-        self._function = function
+            parsed_function = convert_string_to_enum(AggregationFunction, function)
+        else:
+            parsed_function = function
+        self._function = parsed_function
         self._value_column = value_column
         self._densify_output = densify_output
+        self._position_list = position_list
 
     def validate(self, data_schema: GenomicDataSchema) -> None:
         """Validate the aggregation against the data schema"""
         # check that at leastl one offset field is present
         if "offset_1" not in data_schema.get_schema().columns:
             raise ValueError("No offset fields in data schema.")
+        # check that all position fields are present
+        if self._position_list is not None:
+            for position in self._position_list:
+                if position not in data_schema.get_position_fields():
+                    raise ValueError(f"Position {position} not in data schema.")
         # check that value column is present
         if self._value_column not in data_schema.get_schema().columns:
             raise ValueError("Value column not in data schema.")
@@ -291,16 +309,17 @@ class OffsetAggregation:
         return QueryStepDataSchema(
             columns=data_frame.columns,
             position_fields=position_fields,
-            contact_order=input_schema.get_contact_order(),
+            contact_order=len(position_fields),
             binsize=input_schema.get_binsize(),
         )
 
     def _aggregate_offsets(
-        self, data_frame: duckdb.DuckDBPyRelation, input_schema: GenomicDataSchema
+        self,
+        data_frame: duckdb.DuckDBPyRelation,
+        input_schema: GenomicDataSchema,
+        position_fields: Dict[int, List[str]],
     ) -> duckdb.DuckDBPyRelation:
         """Aggregates the offsets."""
-        # get position fields
-        position_fields = input_schema.get_position_fields()
         # get offset columns
         offset_columns = [f"offset_{position}" for position in position_fields.keys()]
         # construct aggregation
@@ -326,6 +345,7 @@ class OffsetAggregation:
         self,
         windowsize: int,
         input_schema: GenomicDataSchema,
+        position_fields: Dict[int, List[str]],
     ) -> duckdb.DuckDBPyRelation:
         """Create dense value columns for all offsets."""
         binsize: Optional[int] = input_schema.get_binsize()
@@ -340,9 +360,9 @@ class OffsetAggregation:
                     (np.floor(windowsize / int_binsize) * int_binsize) + 1,
                     int_binsize,
                 ),
-                repeat=len(input_schema.get_position_fields()),
+                repeat=len(position_fields.keys()),
             ),
-            columns=[f"offset_{i+1}" for i in range(input_schema.get_contact_order())],
+            columns=[f"offset_{i}" for i in position_fields.keys()],
         )
         # fill value
         if self._function in (
@@ -392,8 +412,14 @@ class OffsetAggregation:
             genomic_df = duckdb.from_df(genomic_data.data, connection=DUCKDB_CONNECTION)
         # get position columns
         position_fields = input_schema.get_position_fields()
+        if self._position_list is not None:
+            position_fields = {
+                position: position_fields[position] for position in self._position_list
+            }
         # construct transformation
-        aggregated_data = self._aggregate_offsets(genomic_df, input_schema)
+        aggregated_data = self._aggregate_offsets(
+            genomic_df, input_schema, position_fields
+        )
         if self._densify_output:
             # Take maximum windowsize of regions
             windowsize = (
@@ -401,7 +427,7 @@ class OffsetAggregation:
                 // 2
             )
             empty_dense_output = self._create_empty_dense_output(
-                windowsize, input_schema
+                windowsize, input_schema, position_fields
             )
             aggregated_data = self._fill_empty_output(
                 aggregated_data, empty_dense_output, position_fields
@@ -427,7 +453,7 @@ class RegionOffsetTransformation:
     """Adds offset columns for each position field relative
     to required region_columns."""
 
-    def __init__(self, offset_mode: Union[OffsetMode,str] = OffsetMode.LEFT) -> None:
+    def __init__(self, offset_mode: Union[OffsetMode, str] = OffsetMode.LEFT) -> None:
         """Initialize the transformation.
 
         Args:
