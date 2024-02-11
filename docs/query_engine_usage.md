@@ -16,11 +16,16 @@ The most important ingredient in this query language is a class that implements 
 - It exposes a way to validate the data schema during query building
 - It implements adding itself to a query
 
-This way, query steps can be combined into a query plan that specifies the analysis to be executed. Specific examples of query steps are:
+This way, query steps can be combined into a query plan that specifies the analysis to be executed. In generaly, spoc supports the following types of query steps:
 
-- **Overlap**: Implements selecting overlapping contacts or pixels for a set of genomic regions.
-- **RegionOffsetTransformation**: Adds offset of genomic positions to regions added by Overlap
-- **OffsetAggregation**: Aggregates the offsets to genomic regions using an aggregation function.
+- **Overlap**: Overlaps genomic data with a set of genomic intervals
+- **Aggregation**: Aggregates the data passed into the query using an aggregation function
+- **Transform**: Adds columns to query based on a fixed or custom computation
+
+Specific examples of query steps are:
+
+- **RegionOffsetTransformation**: Example of a transfomration. Adds offset of genomic positions to regions added by Overlap
+- **OffsetAggregation**: Exaple of an aggregation. Aggregates the offsets to genomic regions using an aggregation function.
 
 ### Input and output of query steps
 
@@ -28,15 +33,15 @@ A query step takes as input a class that implements the `GenomicData` protocol. 
 
 - **Pixels**: Represents input pixels
 - **Contacts**: Represents input contacts
-- **QueryResult**: The result of a query step
+- **QueryPlan**: The result of a query step
 
 ### Composition of query steps
 
-To allow specifying complex queries, query steps need to be combined. This is done using the `Query` class. It takes a query plan (a list of `QueryStep` instances) as input, exposes the `query` method, which takes input data, validates all query steps and adds them to the resulting `QueryResult` instance that is returned.
+To allow specifying complex queries, query steps need to be combined. This is done using the `Query` class. It takes a query plan (a list of `QueryStep` instances) as input, exposes the `build` method, which takes input data, validates all query steps and adds them to the resulting `QueryPlan` instance that is returned.
 
 ### Manifestation of results
 
-So far, we have only talked about specifying the query to be executed, but not how to actually execute it. A `QueryResult` has a `load_result()` method that returns the manifested dataframe as a `pd.DataFrame` instance. This is the step that actually executes the specified query.
+So far, we have only talked about specifying the query to be executed, but not how to actually execute it. A `QueryPlan` has a `compute()` method that returns the manifested dataframe as a `pd.DataFrame` instance. This is the step that actually executes the specified query.
 
 ## Examples
 
@@ -79,7 +84,7 @@ A query plan is a list of qury steps that can be used in the basic query class
 query = Query(query_steps=query_steps)
 ```
 
-The `.query` method executes the query plan and retuns a `QueryResult` object
+The `.build` method executes the query plan and retuns a `QueryPlan` object
 
 
 ```python
@@ -356,7 +361,7 @@ In this example, we calculate the offset of pixels to target regions and aggrega
 
 ```python
 from spoc.pixels import Pixels
-from spoc.query_engine import RegionOffsetTransformation
+from spoc.query_engine import RegionOffsetTransformation, OffsetMode
 import pandas as pd
 import numpy as np
 from itertools import product
@@ -428,7 +433,9 @@ We are then interested in selecting all contacts that are contained within these
 ```python
 query_steps = [
     Overlap(target_regions, anchor_mode=Anchor(mode="ANY")),
-    RegionOffsetTransformation(),
+    RegionOffsetTransformation(
+        offset_mode=OffsetMode.LEFT,
+    ),
 ]
 ```
 
@@ -595,7 +602,7 @@ In this example, we extend the above use-case to aggregate the results based on 
 
 
 ```python
-from spoc.query_engine import OffsetAggregation
+from spoc.query_engine import OffsetAggregation, AggregationFunction
 ```
 
 The `OffsetAggregation` class requires the following parameters:
@@ -607,10 +614,13 @@ Note that there are two different average functions available, `AVG` and `AVG_WI
 
 
 ```python
-query_plan = [
-    Overlap(target_regions, anchor_mode=Anchor(mode="ANY")),
+query_steps = [
+    Overlap(target_regions, anchor_mode=Anchor(mode="ALL")),
     RegionOffsetTransformation(),
-    OffsetAggregation('count'),
+    OffsetAggregation(
+        value_column='count',
+        function=AggregationFunction.AVG,
+    ),
 ]
 ```
 
