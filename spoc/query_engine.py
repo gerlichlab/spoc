@@ -7,6 +7,7 @@ from typing import List
 from typing import Optional
 from typing import Protocol
 from typing import Union
+from typing import Tuple
 
 import dask.dataframe as dd
 import duckdb
@@ -19,6 +20,13 @@ from spoc.models.dataframe_models import GenomicDataSchema
 from spoc.models.dataframe_models import QueryStepDataSchema
 from spoc.models.dataframe_models import RegionSchema
 
+
+def convert_string_to_enum(enum_class: Enum, string: str) -> Enum:
+    """Converts a string to an enum value"""
+    try:
+        return enum_class(string.upper())
+    except ValueError:
+        raise ValueError(f"Invalid value for {enum_class.__name__}: {string}")
 
 class GenomicData(Protocol):
     """Protocol for genomic data
@@ -69,13 +77,13 @@ class Overlap:
     and apply the filter to the data.
     """
 
-    def __init__(self, regions: pd.DataFrame, anchor_mode: Anchor) -> None:
+    def __init__(self, regions: pd.DataFrame, anchor_mode: Union[Anchor,Tuple[str,List[int]]]) -> None:
         """
         Initialize the Overlap object.
 
         Args:
             regions (pd.DataFrame): A DataFrame containing the regions data.
-            anchor_mode (Anchor): The anchor mode to be used.
+            anchor_mode (Union[Anchor,Tuple[str,List[int]]]): The anchor mode to be used.
 
         Returns:
             None
@@ -84,7 +92,10 @@ class Overlap:
         if "id" not in regions.columns:
             regions["id"] = range(len(regions))
         self._regions = RegionSchema.validate(regions.add_prefix("region_"))
-        self._anchor_mode = anchor_mode
+        if isinstance(anchor_mode, tuple):
+            self._anchor_mode = Anchor(mode=anchor_mode[0], anchors=anchor_mode[1])
+        else:
+            self._anchor_mode = anchor_mode
 
     def validate(self, data_schema: GenomicDataSchema) -> None:
         """Validate the filter against the data schema"""
@@ -239,17 +250,19 @@ class OffsetAggregation:
     def __init__(
         self,
         value_column: str,
-        function: AggregationFunction = AggregationFunction.AVG,
+        function: Union[AggregationFunction,str] = AggregationFunction.AVG,
         densify_output: bool = True,
     ) -> None:
         """Initialize the aggregation.
 
         Args:
             value_column (str): The name of the column to be aggregated.
-            function (AggregationFunction, optional): The aggregation function to be applied. Defaults to AggregationFunction.AVG.
+            function (Union[AggregationFunction,str]): The aggregation function to be applied. Defaults to AggregationFunction.AVG.
             densify_output (bool, optional): Whether to densify the output. Defaults to True.
                                              This requires a binsize value to be set in the data schema.
         """
+        if isinstance(function, str):
+            function = convert_string_to_enum(AggregationFunction, function)
         self._function = function
         self._value_column = value_column
         self._densify_output = densify_output
@@ -401,25 +414,11 @@ class OffsetAggregation:
         )
 
 
-class OrderReduction:
-    """Reduction of contcts/pixels order using a reduction function."""
-
-    def __init__(self, function: AggregationFunction = AggregationFunction.AVG) -> None:
-        """Initialize the aggregation."""
-        self._function = function
-
-    def validate(self, data_schema: GenomicDataSchema) -> None:
-        """Validate the aggregation against the data schema"""
-
-    def __call__(self, *args: Any, **kwds: Any) -> Any:
-        """Apply the aggregation to the data"""
-
-
 class OffsetMode(Enum):
     """Enum for offset modes."""
 
-    LEFT: str = "ANY"
-    RIGHT: str = "ALL"
+    LEFT: str = "LEFT"
+    RIGHT: str = "RIGHT"
     BOTH: str = "BOTH"
     MIDPOINT: str = "MIDPOINT"
 
@@ -428,15 +427,17 @@ class RegionOffsetTransformation:
     """Adds offset columns for each position field relative
     to required region_columns."""
 
-    def __init__(self, offset_mode: OffsetMode = OffsetMode.LEFT) -> None:
+    def __init__(self, offset_mode: Union[OffsetMode,str] = OffsetMode.LEFT) -> None:
         """Initialize the transformation.
 
         Args:
-            offset_mode (OffsetMode): The offset mode to be used. Defaults to OffsetMode.MIDPOINT.
+            offset_mode (Union[OffsetMode,str]): The offset mode to be used. Defaults to OffsetMode.MIDPOINT.
                                       Specifies how the offset is calculated relative to the region midpoint.
                                       Note that the offset is always calculated relative to the midpoint of the region.
                                       If a binsize is specificed in the data schema, this needs to be set to LEFT.
         """
+        if isinstance(offset_mode, str):
+            offset_mode = convert_string_to_enum(OffsetMode, offset_mode)
         self._offset_mode = offset_mode
 
     def validate(self, data_schema: GenomicDataSchema) -> None:

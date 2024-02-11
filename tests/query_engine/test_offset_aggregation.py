@@ -195,12 +195,15 @@ def test_input_wo_data_column_rejected(pixels_with_offset):
         (AggregationFunction.COUNT, "count", "single_region"),
         (AggregationFunction.COUNT, "count", "two_regions"),
         (AggregationFunction.COUNT, "count", "single_region_not_binaligned"),
+        ("COUNT", "count", "single_region_not_binaligned"),
         (AggregationFunction.SUM, "sum", "single_region"),
         (AggregationFunction.SUM, "sum", "two_regions"),
         (AggregationFunction.SUM, "sum", "single_region_not_binaligned"),
+        ("SUM", "sum", "single_region_not_binaligned"),
         (AggregationFunction.AVG, "mean", "single_region"),
         (AggregationFunction.AVG, "mean", "two_regions"),
         (AggregationFunction.AVG, "mean", "single_region_not_binaligned"),
+        ("AVG", "mean", "single_region_not_binaligned"),
     ],
 )
 def test_aggregations_on_dense_input(
