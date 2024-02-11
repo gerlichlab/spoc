@@ -144,7 +144,7 @@ query_plan_cis = [
 ]
 
 cis_filtered = Query(query_plan_cis)\
-                        .query(cis_triplets)
+                        .build(cis_triplets)
 
 # analysis trans_triplets
 
@@ -161,7 +161,7 @@ query_plan_trans = [
 ]
 
 trans_filtered = Query(query_plan_trans)\
-                        .query(trans_triplets)
+                        .build(trans_triplets)
 
 
 # merge contacts and aggregate
@@ -172,8 +172,8 @@ query_plan_aggregate = [
 ]
 
 result = Query(query_plan_aggregate)\
-                  .query(cis_filtered)\
-                  .load_result()
+                  .build(cis_filtered)\
+                  .compute()
 >
 -----------------------------------
 | overlap_count | is_trans | count |
