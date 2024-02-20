@@ -293,7 +293,8 @@ class OffsetAggregation:
         # check that value column is present
         if self._value_column not in data_schema.get_schema().columns:
             raise ValueError("Value column not in data schema.")
-        if self._densify_output and data_schema.get_binsize() is None:
+        # check for binsize -> only pixels have that
+        if data_schema.get_binsize() is None:
             raise ValueError(
                 "No binsize specified in data schema. This is required for densifying the output."
             )

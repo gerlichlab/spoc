@@ -188,6 +188,18 @@ def test_input_wo_data_column_rejected(pixels_with_offset):
         )
         query.build(pixels_with_offset)
 
+def test_contacts_rejected(contacts_with_single_region):
+    """Test that the validation fails for incorrect inputs."""
+    with pytest.raises(ValueError):
+        query = Query(
+            query_steps=[
+                OffsetAggregation(
+                    value_column="value", function=AggregationFunction.COUNT
+                ),
+            ],
+        )
+        query.build(contacts_with_single_region)
+
 
 @pytest.mark.parametrize(
     "aggregation_spoc, aggregation_pandas, region_fixture",
