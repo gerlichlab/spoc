@@ -128,6 +128,45 @@ def test_specific_anchor_regions_returns_correct_contacts(
 
 
 @pytest.mark.parametrize(
+    "contact_fixture,anchors,expected_reads",
+    [
+        (source_data, anchors, expected_reads)
+        for source_data, anchors, expected_reads in zip(
+            [
+                "example_2d_contacts_pandas",
+                "example_2d_contacts_dask",
+                "example_2d_contacts_duckdb",
+            ]
+            * 3,
+            [[1]] * 3 + [[2]] * 3 + [[1, 2]] * 3,
+            [["read3"]] * 3 + [["read4"]] * 3 + [[]] * 3,
+        )
+    ],
+)
+def test_specific_anchor_regions_returns_correct_contacts_point_region(
+    contact_fixture, anchors, expected_reads, single_region_3, request
+):
+    """Test that specific anchor regions returns correct contacts, when
+    the region is a point region and windowsize is passed"""
+    # setup
+    contacts = request.getfixturevalue(contact_fixture)
+    query_plan = [
+        Overlap(
+            regions=single_region_3,
+            anchor_mode=Anchor(mode="ALL", anchors=anchors),
+            window_size=50,
+        )
+    ]
+    # execution
+    query = Query(query_steps=query_plan)
+    result = query.build(contacts)
+    # test
+    assert result.compute().shape[0] == len(expected_reads)
+    assert sorted(result.compute().read_name.tolist()) == sorted(expected_reads)
+    assert result.get_schema().get_window_size() == 50
+
+
+@pytest.mark.parametrize(
     "contact_fixture",
     [
         "example_2d_contacts_pandas",

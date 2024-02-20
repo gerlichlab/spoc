@@ -84,7 +84,10 @@ class Overlap:
     """
 
     def __init__(
-        self, regions: pd.DataFrame, anchor_mode: Union[Anchor, Tuple[str, List[int]]]
+        self,
+        regions: pd.DataFrame,
+        anchor_mode: Union[Anchor, Tuple[str, List[int]]],
+        window_size: Optional[int] = None,
     ) -> None:
         """
         Initialize the Overlap object.
@@ -92,6 +95,7 @@ class Overlap:
         Args:
             regions (pd.DataFrame): A DataFrame containing the regions data.
             anchor_mode (Union[Anchor,Tuple[str,List[int]]]): The anchor mode to be used.
+            window_size (Optional[int]): The window size the regions should be expanded to. Defaults to None and is inferred from the data.
 
         Returns:
             None
@@ -99,7 +103,27 @@ class Overlap:
         # add ids to regions if they don't exist
         if "id" not in regions.columns:
             regions["id"] = range(len(regions))
-        self._regions = RegionSchema.validate(regions.add_prefix("region_"))
+        if window_size is not None:
+            expanded_regions = regions.copy()
+            # create midpoint
+            expanded_regions["midpoint"] = (
+                expanded_regions["start"] + expanded_regions["end"]
+            ) // 2
+            # expand regions
+            expanded_regions["start"] = expanded_regions["midpoint"] - window_size // 2
+            expanded_regions["end"] = expanded_regions["midpoint"] + window_size // 2
+            # drop midpoint
+            expanded_regions = expanded_regions.drop(columns=["midpoint"])
+            self._regions = RegionSchema.validate(
+                expanded_regions.add_prefix("region_")
+            )
+            self._window_size = window_size
+        else:
+            self._regions = RegionSchema.validate(regions.add_prefix("region_"))
+            # infer window size -> variable regions will have largest possible window size
+            self._window_size = int(
+                (self._regions["region_end"] - self._regions["region_start"]).max() // 2
+            )
         if isinstance(anchor_mode, tuple):
             self._anchor_mode = Anchor(mode=anchor_mode[0], anchors=anchor_mode[1])
         else:
@@ -181,6 +205,7 @@ class Overlap:
             contact_order=input_schema.get_contact_order(),
             binsize=input_schema.get_binsize(),
             region_number=len(self._regions),
+            window_size=self._window_size,
         )
 
     def _add_end_position(
@@ -295,9 +320,10 @@ class OffsetAggregation:
             raise ValueError("Value column not in data schema.")
         # check for binsize -> only pixels have that
         if data_schema.get_binsize() is None:
-            raise ValueError(
-                "No binsize specified in data schema. This is required for densifying the output."
-            )
+            raise ValueError("No binsize specified in data schema.")
+        # check for window size
+        if data_schema.get_window_size() is None:
+            raise ValueError("No window size specified in data schema.")
 
     def _get_transformed_schema(
         self,
@@ -344,7 +370,6 @@ class OffsetAggregation:
 
     def _create_empty_dense_output(
         self,
-        windowsize: int,
         input_schema: GenomicDataSchema,
         position_fields: Dict[int, List[str]],
     ) -> duckdb.DuckDBPyRelation:
@@ -353,12 +378,16 @@ class OffsetAggregation:
         if binsize is None:
             raise ValueError("No binsize specified in data schema.")
         int_binsize: int = binsize
+        windowsize: Optional[int] = input_schema.get_window_size()
+        if windowsize is None:
+            raise ValueError("No window size specified in data schema.")
+        int_windowsize: int = windowsize
         # create combinations of offsets
         offset_combinations = pd.DataFrame(
             product(
                 np.arange(
-                    -(np.floor(windowsize / int_binsize) * int_binsize),
-                    (np.floor(windowsize / int_binsize) * int_binsize) + 1,
+                    -(np.floor(int_windowsize / int_binsize) * int_binsize),
+                    (np.floor(int_windowsize / int_binsize) * int_binsize) + 1,
                     int_binsize,
                 ),
                 repeat=len(position_fields.keys()),
@@ -422,13 +451,8 @@ class OffsetAggregation:
             genomic_df, input_schema, position_fields
         )
         if self._densify_output:
-            # Take maximum windowsize of regions
-            windowsize = (
-                genomic_df.aggregate("MAX(region_end - region_start)").df().iloc[0, 0]
-                // 2
-            )
             empty_dense_output = self._create_empty_dense_output(
-                windowsize, input_schema, position_fields
+                input_schema, position_fields
             )
             aggregated_data = self._fill_empty_output(
                 aggregated_data, empty_dense_output, position_fields
@@ -525,6 +549,7 @@ class RegionOffsetTransformation:
             contact_order=input_schema.get_contact_order(),
             binsize=input_schema.get_binsize(),
             region_number=input_schema.get_region_number(),
+            window_size=input_schema.get_window_size(),
         )
 
     def __call__(self, genomic_data: GenomicData) -> GenomicData:

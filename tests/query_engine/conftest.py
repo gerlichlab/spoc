@@ -71,6 +71,18 @@ def single_region_2_fixture():
     )
 
 
+@pytest.fixture(name="single_region_3")
+def single_region_3_fixture():
+    """Single region"""
+    return pd.DataFrame(
+        {
+            "chrom": ["chr1"],
+            "start": [750],
+            "end": [850],
+        },
+    )
+
+
 @pytest.fixture(name="multi_region")
 def multi_region_fixture():
     """Multi region"""

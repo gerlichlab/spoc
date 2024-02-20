@@ -72,6 +72,10 @@ class GenomicDataSchema(Protocol):
         """Returns the number of regions in the genomic data
         if present."""
 
+    def get_window_size(self) -> Optional[int]:
+        """Returns the window size of the genomic data
+        if present."""
+
 
 class QueryStepDataSchema:
     """Implements GenomicDataSchema for query steps
@@ -86,12 +90,14 @@ class QueryStepDataSchema:
         contact_order: int,
         binsize: Optional[int] = None,
         region_number: Optional[int] = None,
+        window_size: Optional[int] = None,
     ) -> None:
         self._columns = columns
         self._contact_order = contact_order
         self._position_fields = position_fields
         self._binsize = binsize
         self._region_number = region_number
+        self._window_size = window_size
         self._schema = pa.DataFrameSchema(
             {column: pa.Column() for column in columns},
             coerce=True,
@@ -125,6 +131,11 @@ class QueryStepDataSchema:
         """Returns the number of regions in the genomic data
         if present."""
         return self._region_number
+
+    def get_window_size(self) -> Optional[int]:
+        """Returns the window size of the genomic data
+        if present."""
+        return self._window_size
 
 
 # schemas for higher order contacts
@@ -252,6 +263,11 @@ class ContactSchema:
         if present."""
         return None
 
+    def get_window_size(self) -> Optional[int]:
+        """Returns the window size of the genomic data
+        if present."""
+        return None
+
 
 class PixelSchema:
     """Dynamic schema for N-way pixels
@@ -352,6 +368,11 @@ class PixelSchema:
     def get_contact_order(self) -> int:
         """Returns the order of the genomic data"""
         return self._number_fragments
+
+    def get_window_size(self) -> Optional[int]:
+        """Returns the window size of the genomic data
+        if present."""
+        return None
 
     def validate(self, data_frame: DataFrame) -> DataFrame:
         """Validate multiway contact dataframe
