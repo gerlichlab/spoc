@@ -72,7 +72,7 @@ class GenomicDataSchema(Protocol):
         """Returns the number of regions in the genomic data
         if present."""
 
-    def get_window_size(self) -> Optional[int]:
+    def get_half_window_size(self) -> Optional[int]:
         """Returns the window size of the genomic data
         if present."""
 
@@ -90,14 +90,14 @@ class QueryStepDataSchema:
         contact_order: int,
         binsize: Optional[int] = None,
         region_number: Optional[int] = None,
-        window_size: Optional[int] = None,
+        half_window_size: Optional[int] = None,
     ) -> None:
         self._columns = columns
         self._contact_order = contact_order
         self._position_fields = position_fields
         self._binsize = binsize
         self._region_number = region_number
-        self._window_size = window_size
+        self._half_window_size = half_window_size
         self._schema = pa.DataFrameSchema(
             {column: pa.Column() for column in columns},
             coerce=True,
@@ -132,10 +132,10 @@ class QueryStepDataSchema:
         if present."""
         return self._region_number
 
-    def get_window_size(self) -> Optional[int]:
-        """Returns the window size of the genomic data
+    def get_half_window_size(self) -> Optional[int]:
+        """Returns the half window size of the genomic data
         if present."""
-        return self._window_size
+        return self._half_window_size
 
 
 # schemas for higher order contacts
@@ -263,7 +263,7 @@ class ContactSchema:
         if present."""
         return None
 
-    def get_window_size(self) -> Optional[int]:
+    def get_half_window_size(self) -> Optional[int]:
         """Returns the window size of the genomic data
         if present."""
         return None
@@ -369,7 +369,7 @@ class PixelSchema:
         """Returns the order of the genomic data"""
         return self._number_fragments
 
-    def get_window_size(self) -> Optional[int]:
+    def get_half_window_size(self) -> Optional[int]:
         """Returns the window size of the genomic data
         if present."""
         return None

@@ -154,7 +154,7 @@ def test_specific_anchor_regions_returns_correct_contacts_point_region(
         Overlap(
             regions=single_region_3,
             anchor_mode=Anchor(mode="ALL", anchors=anchors),
-            window_size=50,
+            half_window_size=50,
         )
     ]
     # execution
@@ -163,7 +163,7 @@ def test_specific_anchor_regions_returns_correct_contacts_point_region(
     # test
     assert result.compute().shape[0] == len(expected_reads)
     assert sorted(result.compute().read_name.tolist()) == sorted(expected_reads)
-    assert result.get_schema().get_window_size() == 50
+    assert result.get_schema().get_half_window_size() == 50
 
 
 @pytest.mark.parametrize(

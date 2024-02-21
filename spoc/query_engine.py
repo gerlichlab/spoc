@@ -87,7 +87,7 @@ class Overlap:
         self,
         regions: pd.DataFrame,
         anchor_mode: Union[Anchor, Tuple[str, List[int]]],
-        window_size: Optional[int] = None,
+        half_window_size: Optional[int] = None,
     ) -> None:
         """
         Initialize the Overlap object.
@@ -95,7 +95,7 @@ class Overlap:
         Args:
             regions (pd.DataFrame): A DataFrame containing the regions data.
             anchor_mode (Union[Anchor,Tuple[str,List[int]]]): The anchor mode to be used.
-            window_size (Optional[int]): The window size the regions should be expanded to. Defaults to None and is inferred from the data.
+            half_window_size (Optional[int]): The window size the regions should be expanded to. Defaults to None and is inferred from the data.
 
         Returns:
             None
@@ -103,25 +103,25 @@ class Overlap:
         # add ids to regions if they don't exist
         if "id" not in regions.columns:
             regions["id"] = range(len(regions))
-        if window_size is not None:
+        if half_window_size is not None:
             expanded_regions = regions.copy()
             # create midpoint
             expanded_regions["midpoint"] = (
                 expanded_regions["start"] + expanded_regions["end"]
             ) // 2
             # expand regions
-            expanded_regions["start"] = expanded_regions["midpoint"] - window_size // 2
-            expanded_regions["end"] = expanded_regions["midpoint"] + window_size // 2
+            expanded_regions["start"] = expanded_regions["midpoint"] - half_window_size
+            expanded_regions["end"] = expanded_regions["midpoint"] + half_window_size
             # drop midpoint
             expanded_regions = expanded_regions.drop(columns=["midpoint"])
             self._regions = RegionSchema.validate(
                 expanded_regions.add_prefix("region_")
             )
-            self._window_size = window_size
+            self._half_window_size = half_window_size
         else:
             self._regions = RegionSchema.validate(regions.add_prefix("region_"))
             # infer window size -> variable regions will have largest possible window size
-            self._window_size = int(
+            self._half_window_size = int(
                 (self._regions["region_end"] - self._regions["region_start"]).max() // 2
             )
         if isinstance(anchor_mode, tuple):
@@ -205,7 +205,7 @@ class Overlap:
             contact_order=input_schema.get_contact_order(),
             binsize=input_schema.get_binsize(),
             region_number=len(self._regions),
-            window_size=self._window_size,
+            half_window_size=self._half_window_size,
         )
 
     def _add_end_position(
@@ -322,7 +322,7 @@ class OffsetAggregation:
         if data_schema.get_binsize() is None:
             raise ValueError("No binsize specified in data schema.")
         # check for window size
-        if data_schema.get_window_size() is None:
+        if data_schema.get_half_window_size() is None:
             raise ValueError("No window size specified in data schema.")
 
     def _get_transformed_schema(
@@ -378,7 +378,7 @@ class OffsetAggregation:
         if binsize is None:
             raise ValueError("No binsize specified in data schema.")
         int_binsize: int = binsize
-        windowsize: Optional[int] = input_schema.get_window_size()
+        windowsize: Optional[int] = input_schema.get_half_window_size()
         if windowsize is None:
             raise ValueError("No window size specified in data schema.")
         int_windowsize: int = windowsize
@@ -549,7 +549,7 @@ class RegionOffsetTransformation:
             contact_order=input_schema.get_contact_order(),
             binsize=input_schema.get_binsize(),
             region_number=input_schema.get_region_number(),
-            window_size=input_schema.get_window_size(),
+            half_window_size=input_schema.get_half_window_size(),
         )
 
     def __call__(self, genomic_data: GenomicData) -> GenomicData:
