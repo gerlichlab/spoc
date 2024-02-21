@@ -277,8 +277,8 @@ class AggregationFunction(Enum):
     COUNT: str = "COUNT"
 
 
-class OffsetAggregation:
-    """Aggregation based on offsets from a region. Uses all available offsets."""
+class DistanceAggregation:
+    """Aggregation based on distances from a region. Uses all available distances."""
 
     def __init__(
         self,
@@ -307,9 +307,9 @@ class OffsetAggregation:
 
     def validate(self, data_schema: GenomicDataSchema) -> None:
         """Validate the aggregation against the data schema"""
-        # check that at leastl one offset field is present
-        if "offset_1" not in data_schema.get_schema().columns:
-            raise ValueError("No offset fields in data schema.")
+        # check that at leastl one distance field is present
+        if "distance_1" not in data_schema.get_schema().columns:
+            raise ValueError("No distance fields in data schema.")
         # check that all position fields are present
         if self._position_list is not None:
             for position in self._position_list:
@@ -340,15 +340,17 @@ class OffsetAggregation:
             binsize=input_schema.get_binsize(),
         )
 
-    def _aggregate_offsets(
+    def _aggregate_distances(
         self,
         data_frame: duckdb.DuckDBPyRelation,
         input_schema: GenomicDataSchema,
         position_fields: Dict[int, List[str]],
     ) -> duckdb.DuckDBPyRelation:
-        """Aggregates the offsets."""
-        # get offset columns
-        offset_columns = [f"offset_{position}" for position in position_fields.keys()]
+        """Aggregates the distances."""
+        # get distance columns
+        distance_columns = [
+            f"distance_{position}" for position in position_fields.keys()
+        ]
         # construct aggregation
         if self._function == AggregationFunction.COUNT:
             aggregation_string = (
@@ -362,9 +364,9 @@ class OffsetAggregation:
         data_frame = (
             data_frame.set_alias("data")
             .aggregate(
-                ",".join(offset_columns + [aggregation_string]),
+                ",".join(distance_columns + [aggregation_string]),
             )
-            .order(",".join(offset_columns))
+            .order(",".join(distance_columns))
         )
         return data_frame
 
@@ -373,7 +375,7 @@ class OffsetAggregation:
         input_schema: GenomicDataSchema,
         position_fields: Dict[int, List[str]],
     ) -> duckdb.DuckDBPyRelation:
-        """Create dense value columns for all offsets."""
+        """Create dense value columns for all distances."""
         binsize: Optional[int] = input_schema.get_binsize()
         if binsize is None:
             raise ValueError("No binsize specified in data schema.")
@@ -382,8 +384,8 @@ class OffsetAggregation:
         if windowsize is None:
             raise ValueError("No window size specified in data schema.")
         int_windowsize: int = windowsize
-        # create combinations of offsets
-        offset_combinations = pd.DataFrame(
+        # create combinations of distances
+        distance_combinations = pd.DataFrame(
             product(
                 np.arange(
                     -(np.floor(int_windowsize / int_binsize) * int_binsize),
@@ -392,7 +394,7 @@ class OffsetAggregation:
                 ),
                 repeat=len(position_fields.keys()),
             ),
-            columns=[f"offset_{i}" for i in position_fields.keys()],
+            columns=[f"distance_{i}" for i in position_fields.keys()],
         )
         # fill value
         if self._function in (
@@ -400,10 +402,10 @@ class OffsetAggregation:
             AggregationFunction.SUM,
             AggregationFunction.AVG_WITH_EMPTY,
         ):
-            offset_combinations["fill_value"] = 0
+            distance_combinations["fill_value"] = 0
         else:
-            offset_combinations["fill_value"] = np.nan
-        return duckdb.from_df(offset_combinations, connection=DUCKDB_CONNECTION)
+            distance_combinations["fill_value"] = np.nan
+        return duckdb.from_df(distance_combinations, connection=DUCKDB_CONNECTION)
 
     def _fill_empty_output(
         self,
@@ -412,22 +414,22 @@ class OffsetAggregation:
         position_fields: Dict[int, List[str]],
     ) -> duckdb.DuckDBPyRelation:
         """Fill empty output with values from dense output."""
-        # get offset columns
-        offset_columns = [f"offset_{i}" for i in position_fields.keys()]
+        # get distance columns
+        distance_columns = [f"distance_{i}" for i in position_fields.keys()]
         # construct join and coalesce output
         data_frame = (
             data_frame.set_alias("data")
             .join(
                 empty_dense_output.set_alias("empty_dense_output"),
-                ",".join(offset_columns),
+                ",".join(distance_columns),
                 how="right",
             )
             .project(
-                ",".join(offset_columns)
+                ",".join(distance_columns)
                 + f", COALESCE(data.{self._value_column}_{self._function.name.lower()}, empty_dense_output.fill_value) as {self._value_column}"
             )
             .set_alias("filled")
-            .order(",".join([f"filled.{col}" for col in offset_columns]))
+            .order(",".join([f"filled.{col}" for col in distance_columns]))
         )
         return data_frame
 
@@ -447,7 +449,7 @@ class OffsetAggregation:
                 position: position_fields[position] for position in self._position_list
             }
         # construct transformation
-        aggregated_data = self._aggregate_offsets(
+        aggregated_data = self._aggregate_distances(
             genomic_df, input_schema, position_fields
         )
         if self._densify_output:
@@ -465,8 +467,8 @@ class OffsetAggregation:
         )
 
 
-class OffsetMode(Enum):
-    """Enum for offset modes."""
+class DistanceMode(Enum):
+    """Enum for distance modes."""
 
     LEFT: str = "LEFT"
     RIGHT: str = "RIGHT"
@@ -474,22 +476,24 @@ class OffsetMode(Enum):
     MIDPOINT: str = "MIDPOINT"
 
 
-class RegionOffsetTransformation:
-    """Adds offset columns for each position field relative
+class DistanceTransformation:
+    """Adds distance columns for each position field relative
     to required region_columns."""
 
-    def __init__(self, offset_mode: Union[OffsetMode, str] = OffsetMode.LEFT) -> None:
+    def __init__(
+        self, distance_mode: Union[DistanceMode, str] = DistanceMode.LEFT
+    ) -> None:
         """Initialize the transformation.
 
         Args:
-            offset_mode (Union[OffsetMode,str]): The offset mode to be used. Defaults to OffsetMode.MIDPOINT.
-                                      Specifies how the offset is calculated relative to the region midpoint.
-                                      Note that the offset is always calculated relative to the midpoint of the region.
+            distance_mode (Union[DistanceMode,str]): The distance mode to be used. Defaults to DistanceMode.MIDPOINT.
+                                      Specifies how the distance is calculated relative to the region midpoint.
+                                      Note that the distance is always calculated relative to the midpoint of the region.
                                       If a binsize is specificed in the data schema, this needs to be set to LEFT.
         """
-        if isinstance(offset_mode, str):
-            offset_mode = convert_string_to_enum(OffsetMode, offset_mode)
-        self._offset_mode = offset_mode
+        if isinstance(distance_mode, str):
+            distance_mode = convert_string_to_enum(DistanceMode, distance_mode)
+        self._distance_mode = distance_mode
 
     def validate(self, data_schema: GenomicDataSchema) -> None:
         """Validate the transformation against the data schema"""
@@ -501,11 +505,11 @@ class RegionOffsetTransformation:
         if not all(column in schema_columns for column in required_columns):
             raise ValueError("No region columns in data schema.")
         if (
-            self._offset_mode != OffsetMode.LEFT
+            self._distance_mode != DistanceMode.LEFT
             and data_schema.get_binsize() is not None
         ):
             raise ValueError(
-                "Binsize specified in data schema, but offset mode is not set to LEFT."
+                "Binsize specified in data schema, but distance mode is not set to LEFT."
             )
 
     def _create_transform_columns(
@@ -524,17 +528,17 @@ class RegionOffsetTransformation:
         # create transform columns
         for position_field, fields in position_fields.items():
             _, start, end = fields
-            if self._offset_mode == OffsetMode.MIDPOINT:
+            if self._distance_mode == DistanceMode.MIDPOINT:
                 output_string = f"""(FLOOR((data.{start} + data.{end})/2) - FLOOR((data.region_start + data.region_end)/2))
-                                         as offset_{position_field}"""
-            if self._offset_mode == OffsetMode.LEFT:
+                                         as distance_{position_field}"""
+            if self._distance_mode == DistanceMode.LEFT:
                 output_string = f"""data.{start} - FLOOR((FLOOR(data.region_start/{binsize}) * {binsize}
-                                    + FLOOR(data.region_end/{binsize}) * {binsize})/2) as offset_{position_field}"""
-            if self._offset_mode == OffsetMode.RIGHT:
-                output_string = f"""data.{end} - FLOOR((data.region_start + data.region_end)/2) as offset_{position_field}"""
-            if self._offset_mode == OffsetMode.BOTH:
-                output_string = f"""data.{start} - FLOOR((data.region_start + data.region_end)/2) as start_offset_{position_field},
-                                    data.{end} - FLOOR((data.region_start + data.region_end)/2) as end_offset_{position_field}"""
+                                    + FLOOR(data.region_end/{binsize}) * {binsize})/2) as distance_{position_field}"""
+            if self._distance_mode == DistanceMode.RIGHT:
+                output_string = f"""data.{end} - FLOOR((data.region_start + data.region_end)/2) as distance_{position_field}"""
+            if self._distance_mode == DistanceMode.BOTH:
+                output_string = f"""data.{start} - FLOOR((data.region_start + data.region_end)/2) as start_distance_{position_field},
+                                    data.{end} - FLOOR((data.region_start + data.region_end)/2) as end_distance_{position_field}"""
             transform_strings.append(output_string)
         return ",".join(transform_strings)
 

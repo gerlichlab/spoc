@@ -8,17 +8,17 @@ import pytest
 from spoc.pixels import Pixels
 from spoc.query_engine import AggregationFunction
 from spoc.query_engine import Anchor
-from spoc.query_engine import OffsetAggregation
-from spoc.query_engine import OffsetMode
+from spoc.query_engine import DistanceAggregation
+from spoc.query_engine import DistanceMode
+from spoc.query_engine import DistanceTransformation
 from spoc.query_engine import Overlap
 from spoc.query_engine import Query
-from spoc.query_engine import RegionOffsetTransformation
 
 
-@pytest.fixture(name="pixels_with_offset")
-def pixels_with_offset_fixture(pixels_with_single_region):
+@pytest.fixture(name="pixels_with_distance")
+def pixels_with_distance_fixture(pixels_with_single_region):
     """Pixels with single region"""
-    return RegionOffsetTransformation()(pixels_with_single_region)
+    return DistanceTransformation()(pixels_with_single_region)
 
 
 @pytest.fixture(name="complete_synthetic_pixels_df")
@@ -161,13 +161,13 @@ def two_regions():
         "pixels_with_multiple_regions",
     ],
 )
-def test_input_wo_offset_rejected(genomic_data_fixture, request):
+def test_input_wo_distance_rejected(genomic_data_fixture, request):
     """Test that the validation fails for incorrect inputs."""
     genomic_data = request.getfixturevalue(genomic_data_fixture)
     with pytest.raises(ValueError):
         query = Query(
             query_steps=[
-                OffsetAggregation(
+                DistanceAggregation(
                     value_column="value", function=AggregationFunction.COUNT
                 ),
             ],
@@ -175,25 +175,26 @@ def test_input_wo_offset_rejected(genomic_data_fixture, request):
         query.build(genomic_data)
 
 
-def test_input_wo_data_column_rejected(pixels_with_offset):
+def test_input_wo_data_column_rejected(pixels_with_distance):
     """Test that the validation fails for incorrect inputs."""
     with pytest.raises(ValueError):
         query = Query(
             query_steps=[
-                OffsetAggregation(
+                DistanceAggregation(
                     value_column="test_column_does_no_exist",
                     function=AggregationFunction.AVG,
                 ),
             ],
         )
-        query.build(pixels_with_offset)
+        query.build(pixels_with_distance)
+
 
 def test_contacts_rejected(contacts_with_single_region):
     """Test that the validation fails for incorrect inputs."""
     with pytest.raises(ValueError):
         query = Query(
             query_steps=[
-                OffsetAggregation(
+                DistanceAggregation(
                     value_column="value", function=AggregationFunction.COUNT
                 ),
             ],
@@ -232,26 +233,26 @@ def test_aggregations_on_dense_input(
     mapped_pixels = Query(
         query_steps=[
             Overlap(region, anchor_mode=Anchor(mode="ANY")),
-            RegionOffsetTransformation(offset_mode=OffsetMode.LEFT),
+            DistanceTransformation(distance_mode=DistanceMode.LEFT),
         ],
     ).build(pixels)
     mapped_pixels_df = mapped_pixels.compute()
     cat_dtype = pd.CategoricalDtype(range(-100_000, 150_000, 50_000))
-    mapped_pixels_df["offset_1"] = mapped_pixels_df["offset_1"].astype(cat_dtype)
-    mapped_pixels_df["offset_2"] = mapped_pixels_df["offset_2"].astype(cat_dtype)
-    mapped_pixels_df["offset_3"] = mapped_pixels_df["offset_3"].astype(cat_dtype)
+    mapped_pixels_df["distance_1"] = mapped_pixels_df["distance_1"].astype(cat_dtype)
+    mapped_pixels_df["distance_2"] = mapped_pixels_df["distance_2"].astype(cat_dtype)
+    mapped_pixels_df["distance_3"] = mapped_pixels_df["distance_3"].astype(cat_dtype)
     expected_aggregation = (
-        mapped_pixels_df.groupby(["offset_1", "offset_2", "offset_3"])
+        mapped_pixels_df.groupby(["distance_1", "distance_2", "distance_3"])
         .agg(count=("count", aggregation_pandas))
         .astype(float)
         .reset_index()
         .rename(columns={"count": f"count_{aggregation_pandas}"})
-        .sort_values(["offset_1", "offset_2", "offset_3"])
+        .sort_values(["distance_1", "distance_2", "distance_3"])
     )
     # execute aggregation
     query = Query(
         query_steps=[
-            OffsetAggregation(
+            DistanceAggregation(
                 value_column="count", function=aggregation_spoc, densify_output=False
             ),
         ],
@@ -295,25 +296,25 @@ def test_aggregations_on_dense_input_with_reduced_dimensionality(
     mapped_pixels = Query(
         query_steps=[
             Overlap(region, anchor_mode=Anchor(mode="ANY")),
-            RegionOffsetTransformation(offset_mode=OffsetMode.LEFT),
+            DistanceTransformation(distance_mode=DistanceMode.LEFT),
         ],
     ).build(pixels)
     mapped_pixels_df = mapped_pixels.compute()
     cat_dtype = pd.CategoricalDtype(range(-100_000, 150_000, 50_000))
-    mapped_pixels_df["offset_1"] = mapped_pixels_df["offset_1"].astype(cat_dtype)
-    mapped_pixels_df["offset_2"] = mapped_pixels_df["offset_2"].astype(cat_dtype)
+    mapped_pixels_df["distance_1"] = mapped_pixels_df["distance_1"].astype(cat_dtype)
+    mapped_pixels_df["distance_2"] = mapped_pixels_df["distance_2"].astype(cat_dtype)
     expected_aggregation = (
-        mapped_pixels_df.groupby(["offset_1", "offset_2"])
+        mapped_pixels_df.groupby(["distance_1", "distance_2"])
         .agg(count=("count", aggregation_pandas))
         .astype(float)
         .reset_index()
         .rename(columns={"count": f"count_{aggregation_pandas}"})
-        .sort_values(["offset_1", "offset_2"])
+        .sort_values(["distance_1", "distance_2"])
     )
     # execute aggregation
     query = Query(
         query_steps=[
-            OffsetAggregation(
+            DistanceAggregation(
                 value_column="count",
                 function=aggregation_spoc,
                 densify_output=False,
@@ -368,7 +369,7 @@ def test_aggregations_on_sparse_input(
             Overlap(
                 request.getfixturevalue(region_fixture), anchor_mode=Anchor(mode="ANY")
             ),
-            RegionOffsetTransformation(offset_mode=OffsetMode.LEFT),
+            DistanceTransformation(distance_mode=DistanceMode.LEFT),
         ],
     )
     mapped_pixels = query_plan.build(incomplete_pixels)
@@ -381,27 +382,27 @@ def test_aggregations_on_sparse_input(
         pixel_frame_for_expected = mapped_incomplete_dense_pixels_df
     else:
         pixel_frame_for_expected = mapped_pixels.compute()
-    pixel_frame_for_expected["offset_1"] = pixel_frame_for_expected["offset_1"].astype(
-        pd.CategoricalDtype(range(-100_000, 150_000, 50_000))
-    )
-    pixel_frame_for_expected["offset_2"] = pixel_frame_for_expected["offset_2"].astype(
-        pd.CategoricalDtype(range(-100_000, 150_000, 50_000))
-    )
-    pixel_frame_for_expected["offset_3"] = pixel_frame_for_expected["offset_3"].astype(
-        pd.CategoricalDtype(range(-100_000, 150_000, 50_000))
-    )
+    pixel_frame_for_expected["distance_1"] = pixel_frame_for_expected[
+        "distance_1"
+    ].astype(pd.CategoricalDtype(range(-100_000, 150_000, 50_000)))
+    pixel_frame_for_expected["distance_2"] = pixel_frame_for_expected[
+        "distance_2"
+    ].astype(pd.CategoricalDtype(range(-100_000, 150_000, 50_000)))
+    pixel_frame_for_expected["distance_3"] = pixel_frame_for_expected[
+        "distance_3"
+    ].astype(pd.CategoricalDtype(range(-100_000, 150_000, 50_000)))
     expected_aggregation = (
-        pixel_frame_for_expected.groupby(["offset_1", "offset_2", "offset_3"])
+        pixel_frame_for_expected.groupby(["distance_1", "distance_2", "distance_3"])
         .agg(count=("count", aggregation_pandas))
         .astype(float)
         .reset_index()
         .rename(columns={"count": f"count_{aggregation_pandas}"})
-        .sort_values(["offset_1", "offset_2", "offset_3"])
+        .sort_values(["distance_1", "distance_2", "distance_3"])
     )
     # execute aggregation
     query = Query(
         query_steps=[
-            OffsetAggregation(
+            DistanceAggregation(
                 value_column="count", function=aggregation_spoc, densify_output=True
             ),
         ],
@@ -457,7 +458,7 @@ def test_aggregations_on_sparse_input_with_reduced_dimensionality(
             Overlap(
                 request.getfixturevalue(region_fixture), anchor_mode=Anchor(mode="ANY")
             ),
-            RegionOffsetTransformation(offset_mode=OffsetMode.LEFT),
+            DistanceTransformation(distance_mode=DistanceMode.LEFT),
         ],
     )
     mapped_pixels = query_plan.build(incomplete_pixels)
@@ -470,24 +471,24 @@ def test_aggregations_on_sparse_input_with_reduced_dimensionality(
         pixel_frame_for_expected = mapped_incomplete_dense_pixels_df
     else:
         pixel_frame_for_expected = mapped_pixels.compute()
-    pixel_frame_for_expected["offset_1"] = pixel_frame_for_expected["offset_1"].astype(
-        pd.CategoricalDtype(range(-100_000, 150_000, 50_000))
-    )
-    pixel_frame_for_expected["offset_2"] = pixel_frame_for_expected["offset_2"].astype(
-        pd.CategoricalDtype(range(-100_000, 150_000, 50_000))
-    )
+    pixel_frame_for_expected["distance_1"] = pixel_frame_for_expected[
+        "distance_1"
+    ].astype(pd.CategoricalDtype(range(-100_000, 150_000, 50_000)))
+    pixel_frame_for_expected["distance_2"] = pixel_frame_for_expected[
+        "distance_2"
+    ].astype(pd.CategoricalDtype(range(-100_000, 150_000, 50_000)))
     expected_aggregation = (
-        pixel_frame_for_expected.groupby(["offset_1", "offset_2"])
+        pixel_frame_for_expected.groupby(["distance_1", "distance_2"])
         .agg(count=("count", aggregation_pandas))
         .astype(float)
         .reset_index()
         .rename(columns={"count": f"count_{aggregation_pandas}"})
-        .sort_values(["offset_1", "offset_2"])
+        .sort_values(["distance_1", "distance_2"])
     )
     # execute aggregation
     query = Query(
         query_steps=[
-            OffsetAggregation(
+            DistanceAggregation(
                 value_column="count",
                 function=aggregation_spoc,
                 densify_output=True,

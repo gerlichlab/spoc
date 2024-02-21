@@ -24,8 +24,8 @@ This way, query steps can be combined into a query plan that specifies the analy
 
 Specific examples of query steps are:
 
-- **RegionOffsetTransformation**: Example of a transfomration. Adds offset of genomic positions to regions added by Overlap
-- **OffsetAggregation**: Exaple of an aggregation. Aggregates the offsets to genomic regions using an aggregation function.
+- **DistanceTransformation**: Example of a transfomration. Adds distance of genomic positions to regions added by Overlap
+- **DistanceAggregation**: Exaple of an aggregation. Aggregates the distances to genomic regions using an aggregation function.
 
 ### Input and output of query steps
 
@@ -95,7 +95,7 @@ result
 
 
 
-    <spoc.query_engine.QueryPlan at 0x20385e3e1f0>
+    <spoc.query_engine.QueryPlan at 0x1804b711a00>
 
 
 
@@ -355,13 +355,13 @@ In this example, the contact overlapping both regions is duplicated.
 
 The same functionality is implemented also for the pixels class.
 
-## Calculating the offset to a target region and aggregating the result
-In this example, we calculate the offset of pixels to target regions and aggregate based on the offsets. This is a very common use case in so-called pileup analyses, where we want to investigate the average behavior around regions of interest.
+## Calculating the distance to a target region and aggregating the result
+In this example, we calculate the distance of pixels to target regions and aggregate based on the distances. This is a very common use case in so-called pileup analyses, where we want to investigate the average behavior around regions of interest.
 
 
 ```python
 from spoc.pixels import Pixels
-from spoc.query_engine import RegionOffsetTransformation, OffsetMode
+from spoc.query_engine import DistanceTransformation, DistanceMode
 import pandas as pd
 import numpy as np
 from itertools import product
@@ -427,26 +427,26 @@ target_regions = pd.DataFrame(
     )
 ```
 
-We are then interested in selecting all contacts that are contained within these pixels and then calculate the offset to them. The selection step can be done with the `Overlap` class that we described above. The offset transformation can be done with the `OffsetTransformation` query step. This query step takes an instance of genomic data that contains regions (as defined by it's schema) and calculates the offset to all position columns. All offsets are calculated with regards to the center of each assigned region. Since genomic positions are defined by a start and end,the `OffsetTransformation` query step as an `OffsetMode` parameter that defines whether we would like to calculate the offset with regard to the start of a genomic position, the end or it's center.
+We are then interested in selecting all contacts that are contained within these pixels and then calculate the distance to them. The selection step can be done with the `Overlap` class that we described above. The distance transformation can be done with the `DistanceTransformation` query step. This query step takes an instance of genomic data that contains regions (as defined by it's schema) and calculates the distance to all position columns. All distances are calculated with regards to the center of each assigned region. Since genomic positions are defined by a start and end,the `DistanceTransformation` query step has a `DistanceMode` parameter that defines whether we would like to calculate the distance with regard to the start of a genomic position, the end or it's center.
 
 
 ```python
 query_steps = [
     Overlap(target_regions, anchor_mode=Anchor(mode="ANY")),
-    RegionOffsetTransformation(
-        offset_mode=OffsetMode.LEFT,
+    DistanceTransformation(
+        distance_mode=DistanceMode.LEFT,
     ),
 ]
 ```
 
-We can then execute this query plan using the Query class. This well add an offset column to the genomic dataset returned.
+We can then execute this query plan using the Query class. This well add an distance column to the genomic dataset returned.
 
 
 ```python
 Query(query_steps=query_steps)\
     .build(pixels)\
     .compute()\
-    .filter(regex=r"chrom|offset")
+    .filter(regex=r"chrom|distance")
 ```
 
 
@@ -474,9 +474,9 @@ Query(query_steps=query_steps)\
       <th>chrom_2</th>
       <th>chrom_3</th>
       <th>region_chrom</th>
-      <th>offset_1</th>
-      <th>offset_2</th>
-      <th>offset_3</th>
+      <th>distance_1</th>
+      <th>distance_2</th>
+      <th>distance_3</th>
     </tr>
   </thead>
   <tbody>
@@ -597,27 +597,27 @@ Query(query_steps=query_steps)\
 
 
 
-## Aggregating genomic data based on it's offset to a target region
-In this example, we extend the above use-case to aggregate the results based on the offset columns added. This is a common use-case to calculate aggregate statistics for different offset levels. To achieve this, we employ the same query plan as above and extend it using the `OffsetAggregation` query step.
+## Aggregating genomic data based on it's distance to a target region
+In this example, we extend the above use-case to aggregate the results based on the distance columns added. This is a common use-case to calculate aggregate statistics for different distance levels. To achieve this, we employ the same query plan as above and extend it using the `DistanceAggregation` query step.
 
 
 ```python
-from spoc.query_engine import OffsetAggregation, AggregationFunction
+from spoc.query_engine import DistanceAggregation, AggregationFunction
 ```
 
-The `OffsetAggregation` class requires the following parameters:
+The `DistanceAggregation` class requires the following parameters:
 - `value_columns`: Thie specifies the value to aggregate
 - `function`: The aggregation function to use. This is the enumerated type `AggregationFunction`
-- `densify_output`: Whether missing offset values should be filled with empty values (specific empty value depends on the aggregation function)
+- `densify_output`: Whether missing distance values should be filled with empty values (specific empty value depends on the aggregation function)
 
-Note that there are two different average functions available, `AVG` and `AVG_WITH_EMPTY`. `AVG` performs and average over all available columns, where as `AVG_WITH_EMPTY` counts missing offsets per regions as 0.
+Note that there are two different average functions available, `AVG` and `AVG_WITH_EMPTY`. `AVG` performs and average over all available columns, where as `AVG_WITH_EMPTY` counts missing distances per regions as 0.
 
 
 ```python
 query_steps = [
     Overlap(target_regions, anchor_mode=Anchor(mode="ALL")),
-    RegionOffsetTransformation(),
-    OffsetAggregation(
+    DistanceTransformation(),
+    DistanceAggregation(
         value_column='count',
         function=AggregationFunction.AVG,
     ),
@@ -652,9 +652,9 @@ Query(query_steps=query_steps)\
   <thead>
     <tr style="text-align: right;">
       <th></th>
-      <th>offset_1</th>
-      <th>offset_2</th>
-      <th>offset_3</th>
+      <th>distance_1</th>
+      <th>distance_2</th>
+      <th>distance_3</th>
       <th>count</th>
     </tr>
   </thead>
@@ -739,6 +739,211 @@ Query(query_steps=query_steps)\
   </tbody>
 </table>
 <p>125 rows × 4 columns</p>
+</div>
+
+
+
+In addition, we can also aggregate on a subset of distance positions, using the `position_list` parameter:
+
+
+```python
+query_steps = [
+    Overlap(target_regions, anchor_mode=Anchor(mode="ALL")),
+    DistanceTransformation(),
+    DistanceAggregation(
+        value_column='count',
+        function=AggregationFunction.AVG,
+        position_list=[1,2]
+    ),
+]
+```
+
+
+```python
+Query(query_steps=query_steps)\
+    .build(pixels)\
+    .compute()
+```
+
+
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>distance_1</th>
+      <th>distance_2</th>
+      <th>count</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>-100000.0</td>
+      <td>-100000.0</td>
+      <td>4.8</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>-100000.0</td>
+      <td>-50000.0</td>
+      <td>4.5</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>-100000.0</td>
+      <td>0.0</td>
+      <td>5.3</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>-100000.0</td>
+      <td>50000.0</td>
+      <td>4.7</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>-100000.0</td>
+      <td>100000.0</td>
+      <td>5.3</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>-50000.0</td>
+      <td>-100000.0</td>
+      <td>4.8</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>-50000.0</td>
+      <td>-50000.0</td>
+      <td>4.4</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>-50000.0</td>
+      <td>0.0</td>
+      <td>4.5</td>
+    </tr>
+    <tr>
+      <th>8</th>
+      <td>-50000.0</td>
+      <td>50000.0</td>
+      <td>5.4</td>
+    </tr>
+    <tr>
+      <th>9</th>
+      <td>-50000.0</td>
+      <td>100000.0</td>
+      <td>3.4</td>
+    </tr>
+    <tr>
+      <th>10</th>
+      <td>0.0</td>
+      <td>-100000.0</td>
+      <td>2.0</td>
+    </tr>
+    <tr>
+      <th>11</th>
+      <td>0.0</td>
+      <td>-50000.0</td>
+      <td>3.5</td>
+    </tr>
+    <tr>
+      <th>12</th>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>4.4</td>
+    </tr>
+    <tr>
+      <th>13</th>
+      <td>0.0</td>
+      <td>50000.0</td>
+      <td>5.4</td>
+    </tr>
+    <tr>
+      <th>14</th>
+      <td>0.0</td>
+      <td>100000.0</td>
+      <td>4.3</td>
+    </tr>
+    <tr>
+      <th>15</th>
+      <td>50000.0</td>
+      <td>-100000.0</td>
+      <td>5.3</td>
+    </tr>
+    <tr>
+      <th>16</th>
+      <td>50000.0</td>
+      <td>-50000.0</td>
+      <td>4.7</td>
+    </tr>
+    <tr>
+      <th>17</th>
+      <td>50000.0</td>
+      <td>0.0</td>
+      <td>4.0</td>
+    </tr>
+    <tr>
+      <th>18</th>
+      <td>50000.0</td>
+      <td>50000.0</td>
+      <td>4.2</td>
+    </tr>
+    <tr>
+      <th>19</th>
+      <td>50000.0</td>
+      <td>100000.0</td>
+      <td>6.1</td>
+    </tr>
+    <tr>
+      <th>20</th>
+      <td>100000.0</td>
+      <td>-100000.0</td>
+      <td>5.4</td>
+    </tr>
+    <tr>
+      <th>21</th>
+      <td>100000.0</td>
+      <td>-50000.0</td>
+      <td>2.8</td>
+    </tr>
+    <tr>
+      <th>22</th>
+      <td>100000.0</td>
+      <td>0.0</td>
+      <td>3.6</td>
+    </tr>
+    <tr>
+      <th>23</th>
+      <td>100000.0</td>
+      <td>50000.0</td>
+      <td>5.2</td>
+    </tr>
+    <tr>
+      <th>24</th>
+      <td>100000.0</td>
+      <td>100000.0</td>
+      <td>4.3</td>
+    </tr>
+  </tbody>
+</table>
 </div>
 
 
