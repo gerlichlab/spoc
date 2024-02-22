@@ -1,0 +1,2648 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../transformation_pipeline/">
+      
+      
+        <link rel="next" href="../query_engine_usage/">
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.10">
+    
+    
+      
+        <title>Data Structures - Spoc</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.7e359304.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#spoc-data-structures" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Spoc" class="md-header__button md-logo" aria-label="Spoc" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Spoc
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Data Structures
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var media,input,key,value,palette=__md_get("__palette");if(palette&&palette.color){"(prefers-color-scheme)"===palette.color.media&&(media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']"),palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent"));for([key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/gerlichlab/spoc" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    gerlichlab/spoc
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href=".." class="md-tabs__link">
+          
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+    
+  
+  Data Structures
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../query_engine_usage/" class="md-tabs__link">
+          
+  
+  Query Engine
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../contributing/" class="md-tabs__link">
+        
+  
+    
+  
+  Contributing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../cli/" class="md-tabs__link">
+          
+  
+  API
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Spoc" class="md-nav__button md-logo" aria-label="Spoc" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    Spoc
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/gerlichlab/spoc" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    gerlichlab/spoc
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Getting Started
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1">
+            <span class="md-nav__icon md-icon"></span>
+            Getting Started
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Welcomde to spoc
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Installation
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../load_example_dataset/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Load example dataset
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../transformation_pipeline/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Transformation pipeline
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Data Structures
+  </span>
+  
+
+      </a>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Query Engine
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Query Engine
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../query_engine_usage/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Usage guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../query_engine_interface/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Class interface
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Contributing
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    API
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            API
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    CLI
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../io/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    IO
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contacts/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Contacts
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../fragments/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Fragments
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pixels/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Pixels
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../query_engine/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Query Engine
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dataframe_models/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Dataframe models
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../file_parameters_models/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    File parameters models
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="spoc-data-structures">Spoc data structures</h1>
+<p>This notebook explains the data structures that are availabel within spoc and shows how they relate to each other. On a high level, spoc provides data structures for all parts of the transformation pipline from raw reads to aggregated pixels. </p>
+<p>Often, these data structures (with the exception of the pixels class) will not be used within every day analysis tasks, but rather within analysis pipelines.</p>
+<h1 id="data-frame-schemas">Data frame schemas</h1>
+<p>Spoc data structures are wrappers around tabular data containers such as <code>panda.DataFrame</code> or <code>dask.dataframe.DataFrame</code>. To ensure that the underlying data complies with the format that spoc expects, spoc implements dataframe validation using <code>pandera</code>. The underlying schemas reside in the <code>spoc.dataframe_models</code> file.</p>
+<h1 id="io">I/O</h1>
+<p>Reading and writing of spoc data structures is managed by the <code>spoc.io</code> package, specifically by the <code>FileManager</code> class. Examples of using the FileManager can be found with the specific data structure.</p>
+<h1 id="fragments">Fragments</h1>
+<p>Fragments encapsulate a data structure that can hold a dynamic number of aligned fragments per sequencing unit. In a Pore-C experiment, a sequencing unit is the sequencing read that holds multiple fragments per read. In theory, this structure can also be used for other experiment types that generate aligned fragments that are grouped together by an id, for exapmle SPRITE</p>
+<p>Reading fragments using <code>FileManager</code></p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span> <span class="nn">spoc.io</span> <span class="kn">import</span> <span class="n">FileManager</span>
+</span></code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">fragments</span> <span class="o">=</span> <span class="n">FileManager</span><span class="p">()</span><span class="o">.</span><span class="n">load_fragments</span><span class="p">(</span><span class="s2">&quot;../tests/test_files/good_porec.parquet&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+<p>Fragments class has data accessor for fragments</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">fragments</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+</span></code></pre></div>
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>chrom</th>
+      <th>start</th>
+      <th>end</th>
+      <th>strand</th>
+      <th>read_name</th>
+      <th>read_start</th>
+      <th>read_end</th>
+      <th>read_length</th>
+      <th>mapping_quality</th>
+      <th>align_score</th>
+      <th>align_base_qscore</th>
+      <th>pass_filter</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>chr1</td>
+      <td>1</td>
+      <td>4</td>
+      <td>True</td>
+      <td>dummy</td>
+      <td>1</td>
+      <td>4</td>
+      <td>1</td>
+      <td>1</td>
+      <td>1</td>
+      <td>1</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>chr1</td>
+      <td>2</td>
+      <td>5</td>
+      <td>True</td>
+      <td>dummy</td>
+      <td>2</td>
+      <td>5</td>
+      <td>1</td>
+      <td>2</td>
+      <td>2</td>
+      <td>2</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>chr1</td>
+      <td>3</td>
+      <td>6</td>
+      <td>True</td>
+      <td>dummy</td>
+      <td>3</td>
+      <td>6</td>
+      <td>1</td>
+      <td>3</td>
+      <td>3</td>
+      <td>3</td>
+      <td>True</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<p>The fragments class constructor validates the underlying data structure using pandera and the dataframe schemas in <code>spoc.dataframe_models</code></p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span> <span class="nn">pandera.errors</span> <span class="kn">import</span> <span class="n">SchemaError</span>
+</span></code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">try</span><span class="p">:</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="n">FileManager</span><span class="p">()</span><span class="o">.</span><span class="n">load_fragments</span><span class="p">(</span><span class="s2">&quot;../tests/test_files/bad_porec.parquet&quot;</span><span class="p">)</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="k">except</span> <span class="n">SchemaError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="nb">print</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+</span></code></pre></div>
+<p>Fragments class also supports reading as dask dataframe</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span> <span class="nn">spoc.io</span> <span class="kn">import</span> <span class="n">DataMode</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">fragments</span> <span class="o">=</span> <span class="n">FileManager</span><span class="p">(</span><span class="n">DataMode</span><span class="o">.</span><span class="n">DASK</span><span class="p">)</span><span class="o">.</span><span class="n">load_fragments</span><span class="p">(</span><span class="s2">&quot;../tests/test_files/good_porec.parquet&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">fragments</span><span class="o">.</span><span class="n">data</span>
+</span></code></pre></div>
+<div><strong>Dask DataFrame Structure:</strong></div>
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>chrom</th>
+      <th>start</th>
+      <th>end</th>
+      <th>strand</th>
+      <th>read_name</th>
+      <th>read_start</th>
+      <th>read_end</th>
+      <th>read_length</th>
+      <th>mapping_quality</th>
+      <th>align_score</th>
+      <th>align_base_qscore</th>
+      <th>pass_filter</th>
+    </tr>
+    <tr>
+      <th>npartitions=1</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th></th>
+      <td>object</td>
+      <td>int64</td>
+      <td>int64</td>
+      <td>bool</td>
+      <td>object</td>
+      <td>int64</td>
+      <td>int64</td>
+      <td>int64</td>
+      <td>int64</td>
+      <td>int64</td>
+      <td>int64</td>
+      <td>bool</td>
+    </tr>
+    <tr>
+      <th></th>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<div>Dask Name: validate, 2 graph layers</div>
+
+<p>Note that if reading from dask dataframes, schema evaluation is deferred until the dask taskgraph is evaluated</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">fragments</span> <span class="o">=</span> <span class="n">FileManager</span><span class="p">(</span><span class="n">DataMode</span><span class="o">.</span><span class="n">DASK</span><span class="p">)</span><span class="o">.</span><span class="n">load_fragments</span><span class="p">(</span><span class="s2">&quot;../tests/test_files/bad_porec.parquet&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">try</span><span class="p">:</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>    <span class="n">fragments</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="k">except</span> <span class="n">SchemaError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>    <span class="nb">print</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+</span></code></pre></div>
+<div class="language-text highlight"><pre><span></span><code>column &#39;chrom&#39; not in dataframe
+</code></pre></div>
+<h2 id="annotating-fragments">Annotating fragments</h2>
+<p>Fragments can carry metadata that add additional information, which can be propagated in the analysis pipeline. <code>FragmentAnnotator</code> uses a dictionary called label library that contains compound fragment ids and metainformation to annotate fragments. These ids are concatenations of the read_id, chromosome, start and end of the mapping.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">fragments</span> <span class="o">=</span> <span class="n">FileManager</span><span class="p">()</span><span class="o">.</span><span class="n">load_fragments</span><span class="p">(</span><span class="s2">&quot;../tests/test_files/good_porec.parquet&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">label_library</span> <span class="o">=</span> <span class="n">FileManager</span><span class="p">()</span><span class="o">.</span><span class="n">load_label_library</span><span class="p">(</span><span class="s2">&quot;../tests/test_files/ll1.pickle&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="n">label_library</span>
+</span></code></pre></div>
+<div class="language-text highlight"><pre><span></span><code>{&#39;dummy_chr1_1_4&#39;: True, &#39;dummy_chr1_2_5&#39;: False}
+</code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="kn">from</span> <span class="nn">spoc.fragments</span> <span class="kn">import</span> <span class="n">FragmentAnnotator</span>
+</span></code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="n">annotated_fragments</span> <span class="o">=</span> <span class="n">FragmentAnnotator</span><span class="p">(</span><span class="n">label_library</span><span class="p">)</span><span class="o">.</span><span class="n">annotate_fragments</span><span class="p">(</span><span class="n">fragments</span><span class="p">)</span>
+</span></code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="n">annotated_fragments</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+</span></code></pre></div>
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>chrom</th>
+      <th>start</th>
+      <th>end</th>
+      <th>strand</th>
+      <th>read_name</th>
+      <th>read_start</th>
+      <th>read_end</th>
+      <th>read_length</th>
+      <th>mapping_quality</th>
+      <th>align_score</th>
+      <th>align_base_qscore</th>
+      <th>pass_filter</th>
+      <th>metadata</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>chr1</td>
+      <td>1</td>
+      <td>4</td>
+      <td>True</td>
+      <td>dummy</td>
+      <td>1</td>
+      <td>4</td>
+      <td>1</td>
+      <td>1</td>
+      <td>1</td>
+      <td>1</td>
+      <td>True</td>
+      <td>SisterB</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>chr1</td>
+      <td>2</td>
+      <td>5</td>
+      <td>True</td>
+      <td>dummy</td>
+      <td>2</td>
+      <td>5</td>
+      <td>1</td>
+      <td>2</td>
+      <td>2</td>
+      <td>2</td>
+      <td>True</td>
+      <td>SisterA</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<h1 id="contacts">Contacts</h1>
+<p>While the fragment representation retains flexibility, it is often not practical to have contacts of multiple orders and types in different rows of the same file. To this end, we employ the contact representation, where each row contains one contact of a defined order, e.g. a duplet, or a triplet. The <code>Contact</code> class is a wrapper around the data structure that holds this representation.
+The <code>Contacts</code> class is a generic interface that can represent different orders.
+The class that creates contacts from fragments is called <code>FragmentExpander</code>, which can be used to generate contacts of arbitrary order.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="kn">from</span> <span class="nn">spoc.fragments</span> <span class="kn">import</span> <span class="n">FragmentExpander</span>
+</span></code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="n">fragments</span> <span class="o">=</span> <span class="n">FileManager</span><span class="p">()</span><span class="o">.</span><span class="n">load_fragments</span><span class="p">(</span><span class="s2">&quot;../tests/test_files/fragments_unlabelled.parquet&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="n">fragments</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+</span></code></pre></div>
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>chrom</th>
+      <th>start</th>
+      <th>end</th>
+      <th>strand</th>
+      <th>read_name</th>
+      <th>read_start</th>
+      <th>read_end</th>
+      <th>read_length</th>
+      <th>mapping_quality</th>
+      <th>align_score</th>
+      <th>align_base_qscore</th>
+      <th>pass_filter</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>chr1</td>
+      <td>1</td>
+      <td>4</td>
+      <td>True</td>
+      <td>dummy</td>
+      <td>1</td>
+      <td>4</td>
+      <td>1</td>
+      <td>1</td>
+      <td>1</td>
+      <td>1</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>chr1</td>
+      <td>2</td>
+      <td>5</td>
+      <td>True</td>
+      <td>dummy</td>
+      <td>2</td>
+      <td>5</td>
+      <td>1</td>
+      <td>2</td>
+      <td>2</td>
+      <td>2</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>chr1</td>
+      <td>3</td>
+      <td>6</td>
+      <td>True</td>
+      <td>dummy</td>
+      <td>3</td>
+      <td>6</td>
+      <td>1</td>
+      <td>3</td>
+      <td>3</td>
+      <td>3</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>chr1</td>
+      <td>4</td>
+      <td>7</td>
+      <td>True</td>
+      <td>dummy</td>
+      <td>4</td>
+      <td>7</td>
+      <td>1</td>
+      <td>4</td>
+      <td>4</td>
+      <td>4</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>chr1</td>
+      <td>5</td>
+      <td>8</td>
+      <td>True</td>
+      <td>dummy2</td>
+      <td>5</td>
+      <td>8</td>
+      <td>1</td>
+      <td>5</td>
+      <td>5</td>
+      <td>5</td>
+      <td>True</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<div class="language-python highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="n">contacts</span> <span class="o">=</span> <span class="n">FragmentExpander</span><span class="p">(</span><span class="n">number_fragments</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">fragments</span><span class="p">)</span>
+</span></code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="n">contacts</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+</span></code></pre></div>
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>read_name</th>
+      <th>read_length</th>
+      <th>chrom_1</th>
+      <th>start_1</th>
+      <th>end_1</th>
+      <th>mapping_quality_1</th>
+      <th>align_score_1</th>
+      <th>align_base_qscore_1</th>
+      <th>chrom_2</th>
+      <th>start_2</th>
+      <th>end_2</th>
+      <th>mapping_quality_2</th>
+      <th>align_score_2</th>
+      <th>align_base_qscore_2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>dummy</td>
+      <td>1</td>
+      <td>chr1</td>
+      <td>1</td>
+      <td>4</td>
+      <td>1</td>
+      <td>1</td>
+      <td>1</td>
+      <td>chr1</td>
+      <td>2</td>
+      <td>5</td>
+      <td>2</td>
+      <td>2</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>dummy</td>
+      <td>1</td>
+      <td>chr1</td>
+      <td>1</td>
+      <td>4</td>
+      <td>1</td>
+      <td>1</td>
+      <td>1</td>
+      <td>chr1</td>
+      <td>3</td>
+      <td>6</td>
+      <td>3</td>
+      <td>3</td>
+      <td>3</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>dummy</td>
+      <td>1</td>
+      <td>chr1</td>
+      <td>1</td>
+      <td>4</td>
+      <td>1</td>
+      <td>1</td>
+      <td>1</td>
+      <td>chr1</td>
+      <td>4</td>
+      <td>7</td>
+      <td>4</td>
+      <td>4</td>
+      <td>4</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>dummy</td>
+      <td>1</td>
+      <td>chr1</td>
+      <td>2</td>
+      <td>5</td>
+      <td>2</td>
+      <td>2</td>
+      <td>2</td>
+      <td>chr1</td>
+      <td>3</td>
+      <td>6</td>
+      <td>3</td>
+      <td>3</td>
+      <td>3</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>dummy</td>
+      <td>1</td>
+      <td>chr1</td>
+      <td>2</td>
+      <td>5</td>
+      <td>2</td>
+      <td>2</td>
+      <td>2</td>
+      <td>chr1</td>
+      <td>4</td>
+      <td>7</td>
+      <td>4</td>
+      <td>4</td>
+      <td>4</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<p>Fragment expander also allows us to deal with metadata that is associated with fragments</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="n">fragments_labelled</span> <span class="o">=</span> <span class="n">FileManager</span><span class="p">()</span><span class="o">.</span><span class="n">load_fragments</span><span class="p">(</span><span class="s2">&quot;../tests/test_files/fragments_labelled.parquet&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="n">contacts_labelled</span> <span class="o">=</span> <span class="n">FragmentExpander</span><span class="p">(</span><span class="n">number_fragments</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">fragments_labelled</span><span class="p">)</span>
+</span></code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="n">contacts_labelled</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+</span></code></pre></div>
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>read_name</th>
+      <th>read_length</th>
+      <th>chrom_1</th>
+      <th>start_1</th>
+      <th>end_1</th>
+      <th>mapping_quality_1</th>
+      <th>align_score_1</th>
+      <th>align_base_qscore_1</th>
+      <th>metadata_1</th>
+      <th>chrom_2</th>
+      <th>start_2</th>
+      <th>end_2</th>
+      <th>mapping_quality_2</th>
+      <th>align_score_2</th>
+      <th>align_base_qscore_2</th>
+      <th>metadata_2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>dummy</td>
+      <td>1</td>
+      <td>chr1</td>
+      <td>1</td>
+      <td>4</td>
+      <td>1</td>
+      <td>1</td>
+      <td>1</td>
+      <td>SisterA</td>
+      <td>chr1</td>
+      <td>2</td>
+      <td>5</td>
+      <td>2</td>
+      <td>2</td>
+      <td>2</td>
+      <td>SisterB</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>dummy</td>
+      <td>1</td>
+      <td>chr1</td>
+      <td>1</td>
+      <td>4</td>
+      <td>1</td>
+      <td>1</td>
+      <td>1</td>
+      <td>SisterA</td>
+      <td>chr1</td>
+      <td>3</td>
+      <td>6</td>
+      <td>3</td>
+      <td>3</td>
+      <td>3</td>
+      <td>SisterA</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>dummy</td>
+      <td>1</td>
+      <td>chr1</td>
+      <td>1</td>
+      <td>4</td>
+      <td>1</td>
+      <td>1</td>
+      <td>1</td>
+      <td>SisterA</td>
+      <td>chr1</td>
+      <td>4</td>
+      <td>7</td>
+      <td>4</td>
+      <td>4</td>
+      <td>4</td>
+      <td>SisterB</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>dummy</td>
+      <td>1</td>
+      <td>chr1</td>
+      <td>2</td>
+      <td>5</td>
+      <td>2</td>
+      <td>2</td>
+      <td>2</td>
+      <td>SisterB</td>
+      <td>chr1</td>
+      <td>3</td>
+      <td>6</td>
+      <td>3</td>
+      <td>3</td>
+      <td>3</td>
+      <td>SisterA</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>dummy</td>
+      <td>1</td>
+      <td>chr1</td>
+      <td>2</td>
+      <td>5</td>
+      <td>2</td>
+      <td>2</td>
+      <td>2</td>
+      <td>SisterB</td>
+      <td>chr1</td>
+      <td>4</td>
+      <td>7</td>
+      <td>4</td>
+      <td>4</td>
+      <td>4</td>
+      <td>SisterB</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<p>The contact class retains the information as to whether the expanded contacts contain metadata</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="n">contacts_labelled</span><span class="o">.</span><span class="n">contains_metadata</span>
+</span></code></pre></div>
+<div class="language-text highlight"><pre><span></span><code>True
+</code></pre></div>
+<h2 id="persisting-contacts">Persisting contacts</h2>
+<p>Contacts can be persisted using the file manager, which writes the data as well as the gobal parameters to a parquet file. Loading the file restores the global parameters.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="n">contacts_labelled</span><span class="o">.</span><span class="n">get_global_parameters</span><span class="p">()</span>
+</span></code></pre></div>
+<div class="language-text highlight"><pre><span></span><code>ContactsParameters(number_fragments=2, metadata_combi=None, label_sorted=False, binary_labels_equal=False, symmetry_flipped=False)
+</code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="n">FileManager</span><span class="p">()</span><span class="o">.</span><span class="n">write_contacts</span><span class="p">(</span><span class="s2">&quot;test.parquet&quot;</span><span class="p">,</span> <span class="n">contacts_labelled</span><span class="p">)</span>
+</span></code></pre></div>
+<p>The contacts fileformat is a directory containing different specific contact instances such as contacts with different contact order etc.
+We can specify which of those to load by bassing the contacts parameters</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="n">contacts</span> <span class="o">=</span> <span class="n">FileManager</span><span class="p">()</span><span class="o">.</span><span class="n">load_contacts</span><span class="p">(</span><span class="s2">&quot;test.parquet&quot;</span><span class="p">,</span> <span class="n">contacts_labelled</span><span class="o">.</span><span class="n">get_global_parameters</span><span class="p">())</span>
+</span></code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="n">contacts</span><span class="o">.</span><span class="n">get_global_parameters</span><span class="p">()</span>
+</span></code></pre></div>
+<div class="language-text highlight"><pre><span></span><code>ContactsParameters(number_fragments=2, metadata_combi=None, label_sorted=False, binary_labels_equal=False, symmetry_flipped=False)
+</code></pre></div>
+<p>Additionally, contacts can be loaded using a URI that specifies the parameters seperated by <code>::</code>. This method of loading requires the parameters path and number_fragments but will match the rest to the available pixels.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="kn">from</span> <span class="nn">spoc.contacts</span> <span class="kn">import</span> <span class="n">Contacts</span>
+</span></code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-29-1"><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a><span class="n">loaded_contacts</span> <span class="o">=</span> <span class="n">Contacts</span><span class="o">.</span><span class="n">from_uri</span><span class="p">(</span><span class="s1">&#39;test.parquet::2&#39;</span><span class="p">)</span>
+</span></code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a><span class="n">loaded_contacts</span><span class="o">.</span><span class="n">get_global_parameters</span><span class="p">()</span>
+</span></code></pre></div>
+<div class="language-text highlight"><pre><span></span><code>ContactsParameters(number_fragments=2, metadata_combi=None, label_sorted=False, binary_labels_equal=False, symmetry_flipped=False)
+</code></pre></div>
+<h2 id="symmetry">Symmetry</h2>
+<h3 id="unlabelled-contacts">Unlabelled contacts</h3>
+<p>The quantification of genomic interactions in conventional (2-way) Hi-C assumes that there is no difference in the order of interactions. This means that whether a genomic location is measured in the first read or second read of a paired-end sequencing experiment carries the same information. This means that during preprocessing, conventional Hi-C data is flipped based on some convention (often that the first read has a smaller genomic location based on some sort order) and then only the upper triangular interaction matrix is stored.</p>
+<p>When we talk about higher genomic order, a similar reasoning can apply (except for special use-cases) and we thus can flip genomic contacts such that genomic coordinates are monotonically increasing from lower to higher order (we mean this order if we refer to flipping below). This produces a symmetric, high-dimensional tensor, meaning that every permutation of dimensions does not change the associated value.</p>
+<p>In <code>spoc</code>, this logic is implemented in the <code>ContactManipulator</code> class, in the <code>.flip_symmetric_contacts</code> method.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-31-1"><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a><span class="kn">from</span> <span class="nn">spoc.contacts</span> <span class="kn">import</span> <span class="n">Contacts</span>
+</span></code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-32-1"><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a><span class="n">contacts</span> <span class="o">=</span> <span class="n">Contacts</span><span class="o">.</span><span class="n">from_uri</span><span class="p">(</span><span class="s2">&quot;../tests/test_files/contacts_unlabelled_2d_v2.parquet::2&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-33-1"><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a><span class="n">contacts</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">head</span><span class="p">()</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">regex</span><span class="o">=</span><span class="s2">&quot;(read_name|start|end)&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>read_name</th>
+      <th>start_1</th>
+      <th>end_1</th>
+      <th>start_2</th>
+      <th>end_2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>read1</td>
+      <td>100</td>
+      <td>200</td>
+      <td>1000</td>
+      <td>2000</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>read2</td>
+      <td>2000</td>
+      <td>3000</td>
+      <td>200</td>
+      <td>300</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>read3</td>
+      <td>3000</td>
+      <td>4000</td>
+      <td>300</td>
+      <td>400</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<p>This particular contacts dataframe has one contact that conforms with the convention that the first contact should be smaller than the second (<code>read1</code>), whereas the other two contacts don't conform with that convention. Using the <code>.flip_symmetric_contacts</code> method we can fix this:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-34-1"><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a><span class="kn">from</span> <span class="nn">spoc.contacts</span> <span class="kn">import</span> <span class="n">ContactManipulator</span>
+</span></code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-35-1"><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a><span class="n">flipped_contacts</span> <span class="o">=</span> <span class="n">ContactManipulator</span><span class="p">()</span><span class="o">.</span><span class="n">flip_symmetric_contacts</span><span class="p">(</span><span class="n">contacts</span><span class="p">)</span>
+</span></code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-36-1"><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a><span class="n">flipped_contacts</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">head</span><span class="p">()</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">regex</span><span class="o">=</span><span class="s2">&quot;(read_name|start|end)&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>read_name</th>
+      <th>start_1</th>
+      <th>end_1</th>
+      <th>start_2</th>
+      <th>end_2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>read1</td>
+      <td>100</td>
+      <td>200</td>
+      <td>1000</td>
+      <td>2000</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>read2</td>
+      <td>200</td>
+      <td>300</td>
+      <td>2000</td>
+      <td>3000</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>read3</td>
+      <td>300</td>
+      <td>400</td>
+      <td>3000</td>
+      <td>4000</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<p>Symmetry flipped contacts have the flag <code>symmetry_flipped</code> set to true</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-37-1"><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a><span class="n">flipped_contacts</span><span class="o">.</span><span class="n">symmetry_flipped</span>
+</span></code></pre></div>
+<div class="language-text highlight"><pre><span></span><code>True
+</code></pre></div>
+<p>These operations are available for arbitrary contact cardinalities:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-38-1"><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a><span class="n">contacts</span> <span class="o">=</span> <span class="n">Contacts</span><span class="o">.</span><span class="n">from_uri</span><span class="p">(</span><span class="s2">&quot;../tests/test_files/contacts_unlabelled_3d_v2.parquet::3&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-39-1"><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a><span class="n">contacts</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">head</span><span class="p">()</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">regex</span><span class="o">=</span><span class="s2">&quot;(read_name|start|end)&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>read_name</th>
+      <th>start_1</th>
+      <th>end_1</th>
+      <th>start_2</th>
+      <th>end_2</th>
+      <th>start_3</th>
+      <th>end_3</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>read1</td>
+      <td>100</td>
+      <td>200</td>
+      <td>1000</td>
+      <td>2000</td>
+      <td>250</td>
+      <td>300</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>read2</td>
+      <td>2000</td>
+      <td>3000</td>
+      <td>200</td>
+      <td>300</td>
+      <td>400</td>
+      <td>500</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>read3</td>
+      <td>3000</td>
+      <td>4000</td>
+      <td>300</td>
+      <td>400</td>
+      <td>100</td>
+      <td>200</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<div class="language-python highlight"><pre><span></span><code><span id="__span-40-1"><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a><span class="n">flipped_contacts</span> <span class="o">=</span> <span class="n">ContactManipulator</span><span class="p">()</span><span class="o">.</span><span class="n">flip_symmetric_contacts</span><span class="p">(</span><span class="n">contacts</span><span class="p">)</span>
+</span><span id="__span-40-2"><a id="__codelineno-40-2" name="__codelineno-40-2" href="#__codelineno-40-2"></a><span class="n">flipped_contacts</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">head</span><span class="p">()</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">regex</span><span class="o">=</span><span class="s2">&quot;(read_name|start|end)&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>read_name</th>
+      <th>start_1</th>
+      <th>end_1</th>
+      <th>start_2</th>
+      <th>end_2</th>
+      <th>start_3</th>
+      <th>end_3</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>read1</td>
+      <td>100</td>
+      <td>200</td>
+      <td>250</td>
+      <td>300</td>
+      <td>1000</td>
+      <td>2000</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>read2</td>
+      <td>200</td>
+      <td>300</td>
+      <td>400</td>
+      <td>500</td>
+      <td>2000</td>
+      <td>3000</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>read3</td>
+      <td>100</td>
+      <td>200</td>
+      <td>300</td>
+      <td>400</td>
+      <td>3000</td>
+      <td>4000</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<h3 id="labelled-contacts">Labelled contacts</h3>
+<p>For labelled contacts, the situation is more complex as we have to deal with different flavours of symmetry. If we take the example of triplets, that is genomic contacts of order 3, and binary labels (denoted as A or B), there are 8 possible contact orders:
+<div class="language-text highlight"><pre><span></span><code><span id="__span-41-1"><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a> (AAA, BBB, BAA, ABA, AAB, ABB, BAB, BBA)
+</span></code></pre></div></p>
+<p>If we extend the argument that order of interactions is unimportant, this reduces to 4 possible arrangements of labels:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-42-1"><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a> (AAA, BBB, ABB, BAA)
+</span></code></pre></div>
+<p>It is often the case that for binary contacts, the specific label type is unimportant, the only important information is whether the labels where different (e.g. for sister specific labels or homologous chromosome labels). In such a situation, the possible arrangements reduce further to 2 possible label types:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-43-1"><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a> (AAA, AAB)
+</span></code></pre></div>
+<p>For those contact types, two different “rules” for symmetry apply, for the situation of all similar labels (AAA or BBB), the same rules apply as for unlabelled contacts as there is no difference in order. For the other situation (ABB or BBA, which we denote as ABB from now on), only permutations within one label type produce the same value, meaning that if we have the label state ABB, and denote permutations as tuples of length three with (0,1,2) being the identity permutation then only the permutations (0,1,2) and (0,2,1) are identical. Practically, this means that we can flip contacts that are related by these permutations such that their genomic coordinates are monotonically increasing, but we cannot do this for contacts that are not related through a symmetry relation. </p>
+<p>This reasoning can be generalized to higher dimensions, where contacts can be flipped if they can be related via a symmetry relation. Practically speaking, this means that we have a higher-order contact with two possible label states of order n with k labels of type A and (n-k) labels of type B, we can flip the labels within type A and within type B. For example, if we have a contact of order 4 with the configuration AABB, we can flip within A and within B based on genomic coordinates, but not within them. This reasoning also applies to the situation where we have more than one possible label state. Also here, we can flip within one label state, but not between them.</p>
+<p>This logic is implemented in <code>spoc</code> in the <code>ContactManipulator</code> class, with to methods:</p>
+<ul>
+<li>The <code>.equate_binary_labels</code> method can be used to specify whether in a binary label situation, the labels shold be different or not (e.g. whether AA is equivaltent to BB) or not. This method is optional and can be used prior to the flipping procedure.</li>
+<li>The <code>.flip_symmetric_contacts</code> method flips symmetric contacts base don the rules specified above</li>
+</ul>
+<p>Note that all symmetry operations require the contact metadata to be alphabetically sorted, this can be either done explicitely via the <code>.sort_labels</code> method, or is performed automatically within the other methods. For example, the metadat order of <code>ABA</code> will be converted to <code>AAB</code> by the <code>.sort_labels</code> operation.</p>
+<p>Let's look at an example! Here, we have 3d contacts that have binary labels</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-44-1"><a id="__codelineno-44-1" name="__codelineno-44-1" href="#__codelineno-44-1"></a><span class="n">contacts</span> <span class="o">=</span> <span class="n">Contacts</span><span class="o">.</span><span class="n">from_uri</span><span class="p">(</span><span class="s2">&quot;../tests/test_files/contacts_labelled_3d_v2.parquet::3&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-45-1"><a id="__codelineno-45-1" name="__codelineno-45-1" href="#__codelineno-45-1"></a><span class="n">contacts</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">head</span><span class="p">()</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">regex</span><span class="o">=</span><span class="s2">&quot;(read_name|start|end|metadata)&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>read_name</th>
+      <th>start_1</th>
+      <th>end_1</th>
+      <th>metadata_1</th>
+      <th>start_2</th>
+      <th>end_2</th>
+      <th>metadata_2</th>
+      <th>start_3</th>
+      <th>end_3</th>
+      <th>metadata_3</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>read1</td>
+      <td>100</td>
+      <td>200</td>
+      <td>A</td>
+      <td>200</td>
+      <td>300</td>
+      <td>B</td>
+      <td>1000</td>
+      <td>2000</td>
+      <td>B</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>read2</td>
+      <td>5000</td>
+      <td>5500</td>
+      <td>A</td>
+      <td>2000</td>
+      <td>3000</td>
+      <td>A</td>
+      <td>200</td>
+      <td>300</td>
+      <td>B</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>read3</td>
+      <td>800</td>
+      <td>900</td>
+      <td>B</td>
+      <td>3000</td>
+      <td>3200</td>
+      <td>B</td>
+      <td>3000</td>
+      <td>4000</td>
+      <td>B</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<div class="language-python highlight"><pre><span></span><code><span id="__span-46-1"><a id="__codelineno-46-1" name="__codelineno-46-1" href="#__codelineno-46-1"></a><span class="n">contacts</span><span class="o">.</span><span class="n">number_fragments</span><span class="p">,</span> <span class="n">contacts</span><span class="o">.</span><span class="n">get_label_values</span><span class="p">()</span>
+</span></code></pre></div>
+<div class="language-text highlight"><pre><span></span><code>(3, {&#39;A&#39;, &#39;B&#39;})
+</code></pre></div>
+<p>This dataframe contains three contacts, with the following label state:
+<div class="language-text highlight"><pre><span></span><code><span id="__span-47-1"><a id="__codelineno-47-1" name="__codelineno-47-1" href="#__codelineno-47-1"></a>(ABB)
+</span><span id="__span-47-2"><a id="__codelineno-47-2" name="__codelineno-47-2" href="#__codelineno-47-2"></a>(AAB)
+</span><span id="__span-47-3"><a id="__codelineno-47-3" name="__codelineno-47-3" href="#__codelineno-47-3"></a>(BBB)
+</span></code></pre></div>
+In this analysis use case, we want to equate the binary labels since we don't have a biological reason to belive that there is any difference between the labels. The only information that is important for us is whether the contacts happened between different label states or the same label state. Therefore, we use the <code>.equate_binary_labels</code> method to replace all occurences of the same contact combination with their alphabetically first example. For example, the label state <code>(ABB)</code> is a contact, where two parts come from one label state and one part comes from another. In our logic, this equivalent to <code>(AAB)</code>, which is the alphabetically first label, which we therefore use to replace it. Following the same logic, <code>(BBB)</code> will be replaced by <code>(AAA)</code>.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-48-1"><a id="__codelineno-48-1" name="__codelineno-48-1" href="#__codelineno-48-1"></a><span class="n">equated_contacts</span> <span class="o">=</span> <span class="n">ContactManipulator</span><span class="p">()</span><span class="o">.</span><span class="n">equate_binary_labels</span><span class="p">(</span><span class="n">contacts</span><span class="p">)</span>
+</span></code></pre></div>
+<div class="language-text highlight"><pre><span></span><code>/users/michael.mitter/.conda/envs/spoc-dev/lib/python3.8/site-packages/pandas/core/frame.py:3607: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  self._set_item(key, value)
+</code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-49-1"><a id="__codelineno-49-1" name="__codelineno-49-1" href="#__codelineno-49-1"></a><span class="n">equated_contacts</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">head</span><span class="p">()</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">regex</span><span class="o">=</span><span class="s2">&quot;(read_name|start|end|metadata)&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>read_name</th>
+      <th>start_1</th>
+      <th>end_1</th>
+      <th>metadata_1</th>
+      <th>start_2</th>
+      <th>end_2</th>
+      <th>metadata_2</th>
+      <th>start_3</th>
+      <th>end_3</th>
+      <th>metadata_3</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>read1</td>
+      <td>100</td>
+      <td>200</td>
+      <td>A</td>
+      <td>200</td>
+      <td>300</td>
+      <td>A</td>
+      <td>1000</td>
+      <td>2000</td>
+      <td>B</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>read2</td>
+      <td>5000</td>
+      <td>5500</td>
+      <td>A</td>
+      <td>2000</td>
+      <td>3000</td>
+      <td>A</td>
+      <td>200</td>
+      <td>300</td>
+      <td>B</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>read3</td>
+      <td>800</td>
+      <td>900</td>
+      <td>A</td>
+      <td>3000</td>
+      <td>3200</td>
+      <td>A</td>
+      <td>3000</td>
+      <td>4000</td>
+      <td>A</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<p>As you can see, the occurence of <code>(ABB)</code> has been replaced by <code>(AAB)</code> and the occurence of <code>(BBB)</code> has been replaced by <code>(AAA)</code>. We can now reduce the symmetry of these contacts based on the logic explained above using the <code>.flip_symmetric_contacts</code> method.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-50-1"><a id="__codelineno-50-1" name="__codelineno-50-1" href="#__codelineno-50-1"></a><span class="n">flipped_labelled_contacts</span> <span class="o">=</span> <span class="n">ContactManipulator</span><span class="p">()</span><span class="o">.</span><span class="n">flip_symmetric_contacts</span><span class="p">(</span><span class="n">equated_contacts</span><span class="p">)</span>
+</span></code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-51-1"><a id="__codelineno-51-1" name="__codelineno-51-1" href="#__codelineno-51-1"></a><span class="n">flipped_labelled_contacts</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">head</span><span class="p">()</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">regex</span><span class="o">=</span><span class="s2">&quot;(read_name|start|end|metadata)&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>read_name</th>
+      <th>start_1</th>
+      <th>end_1</th>
+      <th>metadata_1</th>
+      <th>start_2</th>
+      <th>end_2</th>
+      <th>metadata_2</th>
+      <th>start_3</th>
+      <th>end_3</th>
+      <th>metadata_3</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>read1</td>
+      <td>100</td>
+      <td>200</td>
+      <td>A</td>
+      <td>200</td>
+      <td>300</td>
+      <td>A</td>
+      <td>1000</td>
+      <td>2000</td>
+      <td>B</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>read2</td>
+      <td>2000</td>
+      <td>3000</td>
+      <td>A</td>
+      <td>5000</td>
+      <td>5500</td>
+      <td>A</td>
+      <td>200</td>
+      <td>300</td>
+      <td>B</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>read3</td>
+      <td>800</td>
+      <td>900</td>
+      <td>A</td>
+      <td>3000</td>
+      <td>3200</td>
+      <td>A</td>
+      <td>3000</td>
+      <td>4000</td>
+      <td>A</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<h1 id="pixels">Pixels</h1>
+<h2 id="concept">Concept</h2>
+<p>Pixels represent aggregated information that count the number of genomic contacts per genomic bin. In this context, a genomic bin is a genomic interval with a fixed size (for example 10 kb) and a genomic contact is defined as above as an interaction between the corresponding bins. Pixels represent a single contact order, binsize and labelling state (if metadata is provided) and are thought to be the central datastructure that an analyst will use to interact with multiway genomic data to answer questions about genomic structure.</p>
+<h2 id="implementation">Implementation</h2>
+<p>Within <code>spoc</code>, pixel instances can be generated from genomic contacts through the <code>GenomicBinner</code> class.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-52-1"><a id="__codelineno-52-1" name="__codelineno-52-1" href="#__codelineno-52-1"></a><span class="kn">from</span> <span class="nn">spoc.pixels</span> <span class="kn">import</span> <span class="n">GenomicBinner</span>
+</span></code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-53-1"><a id="__codelineno-53-1" name="__codelineno-53-1" href="#__codelineno-53-1"></a><span class="n">contacts</span> <span class="o">=</span> <span class="n">Contacts</span><span class="o">.</span><span class="n">from_uri</span><span class="p">(</span><span class="s2">&quot;../tests/test_files/contacts_for_pixels_3d_v2.parquet::3&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-54-1"><a id="__codelineno-54-1" name="__codelineno-54-1" href="#__codelineno-54-1"></a><span class="n">contacts</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">head</span><span class="p">()</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">regex</span><span class="o">=</span><span class="s2">&quot;(read_name|chrom|start|end|metadata)&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>read_name</th>
+      <th>chrom_1</th>
+      <th>start_1</th>
+      <th>end_1</th>
+      <th>metadata_1</th>
+      <th>chrom_2</th>
+      <th>start_2</th>
+      <th>end_2</th>
+      <th>metadata_2</th>
+      <th>chrom_3</th>
+      <th>start_3</th>
+      <th>end_3</th>
+      <th>metadata_3</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>a</td>
+      <td>chr1</td>
+      <td>100010</td>
+      <td>100015</td>
+      <td>SisterA</td>
+      <td>chr1</td>
+      <td>500010</td>
+      <td>500050</td>
+      <td>SisterB</td>
+      <td>chr1</td>
+      <td>600100</td>
+      <td>600200</td>
+      <td>SisterB</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>b</td>
+      <td>chr1</td>
+      <td>5000010</td>
+      <td>5000050</td>
+      <td>SisterB</td>
+      <td>chr1</td>
+      <td>7000050</td>
+      <td>7000070</td>
+      <td>SisterA</td>
+      <td>chr4</td>
+      <td>2000300</td>
+      <td>2000400</td>
+      <td>SisterA</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>c</td>
+      <td>chr1</td>
+      <td>10000010</td>
+      <td>10000050</td>
+      <td>SisterA</td>
+      <td>chr1</td>
+      <td>25000800</td>
+      <td>25000900</td>
+      <td>SisterB</td>
+      <td>chr1</td>
+      <td>6000050</td>
+      <td>6000600</td>
+      <td>SisterA</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>d</td>
+      <td>chr1</td>
+      <td>10000010</td>
+      <td>10000050</td>
+      <td>SisterA</td>
+      <td>chr1</td>
+      <td>25001000</td>
+      <td>25002000</td>
+      <td>SisterA</td>
+      <td>chr1</td>
+      <td>6000010</td>
+      <td>6000700</td>
+      <td>SisterB</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<p><code>GenomicBinner</code> takes a binsize and aggregates contacts by counting the number of contacts that fall within a genomic bin. As with all the other preprocessing functionalities, <code>GenomicBinner</code> can take arguments as either pandas dataframes or dask dataframes. The output is consistent, meaning that when passing a pandas dataframe, a pandas dataframe is returned and if passing a dask dataframe, a dask dataframe is returned.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-55-1"><a id="__codelineno-55-1" name="__codelineno-55-1" href="#__codelineno-55-1"></a><span class="n">pixels</span> <span class="o">=</span> <span class="n">GenomicBinner</span><span class="p">(</span><span class="n">bin_size</span><span class="o">=</span><span class="mi">100_000</span><span class="p">)</span><span class="o">.</span><span class="n">bin_contacts</span><span class="p">(</span><span class="n">contacts</span><span class="p">)</span>
+</span></code></pre></div>
+<p>The default behavior of genomic binner is to filter for contacts that are on the same chromosome and produce an intrachromosomal pixels instance. This behavior allows us to create a compact representation of pixels, which only store one chromosome field per pixel.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-56-1"><a id="__codelineno-56-1" name="__codelineno-56-1" href="#__codelineno-56-1"></a><span class="n">pixels</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+</span></code></pre></div>
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>chrom</th>
+      <th>start_1</th>
+      <th>start_2</th>
+      <th>start_3</th>
+      <th>count</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>chr1</td>
+      <td>100000</td>
+      <td>500000</td>
+      <td>600000</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>chr1</td>
+      <td>10000000</td>
+      <td>25000000</td>
+      <td>6000000</td>
+      <td>2</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<p>The pixels class additionally contains all information associated with the data stored. This data is taken from the contacts object passed to genomic binner.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-57-1"><a id="__codelineno-57-1" name="__codelineno-57-1" href="#__codelineno-57-1"></a><span class="n">pixels</span><span class="o">.</span><span class="n">number_fragments</span><span class="p">,</span> <span class="n">pixels</span><span class="o">.</span><span class="n">binsize</span><span class="p">,</span> <span class="n">pixels</span><span class="o">.</span><span class="n">binary_labels_equal</span><span class="p">,</span> <span class="n">pixels</span><span class="o">.</span><span class="n">symmetry_flipped</span><span class="p">,</span> <span class="n">pixels</span><span class="o">.</span><span class="n">metadata_combi</span>
+</span></code></pre></div>
+<div class="language-text highlight"><pre><span></span><code>(3, 100000, False, False, None)
+</code></pre></div>
+<p>If interchromosomal contacts are needed, this can be passed to the <code>.bin_contacts</code> method of genomic binner and will cause the pixel schema to incorporate chromosome columns for each of the corresponding pixel dimensions.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-58-1"><a id="__codelineno-58-1" name="__codelineno-58-1" href="#__codelineno-58-1"></a><span class="n">pixels_w_inter</span> <span class="o">=</span> <span class="n">GenomicBinner</span><span class="p">(</span><span class="n">bin_size</span><span class="o">=</span><span class="mi">100_000</span><span class="p">)</span><span class="o">.</span><span class="n">bin_contacts</span><span class="p">(</span><span class="n">contacts</span><span class="p">,</span> <span class="n">same_chromosome</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</span></code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-59-1"><a id="__codelineno-59-1" name="__codelineno-59-1" href="#__codelineno-59-1"></a><span class="n">pixels_w_inter</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+</span></code></pre></div>
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>chrom_1</th>
+      <th>start_1</th>
+      <th>chrom_2</th>
+      <th>start_2</th>
+      <th>chrom_3</th>
+      <th>start_3</th>
+      <th>count</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>chr1</td>
+      <td>100000</td>
+      <td>chr1</td>
+      <td>500000</td>
+      <td>chr1</td>
+      <td>600000</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>chr1</td>
+      <td>10000000</td>
+      <td>chr1</td>
+      <td>25000000</td>
+      <td>chr1</td>
+      <td>6000000</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>chr1</td>
+      <td>5000000</td>
+      <td>chr1</td>
+      <td>7000000</td>
+      <td>chr4</td>
+      <td>2000000</td>
+      <td>1</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<h2 id="lablled-contacts">Lablled contacts</h2>
+<p>The concept of pixels representing a single labeling state allows simplification of the interfaces to downstream processing functionality, but offloads responsibiltiy to the analyst to ensure that the biological question at hand is adequately adressed by the chosen labelling state. The pixels class does not perform any labelling state checks and forwards the combination(s) of labelling states present in the contacts class used for their construction. This allows for greater flexibility with regards to the questions that can be answered. </p>
+<p>The <code>ContactManipulator</code> class contains functionality to filter contacts for a given labelling state to perform downstream aggregation of pixels.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-60-1"><a id="__codelineno-60-1" name="__codelineno-60-1" href="#__codelineno-60-1"></a><span class="n">contacts</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">head</span><span class="p">()</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">regex</span><span class="o">=</span><span class="s2">&quot;(read_name|chrom|start|end|metadata)&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>read_name</th>
+      <th>chrom_1</th>
+      <th>start_1</th>
+      <th>end_1</th>
+      <th>metadata_1</th>
+      <th>chrom_2</th>
+      <th>start_2</th>
+      <th>end_2</th>
+      <th>metadata_2</th>
+      <th>chrom_3</th>
+      <th>start_3</th>
+      <th>end_3</th>
+      <th>metadata_3</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>a</td>
+      <td>chr1</td>
+      <td>100010</td>
+      <td>100015</td>
+      <td>SisterA</td>
+      <td>chr1</td>
+      <td>500010</td>
+      <td>500050</td>
+      <td>SisterB</td>
+      <td>chr1</td>
+      <td>600100</td>
+      <td>600200</td>
+      <td>SisterB</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>b</td>
+      <td>chr1</td>
+      <td>5000010</td>
+      <td>5000050</td>
+      <td>SisterB</td>
+      <td>chr1</td>
+      <td>7000050</td>
+      <td>7000070</td>
+      <td>SisterA</td>
+      <td>chr4</td>
+      <td>2000300</td>
+      <td>2000400</td>
+      <td>SisterA</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>c</td>
+      <td>chr1</td>
+      <td>10000010</td>
+      <td>10000050</td>
+      <td>SisterA</td>
+      <td>chr1</td>
+      <td>25000800</td>
+      <td>25000900</td>
+      <td>SisterB</td>
+      <td>chr1</td>
+      <td>6000050</td>
+      <td>6000600</td>
+      <td>SisterA</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>d</td>
+      <td>chr1</td>
+      <td>10000010</td>
+      <td>10000050</td>
+      <td>SisterA</td>
+      <td>chr1</td>
+      <td>25001000</td>
+      <td>25002000</td>
+      <td>SisterA</td>
+      <td>chr1</td>
+      <td>6000010</td>
+      <td>6000700</td>
+      <td>SisterB</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<div class="language-python highlight"><pre><span></span><code><span id="__span-61-1"><a id="__codelineno-61-1" name="__codelineno-61-1" href="#__codelineno-61-1"></a><span class="n">filtered_contacts</span> <span class="o">=</span> <span class="n">ContactManipulator</span><span class="p">()</span><span class="o">.</span><span class="n">subset_on_metadata</span><span class="p">(</span><span class="n">contacts</span><span class="p">,</span> <span class="n">metadata_combi</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;SisterA&#39;</span><span class="p">,</span> <span class="s1">&#39;SisterB&#39;</span><span class="p">,</span> <span class="s1">&#39;SisterB&#39;</span><span class="p">])</span>
+</span></code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-62-1"><a id="__codelineno-62-1" name="__codelineno-62-1" href="#__codelineno-62-1"></a><span class="n">filtered_contacts</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">head</span><span class="p">()</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">regex</span><span class="o">=</span><span class="s2">&quot;(read_name|chrom|start|end|metadata)&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>read_name</th>
+      <th>chrom_1</th>
+      <th>start_1</th>
+      <th>end_1</th>
+      <th>metadata_1</th>
+      <th>chrom_2</th>
+      <th>start_2</th>
+      <th>end_2</th>
+      <th>metadata_2</th>
+      <th>chrom_3</th>
+      <th>start_3</th>
+      <th>end_3</th>
+      <th>metadata_3</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>a</td>
+      <td>chr1</td>
+      <td>100010</td>
+      <td>100015</td>
+      <td>SisterA</td>
+      <td>chr1</td>
+      <td>500010</td>
+      <td>500050</td>
+      <td>SisterB</td>
+      <td>chr1</td>
+      <td>600100</td>
+      <td>600200</td>
+      <td>SisterB</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<p>The resulting contacts carry the filtered metadata combination as an attribute:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-63-1"><a id="__codelineno-63-1" name="__codelineno-63-1" href="#__codelineno-63-1"></a><span class="n">filtered_contacts</span><span class="o">.</span><span class="n">metadata_combi</span>
+</span></code></pre></div>
+<div class="language-text highlight"><pre><span></span><code>[&#39;SisterA&#39;, &#39;SisterB&#39;, &#39;SisterB&#39;]
+</code></pre></div>
+<p><code>GenomicBinner</code> carries this information forward and adds it to the pixels object</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-64-1"><a id="__codelineno-64-1" name="__codelineno-64-1" href="#__codelineno-64-1"></a><span class="n">pixels_filtered</span> <span class="o">=</span> <span class="n">GenomicBinner</span><span class="p">(</span><span class="n">bin_size</span><span class="o">=</span><span class="mi">100_000</span><span class="p">)</span><span class="o">.</span><span class="n">bin_contacts</span><span class="p">(</span><span class="n">filtered_contacts</span><span class="p">)</span>
+</span></code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-65-1"><a id="__codelineno-65-1" name="__codelineno-65-1" href="#__codelineno-65-1"></a><span class="n">pixels_filtered</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+</span></code></pre></div>
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>chrom</th>
+      <th>start_1</th>
+      <th>start_2</th>
+      <th>start_3</th>
+      <th>count</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>chr1</td>
+      <td>100000</td>
+      <td>500000</td>
+      <td>600000</td>
+      <td>1</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<div class="language-python highlight"><pre><span></span><code><span id="__span-66-1"><a id="__codelineno-66-1" name="__codelineno-66-1" href="#__codelineno-66-1"></a><span class="n">pixels_filtered</span><span class="o">.</span><span class="n">metadata_combi</span>
+</span></code></pre></div>
+<div class="language-text highlight"><pre><span></span><code>[&#39;SisterA&#39;, &#39;SisterB&#39;, &#39;SisterB&#39;]
+</code></pre></div>
+<h2 id="persisting-pixels">Persisting pixels</h2>
+<p>Pixels come in a multitude of different flavors and it would thus be cumbsersome to have to keep track of pixels of different binsize, labelling state or contact order that belong to the same source fragments. We thus developed a pixel file format that exposes a unified name to pixels that belong together as well as functoinality to load the exact pixels that we want.</p>
+<h3 id="the-pixel-file-format">The pixel file format</h3>
+<p>The pixel file format is a directory that contains a number of parquet files as well as a config file that holds information about what specific pixels are available. As with the other io-operations, the <code>FileManager</code> object is responsible for saving pixels.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-67-1"><a id="__codelineno-67-1" name="__codelineno-67-1" href="#__codelineno-67-1"></a><span class="kn">import</span> <span class="nn">os</span>
+</span></code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-68-1"><a id="__codelineno-68-1" name="__codelineno-68-1" href="#__codelineno-68-1"></a><span class="n">FileManager</span><span class="p">()</span><span class="o">.</span><span class="n">write_pixels</span><span class="p">(</span><span class="s2">&quot;test_pixels.parquet&quot;</span><span class="p">,</span> <span class="n">pixels</span><span class="p">)</span>
+</span></code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-69-1"><a id="__codelineno-69-1" name="__codelineno-69-1" href="#__codelineno-69-1"></a><span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="s1">&#39;test_pixels.parquet&#39;</span><span class="p">)</span>
+</span></code></pre></div>
+<div class="language-text highlight"><pre><span></span><code>[&#39;5f0e4d6a6c0e5afb82c3a6ec4bce1635.parquet&#39;, &#39;metadata.json&#39;]
+</code></pre></div>
+<ul>
+<li>The pixel foler at <code>test.parquet</code> contains a single specific pixel file as well as a metadata file</li>
+</ul>
+<p>The <code>FileManager</code> class contains functionality to read the metadata file and list available pixels</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-70-1"><a id="__codelineno-70-1" name="__codelineno-70-1" href="#__codelineno-70-1"></a><span class="n">FileManager</span><span class="p">()</span><span class="o">.</span><span class="n">list_pixels</span><span class="p">(</span><span class="s2">&quot;test_pixels.parquet&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+<div class="language-text highlight"><pre><span></span><code>[PixelParameters(number_fragments=3, binsize=100000, metadata_combi=None, label_sorted=False, binary_labels_equal=False, symmetry_flipped=False, same_chromosome=True)]
+</code></pre></div>
+<ul>
+<li>The <code>list_pixels</code> method lists all available pixels in the form of <code>PixelParameters</code>, a pydantic dataclass that holds the parameters that describe a specific pixel file</li>
+</ul>
+<p>Writing additional pixels updates the metadata file</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-71-1"><a id="__codelineno-71-1" name="__codelineno-71-1" href="#__codelineno-71-1"></a><span class="n">pixels_filtered</span><span class="o">.</span><span class="n">_metadata_combi</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">]</span> <span class="c1"># make metadata shorter</span>
+</span></code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-72-1"><a id="__codelineno-72-1" name="__codelineno-72-1" href="#__codelineno-72-1"></a><span class="n">FileManager</span><span class="p">()</span><span class="o">.</span><span class="n">write_pixels</span><span class="p">(</span><span class="s2">&quot;test_pixels.parquet&quot;</span><span class="p">,</span> <span class="n">pixels_filtered</span><span class="p">)</span>
+</span></code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-73-1"><a id="__codelineno-73-1" name="__codelineno-73-1" href="#__codelineno-73-1"></a><span class="n">FileManager</span><span class="p">()</span><span class="o">.</span><span class="n">list_pixels</span><span class="p">(</span><span class="s2">&quot;test_pixels.parquet&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+<div class="language-text highlight"><pre><span></span><code>[PixelParameters(number_fragments=3, binsize=100000, metadata_combi=None, label_sorted=False, binary_labels_equal=False, symmetry_flipped=False, same_chromosome=True),
+ PixelParameters(number_fragments=3, binsize=100000, metadata_combi=[&#39;A&#39;, &#39;B&#39;, &#39;B&#39;], label_sorted=False, binary_labels_equal=False, symmetry_flipped=False, same_chromosome=True)]
+</code></pre></div>
+<h3 id="loading-pixels">Loading pixels</h3>
+<p>Pixel files can be loaded using the parameter pydantic class</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-74-1"><a id="__codelineno-74-1" name="__codelineno-74-1" href="#__codelineno-74-1"></a><span class="kn">from</span> <span class="nn">spoc.file_parameter_models</span> <span class="kn">import</span> <span class="n">PixelParameters</span>
+</span></code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-75-1"><a id="__codelineno-75-1" name="__codelineno-75-1" href="#__codelineno-75-1"></a><span class="n">loaded_pixels</span> <span class="o">=</span> <span class="n">FileManager</span><span class="p">()</span><span class="o">.</span><span class="n">load_pixels</span><span class="p">(</span><span class="s2">&quot;test_pixels.parquet&quot;</span><span class="p">,</span> <span class="n">PixelParameters</span><span class="p">(</span><span class="n">number_fragments</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">binsize</span><span class="o">=</span><span class="mi">100_000</span><span class="p">,</span> <span class="n">same_chromosome</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+</span></code></pre></div>
+<p>Additionally, pixels can be loaded using a URI that specifies the parameters seperated by <code>::</code>. This method of loading requires the parameters path, number_fragments and binsize, but will match the rest to the available pixels.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-76-1"><a id="__codelineno-76-1" name="__codelineno-76-1" href="#__codelineno-76-1"></a><span class="kn">from</span> <span class="nn">spoc.pixels</span> <span class="kn">import</span> <span class="n">Pixels</span>
+</span></code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-77-1"><a id="__codelineno-77-1" name="__codelineno-77-1" href="#__codelineno-77-1"></a><span class="n">loaded_pixels</span> <span class="o">=</span> <span class="n">Pixels</span><span class="o">.</span><span class="n">from_uri</span><span class="p">(</span><span class="s1">&#39;test_pixels.parquet::3::100000::ABB&#39;</span><span class="p">)</span>
+</span></code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-78-1"><a id="__codelineno-78-1" name="__codelineno-78-1" href="#__codelineno-78-1"></a><span class="n">loaded_pixels</span><span class="o">.</span><span class="n">get_global_parameters</span><span class="p">()</span>
+</span></code></pre></div>
+<div class="language-text highlight"><pre><span></span><code>PixelParameters(number_fragments=3, binsize=100000, metadata_combi=[&#39;A&#39;, &#39;B&#39;, &#39;B&#39;], label_sorted=False, binary_labels_equal=False, symmetry_flipped=False, same_chromosome=True)
+</code></pre></div>
+<p>If the specified uri is not specific enough and multiple pixels match, an error is raised</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.instant", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top"], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.8fd75fb4.min.js"></script>
+      
+    
+  </body>
+</html>
