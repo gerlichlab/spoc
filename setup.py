@@ -1,8 +1,7 @@
 #!/usr/bin/env python
-
 """The setup script."""
-
-from setuptools import setup, find_packages
+from setuptools import find_packages
+from setuptools import setup
 
 
 requirements = [
@@ -17,7 +16,7 @@ requirements = [
     "ipykernel",
     "matplotlib>=3.5.3",
     "seaborn>=0.11.2",
-    "duckdb==0.3.4",
+    "duckdb==0.9.1",
     "sparse==0.13.0",
     "numba>=0.57.0",
 ]

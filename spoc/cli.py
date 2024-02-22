@@ -1,11 +1,15 @@
 """Console script for spoc."""
 import sys
+
 import click
+
 from spoc.contacts import ContactManipulator
-from spoc.fragments import FragmentAnnotator, FragmentExpander
-from spoc.io import FileManager
-from spoc.pixels import GenomicBinner
 from spoc.contacts import Contacts
+from spoc.fragments import FragmentAnnotator
+from spoc.fragments import FragmentExpander
+from spoc.io import FileManager
+from spoc.models.dataframe_models import DataMode
+from spoc.pixels import GenomicBinner
 
 
 @click.group()
@@ -85,7 +89,7 @@ def bin_contacts(
 
     """
     # load data from disk
-    file_manager = FileManager(use_dask=True)
+    file_manager = FileManager(DataMode.DASK)
     contacts = Contacts.from_uri(contact_path)
     # binning
     binner = GenomicBinner(bin_size=bin_size)
@@ -110,7 +114,7 @@ def merge_contacts(contact_paths, output):
         contact_paths (tuple): Paths to the input contact files.
         output (str, optional): Path to the output merged contact file.
     """
-    file_manager = FileManager(use_dask=True)
+    file_manager = FileManager(DataMode.DASK)
     # get list of parameters
     parameters = [file_manager.list_contacts(p) for p in contact_paths]
     # get parameter counts -> if count > 1 then we need to concatenate

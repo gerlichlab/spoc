@@ -1,14 +1,17 @@
 """This file tests the io module for pixels"""
 # pylint: disable=redefined-outer-name
-import tempfile
-import os
 import json
+import os
 import shutil
+import tempfile
 from pathlib import Path
-import pytest
-import pandas as pd
+
 import dask.dataframe as dd
+import pandas as pd
+import pytest
+
 from spoc.io import FileManager
+from spoc.models.dataframe_models import DataMode
 from spoc.models.file_parameter_models import PixelParameters
 from spoc.pixels import Pixels
 
@@ -119,24 +122,12 @@ def test_read_pixels_metadata_json_fails_gracefully():
         assert e.value == "Metadata file not found at bad_path/metadata.json"
 
 
-def test_read_pixels_as_path(example_pixels_w_metadata):
-    """Test reading pixels metadata json file"""
-    pixels_dir, expected_parameters, paths, _ = example_pixels_w_metadata
-    # read metadata
-    for path, expected in zip(paths, expected_parameters):
-        pixels = FileManager().load_pixels(pixels_dir, expected, load_dataframe=False)
-        assert pixels.path == path
-        assert pixels.get_global_parameters() == expected
-
-
 def test_read_pixels_as_pandas_df(example_pixels_w_metadata):
     """Test reading pixels metadata json file"""
     pixels_dir, expected_parameters, paths, dataframes = example_pixels_w_metadata
     # read metadata
     for path, expected, df in zip(paths, expected_parameters, dataframes):
-        pixels = FileManager(use_dask=False).load_pixels(
-            pixels_dir, expected, load_dataframe=True
-        )
+        pixels = FileManager(DataMode.PANDAS).load_pixels(pixels_dir, expected)
         assert pixels.get_global_parameters() == expected
         assert pixels.data.equals(df)
 
@@ -146,9 +137,7 @@ def test_read_pixels_as_dask_df(example_pixels_w_metadata):
     pixels_dir, expected_parameters, paths, dataframes = example_pixels_w_metadata
     # read metadata
     for path, expected, df in zip(paths, expected_parameters, dataframes):
-        pixels = FileManager(use_dask=True).load_pixels(
-            pixels_dir, expected, load_dataframe=True
-        )
+        pixels = FileManager(DataMode.DASK).load_pixels(pixels_dir, expected)
         assert pixels.get_global_parameters() == expected
         assert pixels.data.compute().equals(df)
 
@@ -282,7 +271,7 @@ def test_load_pixels_from_uri_fails_without_required_parameters(df, params, requ
         file_name = tmpdirname + "/" + "test.parquet"
         FileManager().write_pixels(file_name, pixels)
         # try loading without required parameters
-        with pytest.raises(ValueError) as e:
+        with pytest.raises(ValueError):
             Pixels.from_uri(file_name)
 
 
@@ -418,5 +407,5 @@ def test_load_pixels_from_uri_fails_with_ambiguous_specification(df, params, req
         FileManager().write_pixels(file_name, pixels)
         FileManager().write_pixels(file_name, pixels2)
         # load pixels
-        with pytest.raises(ValueError) as e:
+        with pytest.raises(ValueError):
             Pixels.from_uri(file_name + "::" + uri)

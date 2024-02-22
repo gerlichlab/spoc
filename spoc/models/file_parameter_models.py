@@ -1,7 +1,10 @@
 """This file contains data classes for parameters
 of spoc data structures"""
-from typing import Optional, Tuple, List
-from pydantic import BaseModel, Field
+from typing import List
+from typing import Optional
+from typing import Tuple
+
+from pydantic import BaseModel
 
 
 class GlobalParameters(BaseModel):
@@ -15,6 +18,7 @@ class GlobalParameters(BaseModel):
 
     @classmethod
     def get_uri_fields(cls) -> List[str]:
+        """Returns the fields that should be included in the URI"""
         raise NotImplementedError
 
     def __hash__(self) -> int:
@@ -35,6 +39,7 @@ class ContactsParameters(GlobalParameters):
 
     @classmethod
     def get_uri_fields(cls) -> List[str]:
+        """Returns the fields that should be included in the URI"""
         # Specific parameters needed to enforce order
         return [
             "number_fragments",
@@ -53,6 +58,7 @@ class PixelParameters(GlobalParameters):
 
     @classmethod
     def get_uri_fields(cls) -> List[str]:
+        """Returns the fields that should be included in the URI"""
         # Specific parameters needed to enforce order
         return [
             "number_fragments",

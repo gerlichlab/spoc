@@ -1,12 +1,19 @@
 """This part of spoc is responsible for binned,
 higher order contacts in the form of 'genomic pixels'"""
-from pathlib import Path
-from typing import Union, Optional, List
-import pandas as pd
+from functools import partial
+from typing import List
+from typing import Optional
+
 import dask.dataframe as dd
-from spoc.models.dataframe_models import PixelSchema, DataFrame
-from spoc.models.file_parameter_models import PixelParameters
+import duckdb
+import pandas as pd
+
 from spoc.contacts import Contacts
+from spoc.models.dataframe_models import DataFrame
+from spoc.models.dataframe_models import DataMode
+from spoc.models.dataframe_models import GenomicDataSchema
+from spoc.models.dataframe_models import PixelSchema
+from spoc.models.file_parameter_models import PixelParameters
 
 
 class Pixels:
@@ -38,9 +45,9 @@ class Pixels:
 
     def __init__(
         self,
-        pixel_source: Union[pd.DataFrame, dd.DataFrame, str],
-        number_fragments: Optional[int] = None,
-        binsize: Optional[int] = None,
+        pixel_source: DataFrame,
+        number_fragments: int,
+        binsize: int,
         metadata_combi: Optional[List[str]] = None,
         label_sorted: bool = False,
         binary_labels_equal: bool = False,
@@ -51,7 +58,9 @@ class Pixels:
         can be a pandas or dask dataframe or a path. Caveat is that
         if pixels are a path, source data is not validated."""
         self._schema = PixelSchema(
-            number_fragments=number_fragments, same_chromosome=same_chromosome
+            number_fragments=number_fragments,
+            same_chromosome=same_chromosome,
+            binsize=binsize,
         )
         self._same_chromosome = same_chromosome
         self._number_fragments = number_fragments
@@ -60,18 +69,19 @@ class Pixels:
         self._symmetry_flipped = symmetry_flipped
         self._metadata_combi = metadata_combi
         self._label_sorted = label_sorted
-        if isinstance(pixel_source, (pd.DataFrame, dd.DataFrame)):
-            self._data = self._schema.validate(pixel_source)
-            self._path = None
+        # get data mode
+        if isinstance(pixel_source, pd.DataFrame):
+            self.data_mode = DataMode.PANDAS
+        elif isinstance(pixel_source, dd.DataFrame):
+            self.data_mode = DataMode.DASK
+        elif isinstance(pixel_source, duckdb.DuckDBPyRelation):
+            self.data_mode = DataMode.DUCKDB
         else:
-            # check whether path exists
-            if not Path(pixel_source).exists():
-                raise ValueError(f"Path: {pixel_source} does not exist!")
-            self._path = Path(pixel_source)
-            self._data = None
+            raise ValueError("Unknown data mode!")
+        self._data = self._schema.validate(pixel_source)
 
     @staticmethod
-    def from_uri(uri, mode="path") -> "Pixels":
+    def from_uri(uri, mode=DataMode.PANDAS) -> "Pixels":
         """Construct pixels from uri.
         Will match parameters based on the following order:
 
@@ -95,19 +105,7 @@ class Pixels:
         # pylint: disable=import-outside-toplevel
         from spoc.io import FileManager
 
-        # get read mode
-        if mode == "path":
-            load_dataframe = False
-            use_dask = False
-        elif mode == "pandas":
-            load_dataframe = True
-            use_dask = False
-        else:
-            load_dataframe = True
-            use_dask = True
-        return FileManager(use_dask=use_dask).load_pixels(
-            uri, load_dataframe=load_dataframe
-        )
+        return FileManager(mode).load_pixels(uri)
 
     def get_global_parameters(self) -> PixelParameters:
         """Returns global parameters of pixels
@@ -124,15 +122,6 @@ class Pixels:
             symmetry_flipped=self._symmetry_flipped,
             same_chromosome=self._same_chromosome,
         )
-
-    @property
-    def path(self) -> str:
-        """Returns path of pixels
-
-        Returns:
-            str: The path of the pixels.
-        """
-        return self._path
 
     @property
     def data(self) -> DataFrame:
@@ -200,6 +189,10 @@ class Pixels:
         """
         return self._same_chromosome
 
+    def get_schema(self) -> GenomicDataSchema:
+        """Returns the schema of the underlying data"""
+        return self._schema
+
 
 class GenomicBinner:
     """Bins higher order contacts into genomic bins of fixed size.
@@ -208,43 +201,45 @@ class GenomicBinner:
 
     Args:
         bin_size (int): The size of the genomic bins.
-
     """
 
     def __init__(self, bin_size: int) -> None:
         self._bin_size = bin_size
-        self._contact_order = None
 
-    def _get_assigned_bin_output_structure(self):
-        columns = [f"chrom_{index}" for index in range(1, self._contact_order + 1)] + [
-            f"start_{index}" for index in range(1, self._contact_order + 1)
+    def _get_assigned_bin_output_structure(self, contact_order: int):
+        columns = [f"chrom_{index}" for index in range(1, contact_order + 1)] + [
+            f"start_{index}" for index in range(1, contact_order + 1)
         ]
         return pd.DataFrame(columns=columns).astype(int)
 
-    def _assign_bins(self, data_frame: pd.DataFrame) -> pd.DataFrame:
+    def _assign_bins(
+        self, data_frame: pd.DataFrame, contact_order: int
+    ) -> pd.DataFrame:
         # capture empty dataframe
         if data_frame.empty:
-            return self._get_assigned_bin_output_structure()
+            return self._get_assigned_bin_output_structure(contact_order)
         return data_frame.assign(
             **{
                 f"start_{index}": (data_frame[f"pos_{index}"] // self._bin_size)
                 * self._bin_size
-                for index in range(1, self._contact_order + 1)
+                for index in range(1, contact_order + 1)
             }
         ).filter(regex="(chrom|start)")
 
-    def _assign_midpoints(self, contacts: dd.DataFrame) -> dd.DataFrame:
+    def _assign_midpoints(
+        self, contacts: dd.DataFrame, contact_order: int
+    ) -> dd.DataFrame:
         """Collapses start-end to a middle position"""
         return contacts.assign(
             **{
                 f"pos_{index}": (contacts[f"start_{index}"] + contacts[f"end_{index}"])
                 // 2
-                for index in range(1, self._contact_order + 1)
+                for index in range(1, contact_order + 1)
             }
         ).drop(
             [
                 c
-                for index in range(1, self._contact_order + 1)
+                for index in range(1, contact_order + 1)
                 for c in [f"start_{index}", f"end_{index}"]
             ],
             axis=1,
@@ -261,19 +256,22 @@ class GenomicBinner:
             Pixels: The binned genomic pixels.
 
         """
-        self._contact_order = contacts.number_fragments
-        contacts_w_midpoints = self._assign_midpoints(contacts.data)
-        if contacts.is_dask:
+        contact_order = contacts.number_fragments
+        contacts_w_midpoints = self._assign_midpoints(contacts.data, contact_order)
+        if contacts.data_mode == DataMode.DASK:
             contact_bins = contacts_w_midpoints.map_partitions(
-                self._assign_bins, meta=self._get_assigned_bin_output_structure()
+                partial(self._assign_bins, contact_order=contact_order),
+                meta=self._get_assigned_bin_output_structure(contact_order),
             )
+        elif contacts.data_mode == DataMode.PANDAS:
+            contact_bins = self._assign_bins(contacts_w_midpoints, contact_order)
         else:
-            contact_bins = self._assign_bins(contacts_w_midpoints)
+            raise ValueError(f"Data mode: {contacts.data_mode} not supported!")
         pixels = (
             contact_bins.groupby(
                 [
                     c
-                    for index in range(1, self._contact_order + 1)
+                    for index in range(1, contact_order + 1)
                     for c in [f"chrom_{index}", f"start_{index}"]
                 ],
                 observed=True,
@@ -290,26 +288,25 @@ class GenomicBinner:
                     & (pixels.chrom_2.astype(str) == pixels.chrom_3.astype(str))
                 ]
                 .drop(
-                    [f"chrom_{index}" for index in range(2, self._contact_order + 1)],
+                    [f"chrom_{index}" for index in range(2, contact_order + 1)],
                     axis=1,
                 )
                 .rename(columns={"chrom_1": "chrom"})
             )
             # sort pixels
             pixels_sorted = pixels.sort_values(
-                ["chrom"]
-                + [f"start_{index}" for index in range(1, self._contact_order + 1)]
+                ["chrom"] + [f"start_{index}" for index in range(1, contact_order + 1)]
             ).reset_index(drop=True)
         else:
             pixels_sorted = pixels.sort_values(
-                [f"chrom_{index}" for index in range(1, self._contact_order + 1)]
-                + [f"start_{index}" for index in range(1, self._contact_order + 1)]
+                [f"chrom_{index}" for index in range(1, contact_order + 1)]
+                + [f"start_{index}" for index in range(1, contact_order + 1)]
             ).reset_index(drop=True)
         # construct pixels and return
         return Pixels(
             pixels_sorted,
             same_chromosome=same_chromosome,
-            number_fragments=self._contact_order,
+            number_fragments=contact_order,
             binsize=self._bin_size,
             binary_labels_equal=contacts.binary_labels_equal,
             symmetry_flipped=contacts.symmetry_flipped,

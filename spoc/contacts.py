@@ -1,12 +1,22 @@
 """Managing multi-way contacts."""
-
 from __future__ import annotations  # needed for self reference in type hints
-from itertools import permutations, product
-from typing import List, Optional, Dict
-import pandas as pd
+
+from itertools import permutations
+from itertools import product
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Tuple
+
 import dask.dataframe as dd
+import duckdb
 import numpy as np
-from spoc.models.dataframe_models import ContactSchema, DataFrame
+import pandas as pd
+
+from spoc.models.dataframe_models import ContactSchema
+from spoc.models.dataframe_models import DataFrame
+from spoc.models.dataframe_models import DataMode
+from spoc.models.dataframe_models import GenomicDataSchema
 from spoc.models.file_parameter_models import ContactsParameters
 
 
@@ -51,10 +61,15 @@ class Contacts:
             number_fragments=self.number_fragments,
             contains_metadata=self.contains_metadata,
         )
+        # TODO: make this work for duckdb pyrelation -> switch to mode
         if isinstance(contact_frame, pd.DataFrame):
-            self.is_dask = False
+            self.data_mode = DataMode.PANDAS
+        elif isinstance(contact_frame, dd.DataFrame):
+            self.data_mode = DataMode.DASK
+        elif isinstance(contact_frame, duckdb.DuckDBPyRelation):
+            self.data_mode = DataMode.DUCKDB
         else:
-            self.is_dask = True
+            raise ValueError("Unknown data mode!")
         self._data = self._schema.validate(contact_frame)
         self.metadata_combi = metadata_combi
         self.label_sorted = label_sorted
@@ -62,7 +77,7 @@ class Contacts:
         self.symmetry_flipped = symmetry_flipped
 
     @staticmethod
-    def from_uri(uri, mode="pandas"):
+    def from_uri(uri, mode=DataMode.PANDAS):
         """Construct contacts from uri.
         Will match parameters based on the following order:
 
@@ -76,7 +91,7 @@ class Contacts:
         # import here to avoid circular imports
         from spoc.io import FileManager
 
-        return FileManager(use_dask=mode == "dask").load_contacts(uri)
+        return FileManager(mode).load_contacts(uri)
 
     def get_global_parameters(self) -> ContactsParameters:
         """Returns global parameters"""
@@ -87,6 +102,10 @@ class Contacts:
             binary_labels_equal=self.binary_labels_equal,
             symmetry_flipped=self.symmetry_flipped,
         )
+
+    def get_schema(self) -> GenomicDataSchema:
+        """Returns the schema of the underlying data"""
+        return self._schema
 
     def _guess_number_fragments(self, contact_frame: DataFrame) -> int:
         """Guesses the number of fragments from the contact frame"""
@@ -99,22 +118,26 @@ class Contacts:
             raise ValueError("Contacts do not contain metadata!")
         output = set()
         for i in range(self.number_fragments):
-            if self.is_dask:
+            if self.data_mode == DataMode.DASK:
                 output.update(self.data[f"metadata_{i+1}"].unique().compute())
-            else:
+            elif self.data_mode == DataMode.PANDAS:
                 output.update(self.data[f"metadata_{i+1}"].unique())
-        return output
+            else:
+                raise ValueError("Label values not supported for duckdb!")
+        return list(output)
 
     def get_chromosome_values(self) -> List[str]:
         """Returns all chromosome values"""
         # TODO: This could be put in global metadata of parquet file
         output = set()
         for i in range(self.number_fragments):
-            if self.is_dask:
+            if self.data_mode == DataMode.DASK:
                 output.update(self.data[f"chrom_{i+1}"].unique().compute())
-            else:
+            elif self.data_mode == DataMode.PANDAS:
                 output.update(self.data[f"chrom_{i+1}"].unique())
-        return output
+            else:
+                raise ValueError("Chromosome values not supported for duckdb!")
+        return list(output)
 
     @property
     def data(self):
@@ -150,18 +173,22 @@ class ContactManipulator:
         # validate that merge is possible
         if len({i.number_fragments for i in merge_list}) != 1:
             raise ValueError("All contacts need to have the same order!")
-        if len({i.is_dask for i in merge_list}) != 1:
-            raise ValueError("Mixture of dask and pandas dataframes is not supported!")
+        if len({i.data_mode for i in merge_list}) != 1:
+            raise ValueError("Mixture of dataframes is not supported!")
         # TODO: assert all have same labelling state
         number_fragments = merge_list[0].number_fragments
-        if merge_list[0].is_dask:
+        if merge_list[0].data_mode == DataMode.DASK:
             return Contacts(
                 dd.concat([i.data for i in merge_list]),
                 number_fragments=number_fragments,
             )
-        return Contacts(
-            pd.concat([i.data for i in merge_list]), number_fragments=number_fragments
-        )
+        elif merge_list[0].data_mode == DataMode.PANDAS:
+            return Contacts(
+                pd.concat([i.data for i in merge_list]),
+                number_fragments=number_fragments,
+            )
+        else:
+            raise ValueError("Merging duckdb relations is not supported!")
 
     @staticmethod
     def _generate_rename_columns(order, start_index=1):
@@ -317,13 +344,15 @@ class ContactManipulator:
                 )
             )
         # determine which method to use for concatenation
-        if contacts.is_dask:
+        if contacts.data_mode == DataMode.DASK:
             # this is a bit of a hack to get the index sorted. Dask does not support index sorting
             result = (
                 dd.concat(subsets).reset_index().sort_values("index").set_index("index")
             )
-        else:
+        elif contacts.data_mode == DataMode.PANDAS:
             result = pd.concat(subsets).sort_index()
+        else:
+            raise ValueError("Sorting labels for duckdb relations is not implemented.")
         return Contacts(
             result, number_fragments=contacts.number_fragments, label_sorted=True
         )
@@ -365,7 +394,7 @@ class ContactManipulator:
 
     def _generate_binary_label_mapping(
         self, label_values: List[str], number_fragments: int
-    ) -> Dict[str, str]:
+    ) -> Dict[Tuple[str, ...], Tuple[str, ...]]:
         sorted_labels = sorted(label_values)
         mapping = {}
         for i in range(number_fragments + 1):
@@ -422,13 +451,17 @@ class ContactManipulator:
                 subset[f"metadata_{i+1}"] = j
             subsets.append(subset)
         # determine which method to use for concatenation
-        if contacts.is_dask:
+        if contacts.data_mode == DataMode.DASK:
             # this is a bit of a hack to get the index sorted. Dask does not support index sorting
             result = (
                 dd.concat(subsets).reset_index().sort_values("index").set_index("index")
             )
-        else:
+        elif contacts.data_mode == DataMode.PANDAS:
             result = pd.concat(subsets).sort_index()
+        else:
+            raise ValueError(
+                "Equate binary labels for duckdb relations is not implemented."
+            )
         return Contacts(
             result,
             number_fragments=contacts.number_fragments,
