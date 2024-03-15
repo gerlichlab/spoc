@@ -70,20 +70,10 @@ class Anchor(BaseModel):
     positions: Optional[List[int]] = None
 
     def __repr__(self) -> str:
-        return f"Anchor(fragment_mode={self.fragment_mode}, positions={self.positions})"
+        return f"Anchor(fragment_mode={self.fragment_mode}, positions={self.positions}, region_mode={self.region_mode})"
 
     def __str__(self) -> str:
         return self.__repr__()
-
-
-class MultiOverlap:
-    """
-    This class represents an overlap calculation with multiple
-    genomic regions used for contact and pixel selection.
-    It provides methods to validate the filter against a data schema,
-    convert data to a duckdb relation, construct a filter string,
-    and apply the filter to the data.
-    """
 
 
 class Overlap:
@@ -96,7 +86,7 @@ class Overlap:
 
     def __init__(
         self,
-        regions: pd.DataFrame,
+        regions: Union[pd.DataFrame, List[pd.DataFrame]],
         anchor_mode: Union[Anchor, Tuple[str, List[int]]],
         half_window_size: Optional[int] = None,
     ) -> None:
@@ -104,14 +94,39 @@ class Overlap:
         Initialize the Overlap object.
 
         Args:
-            regions (pd.DataFrame): A DataFrame containing the regions data.
+            regions (Union[pd.DataFrame, List[pd.DataFrame]]): A DataFrame containing the regions data,
+                                                               or a list of DataFrames containing the regions data.
             anchor_mode (Union[Anchor,Tuple[str,List[int]]]): The anchor mode to be used.
             half_window_size (Optional[int]): The window size the regions should be expanded to. Defaults to None and is inferred from the data.
 
         Returns:
             None
         """
-        # add ids to regions if they don't exist
+        # preprocess regions
+        if isinstance(regions, list):
+            regions, half_window_sizes = zip(
+                *[self._prepare_regions(region, half_window_size) for region in regions]
+            )
+            if not all(
+                half_window_size == half_window_sizes[0]
+                for half_window_size in half_window_sizes
+            ):
+                raise ValueError("All regions need to have the same window size.")
+        else:
+            self._regions, self._half_window_size = self._prepare_regions(
+                regions, half_window_size
+            )
+        if isinstance(anchor_mode, tuple):
+            self._anchor_mode = Anchor(
+                fragment_mode=anchor_mode[0], positions=anchor_mode[1]
+            )
+        else:
+            self._anchor_mode = anchor_mode
+
+    def _prepare_regions(
+        self, regions: pd.DataFrame, half_window_size: Optional[int]
+    ) -> Tuple[pd.DataFrame, int]:
+        """Preprocessing of regions including adding an id column."""
         if "id" not in regions.columns:
             regions["id"] = range(len(regions))
         if half_window_size is not None:
@@ -124,23 +139,19 @@ class Overlap:
             expanded_regions["start"] = expanded_regions["midpoint"] - half_window_size
             expanded_regions["end"] = expanded_regions["midpoint"] + half_window_size
             # drop midpoint
-            expanded_regions = expanded_regions.drop(columns=["midpoint"])
-            self._regions = RegionSchema.validate(
-                expanded_regions.add_prefix("region_")
-            )
-            self._half_window_size = half_window_size
-        else:
-            self._regions = RegionSchema.validate(regions.add_prefix("region_"))
-            # infer window size -> variable regions will have largest possible window size
-            self._half_window_size = int(
-                (self._regions["region_end"] - self._regions["region_start"]).max() // 2
-            )
-        if isinstance(anchor_mode, tuple):
-            self._anchor_mode = Anchor(
-                fragment_mode=anchor_mode[0], positions=anchor_mode[1]
-            )
-        else:
-            self._anchor_mode = anchor_mode
+            preprocssed_regions = expanded_regions.drop(
+                columns=["midpoint"]
+            ).add_prefix("region_")
+            return preprocssed_regions, half_window_size
+        preprocssed_regions = RegionSchema.validate(regions.add_prefix("region_"))
+        # infer window size -> variable regions will have largest possible window size
+        calculated_half_window_size = int(
+            (
+                preprocssed_regions["region_end"] - preprocssed_regions["region_start"]
+            ).max()
+            // 2
+        )
+        return preprocssed_regions, calculated_half_window_size
 
     def validate(self, data_schema: GenomicDataSchema) -> None:
         """Validate the filter against the data schema"""
