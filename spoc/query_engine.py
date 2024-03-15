@@ -56,23 +56,34 @@ class QueryStep(Protocol):
         """Apply the query step to the data"""
 
 
-# TODO: think about allowing anchor composition
 class Anchor(BaseModel):
     """Represents an anchor.
 
     Attributes:
-        mode (str): The mode of the anchor. (Can be "ANY" or "ALL")
-        anchors (Optional[List[int]]): The list of anchor values (optional).
+        fragment_mode (str): The mode for fragment overlap. (Can be "ANY" or "ALL")
+        region_mode (str): The mode for region overlap. (Can be "ANY" or "ALL"). Defaults to "ALL".
+        positions (Optional[List[int]]): The list of anchor values (optional).
     """
 
-    mode: str
-    anchors: Optional[List[int]] = None
+    fragment_mode: str
+    region_mode: str = "ALL"
+    positions: Optional[List[int]] = None
 
     def __repr__(self) -> str:
-        return f"Anchor(mode={self.mode}, anchors={self.anchors})"
+        return f"Anchor(fragment_mode={self.fragment_mode}, positions={self.positions})"
 
     def __str__(self) -> str:
         return self.__repr__()
+
+
+class MultiOverlap:
+    """
+    This class represents an overlap calculation with multiple
+    genomic regions used for contact and pixel selection.
+    It provides methods to validate the filter against a data schema,
+    convert data to a duckdb relation, construct a filter string,
+    and apply the filter to the data.
+    """
 
 
 class Overlap:
@@ -125,17 +136,19 @@ class Overlap:
                 (self._regions["region_end"] - self._regions["region_start"]).max() // 2
             )
         if isinstance(anchor_mode, tuple):
-            self._anchor_mode = Anchor(mode=anchor_mode[0], anchors=anchor_mode[1])
+            self._anchor_mode = Anchor(
+                fragment_mode=anchor_mode[0], positions=anchor_mode[1]
+            )
         else:
             self._anchor_mode = anchor_mode
 
     def validate(self, data_schema: GenomicDataSchema) -> None:
         """Validate the filter against the data schema"""
         # check whether an anchor is specified that is not in the data
-        if self._anchor_mode.anchors is not None:
+        if self._anchor_mode.positions is not None:
             if not all(
                 anchor in data_schema.get_position_fields().keys()
-                for anchor in self._anchor_mode.anchors
+                for anchor in self._anchor_mode.positions
             ):
                 raise ValueError(
                     "An anchor is specified that is not in the data schema."
@@ -171,11 +184,11 @@ class Overlap:
             NotImplementedError: If the length of fields is not equal to 3.
         """
         query_strings = []
-        join_string = " or " if self._anchor_mode.mode == "ANY" else " and "
+        join_string = " or " if self._anchor_mode.fragment_mode == "ANY" else " and "
         # subset on anchor regions
-        if self._anchor_mode.anchors is not None:
+        if self._anchor_mode.positions is not None:
             subset_positions = [
-                position_fields[anchor] for anchor in self._anchor_mode.anchors
+                position_fields[anchor] for anchor in self._anchor_mode.positions
             ]
         else:
             subset_positions = list(position_fields.values())

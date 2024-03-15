@@ -60,7 +60,9 @@ def test_any_anchor_region_returns_correct_contacts(
     """Test that any anchor region returns correct contacts"""
     # setup
     contacts = request.getfixturevalue(contact_fixture)
-    query_plan = [Overlap(regions=single_region, anchor_mode=Anchor(mode="ANY"))]
+    query_plan = [
+        Overlap(regions=single_region, anchor_mode=Anchor(fragment_mode="ANY"))
+    ]
     # execution
     query = Query(query_steps=query_plan)
     result = query.build(contacts)
@@ -83,7 +85,9 @@ def test_all_anchor_regions_returns_correct_contacts(
     """Test that all anchor regions returns correct contacts"""
     # setup
     contacts = request.getfixturevalue(contact_fixture)
-    query_plan = [Overlap(regions=single_region, anchor_mode=Anchor(mode="ALL"))]
+    query_plan = [
+        Overlap(regions=single_region, anchor_mode=Anchor(fragment_mode="ALL"))
+    ]
     # execution
     query = Query(query_steps=query_plan)
     result = query.build(contacts)
@@ -116,7 +120,8 @@ def test_specific_anchor_regions_returns_correct_contacts(
     contacts = request.getfixturevalue(contact_fixture)
     query_plan = [
         Overlap(
-            regions=single_region_2, anchor_mode=Anchor(mode="ALL", anchors=anchors)
+            regions=single_region_2,
+            anchor_mode=Anchor(fragment_mode="ALL", positions=anchors),
         )
     ]
     # execution
@@ -153,7 +158,7 @@ def test_specific_anchor_regions_returns_correct_contacts_point_region(
     query_plan = [
         Overlap(
             regions=single_region_3,
-            anchor_mode=Anchor(mode="ALL", anchors=anchors),
+            anchor_mode=Anchor(fragment_mode="ALL", positions=anchors),
             half_window_size=50,
         )
     ]
@@ -180,7 +185,9 @@ def test_any_anchor_region_returns_correct_contacts_multi_region(
     """Test that any anchor region returns correct contacts"""
     # setup
     contacts = request.getfixturevalue(contact_fixture)
-    query_plan = [Overlap(regions=multi_region, anchor_mode=Anchor(mode="ANY"))]
+    query_plan = [
+        Overlap(regions=multi_region, anchor_mode=Anchor(fragment_mode="ANY"))
+    ]
     # execution
     query = Query(query_steps=query_plan)
     result = query.build(contacts)
@@ -205,7 +212,9 @@ def test_all_anchor_regions_returns_correct_contacts_multi_region(
     """Test that all anchor regions returns correct contacts"""
     # setup
     contacts = request.getfixturevalue(contact_fixture)
-    query_plan = [Overlap(regions=multi_region, anchor_mode=Anchor(mode="ALL"))]
+    query_plan = [
+        Overlap(regions=multi_region, anchor_mode=Anchor(fragment_mode="ALL"))
+    ]
     # execution
     query = Query(query_steps=query_plan)
     result = query.build(contacts)
@@ -231,7 +240,9 @@ def test_contacts_duplicated_for_multiple_overlapping_regions(
     """
     # setup
     contacts = request.getfixturevalue(contact_fixture)
-    query_plan = [Overlap(regions=multi_region_2, anchor_mode=Anchor(mode="ALL"))]
+    query_plan = [
+        Overlap(regions=multi_region_2, anchor_mode=Anchor(fragment_mode="ALL"))
+    ]
     # execution
     query = Query(query_steps=query_plan)
     result = query.build(contacts)
@@ -265,7 +276,10 @@ def test_specific_anchor_regions_returns_correct_contacts_multi_region(
     # setup
     contacts = request.getfixturevalue(contact_fixture)
     query_plan = [
-        Overlap(regions=multi_region, anchor_mode=Anchor(mode="ALL", anchors=anchors))
+        Overlap(
+            regions=multi_region,
+            anchor_mode=Anchor(fragment_mode="ALL", positions=anchors),
+        )
     ]
     # execution
     query = Query(query_steps=query_plan)
@@ -293,7 +307,10 @@ def test_specific_anchor_region_not_in_contacts_raises_error(
     # setup
     contacts = request.getfixturevalue(contact_fixture)
     query_plan = [
-        Overlap(regions=single_region, anchor_mode=Anchor(mode="ALL", anchors=[3]))
+        Overlap(
+            regions=single_region,
+            anchor_mode=Anchor(fragment_mode="ALL", positions=[3]),
+        )
     ]
     with pytest.raises(ValueError):
         query = Query(query_steps=query_plan)
