@@ -68,7 +68,7 @@ class GenomicDataSchema(Protocol):
     def get_binsize(self) -> Optional[int]:
         """Returns the binsize of the genomic data"""
 
-    def get_region_number(self) -> Optional[int]:
+    def get_region_number(self) -> Optional[Union[int, List[int]]]:
         """Returns the number of regions in the genomic data
         if present."""
 
@@ -89,7 +89,7 @@ class QueryStepDataSchema:
         position_fields: Dict[int, List[str]],
         contact_order: int,
         binsize: Optional[int] = None,
-        region_number: Optional[int] = None,
+        region_number: Optional[Union[int, List[int]]] = None,
         half_window_size: Optional[int] = None,
     ) -> None:
         self._columns = columns
@@ -127,7 +127,7 @@ class QueryStepDataSchema:
         """Returns the binsize of the genomic data"""
         return self._binsize
 
-    def get_region_number(self) -> Optional[int]:
+    def get_region_number(self) -> Optional[Union[int, List[int]]]:
         """Returns the number of regions in the genomic data
         if present."""
         return self._region_number
@@ -258,7 +258,7 @@ class ContactSchema:
         """Returns the binsize of the genomic data"""
         return None
 
-    def get_region_number(self) -> Optional[int]:
+    def get_region_number(self) -> Optional[Union[int, List[int]]]:
         """Returns the number of regions in the genomic data
         if present."""
         return None
@@ -360,7 +360,7 @@ class PixelSchema:
         """Returns the binsize of the genomic data"""
         return self._binsize
 
-    def get_region_number(self) -> Optional[int]:
+    def get_region_number(self) -> Optional[Union[int, List[int]]]:
         """Returns the number of regions in the genomic data
         if present."""
         return None

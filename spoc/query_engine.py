@@ -97,14 +97,15 @@ class Overlap:
             regions (Union[pd.DataFrame, List[pd.DataFrame]]): A DataFrame containing the regions data,
                                                                or a list of DataFrames containing the regions data.
             anchor_mode (Union[Anchor,Tuple[str,List[int]]]): The anchor mode to be used.
-            half_window_size (Optional[int]): The window size the regions should be expanded to. Defaults to None and is inferred from the data.
+            half_window_size (Optional[int]): The window size the regions should be expanded to.
+                                                Defaults to None and is inferred from the data.
 
         Returns:
             None
         """
         # preprocess regions
         if isinstance(regions, list):
-            regions, half_window_sizes = zip(
+            self._regions, half_window_sizes = zip(
                 *[self._prepare_regions(region, half_window_size) for region in regions]
             )
             if not all(
@@ -112,16 +113,17 @@ class Overlap:
                 for half_window_size in half_window_sizes
             ):
                 raise ValueError("All regions need to have the same window size.")
+            self._half_window_size = half_window_sizes[0]
         else:
             self._regions, self._half_window_size = self._prepare_regions(
                 regions, half_window_size
             )
         if isinstance(anchor_mode, tuple):
-            self._anchor_mode = Anchor(
+            self._anchor = Anchor(
                 fragment_mode=anchor_mode[0], positions=anchor_mode[1]
             )
         else:
-            self._anchor_mode = anchor_mode
+            self._anchor = anchor_mode
 
     def _prepare_regions(
         self, regions: pd.DataFrame, half_window_size: Optional[int]
@@ -130,6 +132,9 @@ class Overlap:
         if "id" not in regions.columns:
             regions["id"] = range(len(regions))
         if half_window_size is not None:
+            # check halfwindowsize is positive
+            if half_window_size < 0:
+                raise ValueError("Half window size must be positive.")
             expanded_regions = regions.copy()
             # create midpoint
             expanded_regions["midpoint"] = (
@@ -156,10 +161,10 @@ class Overlap:
     def validate(self, data_schema: GenomicDataSchema) -> None:
         """Validate the filter against the data schema"""
         # check whether an anchor is specified that is not in the data
-        if self._anchor_mode.positions is not None:
+        if self._anchor.positions is not None:
             if not all(
                 anchor in data_schema.get_position_fields().keys()
-                for anchor in self._anchor_mode.positions
+                for anchor in self._anchor.positions
             ):
                 raise ValueError(
                     "An anchor is specified that is not in the data schema."
@@ -182,7 +187,55 @@ class Overlap:
             data = data.compute()
         return duckdb.from_df(data, connection=DUCKDB_CONNECTION)
 
-    def _contstruct_filter(self, position_fields: Dict[int, List[str]]) -> str:
+    def _construct_query_multi_region(
+        self,
+        regions: List[duckdb.DuckDBPyRelation],
+        genomic_df: duckdb.DuckDBPyRelation,
+        position_fields: Dict[int, List[str]],
+    ) -> duckdb.DuckDBPyRelation:
+        """Constructs the query for multiple regions."""
+        snipped_df = genomic_df.set_alias("data")
+        for index, region in enumerate(regions):
+            snipped_df = snipped_df.join(
+                region.set_alias(f"regions_{index}"),
+                self._contstruct_filter(position_fields, f"regions_{index}"),
+                how="left",
+            )
+        # filter regions based on region mode
+        if self._anchor.region_mode == "ALL":
+            return snipped_df.filter(
+                " and ".join(
+                    [
+                        f"regions_{index}.region_chrom is not null"
+                        for index in range(0, len(regions))
+                    ]
+                )
+            )
+
+        return snipped_df.filter(
+            " or ".join(
+                [
+                    f"regions_{index}.region_chrom is not null"
+                    for index in range(0, len(regions))
+                ]
+            )
+        )
+
+    def _constrcut_query_single_region(
+        self,
+        regions: duckdb.DuckDBPyRelation,
+        genomic_df: duckdb.DuckDBPyRelation,
+        position_fields: Dict[int, List[str]],
+    ) -> duckdb.DuckDBPyRelation:
+        """Constructs the query for a single region."""
+        return genomic_df.set_alias("data").join(
+            regions.set_alias("regions"),
+            self._contstruct_filter(position_fields, "regions"),
+        )
+
+    def _contstruct_filter(
+        self, position_fields: Dict[int, List[str]], region_name: str
+    ) -> str:
         """Constructs the filter string.
 
         Args:
@@ -195,21 +248,21 @@ class Overlap:
             NotImplementedError: If the length of fields is not equal to 3.
         """
         query_strings = []
-        join_string = " or " if self._anchor_mode.fragment_mode == "ANY" else " and "
+        join_string = " or " if self._anchor.fragment_mode == "ANY" else " and "
         # subset on anchor regions
-        if self._anchor_mode.positions is not None:
+        if self._anchor.positions is not None:
             subset_positions = [
-                position_fields[anchor] for anchor in self._anchor_mode.positions
+                position_fields[anchor] for anchor in self._anchor.positions
             ]
         else:
             subset_positions = list(position_fields.values())
         for fields in subset_positions:
             chrom, start, end = fields
-            output_string = f"""(data.{chrom} = regions.region_chrom and
+            output_string = f"""(data.{chrom} = {region_name}.region_chrom and
                                     (
-                                        data.{start} between regions.region_start and regions.region_end or 
-                                        data.{end} between regions.region_start and regions.region_end or
-                                        regions.region_start between data.{start} and data.{end}
+                                        data.{start} between {region_name}.region_start and {region_name}.region_end or 
+                                        data.{end} between {region_name}.region_start and {region_name}.region_end or
+                                        {region_name}.region_start between data.{start} and data.{end}
                                     )
                                 )"""
             query_strings.append(output_string)
@@ -223,12 +276,17 @@ class Overlap:
     ) -> GenomicDataSchema:
         """Returns the schema of the transformed data."""
         # construct schema
+        # get region number
+        if isinstance(self._regions, (list, tuple)):
+            region_number = [region.shape[0] for region in self._regions]
+        else:
+            region_number = self._regions.shape[0]
         return QueryStepDataSchema(
             columns=data_frame.columns,
             position_fields=position_fields,
             contact_order=input_schema.get_contact_order(),
             binsize=input_schema.get_binsize(),
-            region_number=len(self._regions),
+            region_number=region_number,
             half_window_size=self._half_window_size,
         )
 
@@ -253,7 +311,7 @@ class Overlap:
         )
 
     def __repr__(self) -> str:
-        return f"Overlap(anchor_mode={self._anchor_mode})"
+        return f"Overlap(anchor_mode={self._anchor})"
 
     def __call__(self, genomic_data: GenomicData) -> GenomicData:
         """Apply the filter to the data"""
@@ -264,7 +322,11 @@ class Overlap:
             genomic_df = genomic_data.data
         else:
             genomic_df = self._convert_to_duckdb(genomic_data.data)
-        regions = self._convert_to_duckdb(self._regions)
+        # bring regions to duckdb dataframe
+        if isinstance(self._regions, (list, tuple)):
+            regions = [self._convert_to_duckdb(region) for region in self._regions]
+        else:
+            regions = self._convert_to_duckdb(self._regions)
         # get position columns and construct filter
         position_fields = input_schema.get_position_fields()
         # add end position if not present
@@ -277,9 +339,14 @@ class Overlap:
                 for position in position_fields.keys()
             }
         # construct query
-        snipped_df = genomic_df.set_alias("data").join(
-            regions.set_alias("regions"), self._contstruct_filter(position_fields)
-        )
+        if isinstance(regions, (list, tuple)):
+            snipped_df = self._construct_query_multi_region(
+                regions, genomic_df, position_fields
+            )
+        else:
+            snipped_df = self._constrcut_query_single_region(
+                regions, genomic_df, position_fields
+            )
         return QueryPlan(
             snipped_df,
             self._get_transformed_schema(snipped_df, input_schema, position_fields),
