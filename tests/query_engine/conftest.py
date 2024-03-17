@@ -135,6 +135,18 @@ def contacts_with_multiple_regions_fixture(contacts_without_regions, multi_regio
     )
 
 
+@pytest.fixture(name="contacts_with_multiple_regions_overlapped")
+def contacts_with_multiple_regions_overlapped_fixture(
+    contacts_without_regions, single_region, single_region_2
+):
+    """Pixels with multiple regions overlapped"""
+    return Overlap(
+        [single_region, single_region_2],
+        anchor_mode=Anchor(fragment_mode="ANY"),
+        half_window_size=100,
+    )(contacts_without_regions)
+
+
 @pytest.fixture(name="pixels_with_single_region")
 def pixels_with_single_region_fixture(pixels_without_regions, single_region):
     """Pixels with single region"""

@@ -108,7 +108,10 @@ class Overlap:
         # preprocess regions
         if isinstance(regions, list):
             self._regions, half_window_sizes = zip(
-                *[self._prepare_regions(region, half_window_size) for region in regions]
+                *[
+                    self._prepare_regions(region, half_window_size, index=index)
+                    for index, region in enumerate(regions)
+                ]
             )
             if not all(
                 half_window_size == half_window_sizes[0]
@@ -128,7 +131,7 @@ class Overlap:
             self._anchor = anchor_mode
 
     def _prepare_regions(
-        self, regions: pd.DataFrame, half_window_size: Optional[int]
+        self, regions: pd.DataFrame, half_window_size: Optional[int], index: int = 0
     ) -> Tuple[pd.DataFrame, int]:
         """Preprocessing of regions including adding an id column."""
         if "id" not in regions.columns:
@@ -149,6 +152,9 @@ class Overlap:
             preprocssed_regions = expanded_regions.drop(
                 columns=["midpoint"]
             ).add_prefix("region_")
+            preprocssed_regions = RegionSchema.validate(preprocssed_regions)
+            if index > 0:
+                preprocssed_regions = preprocssed_regions.add_suffix(f"_{index}")
             return preprocssed_regions, half_window_size
         preprocssed_regions = RegionSchema.validate(regions.add_prefix("region_"))
         # infer window size -> variable regions will have largest possible window size
@@ -158,6 +164,9 @@ class Overlap:
             ).max()
             // 2
         )
+        # add index
+        if index > 0:
+            preprocssed_regions = preprocssed_regions.add_suffix(f"_{index}")
         return preprocssed_regions, calculated_half_window_size
 
     def validate(self, data_schema: GenomicDataSchema) -> None:
@@ -200,7 +209,9 @@ class Overlap:
         for index, region in enumerate(regions):
             snipped_df = snipped_df.join(
                 region.set_alias(f"regions_{index}"),
-                self._contstruct_filter(position_fields, f"regions_{index}"),
+                self._contstruct_filter(
+                    position_fields, f"regions_{index}", index=index
+                ),
                 how="left",
             )
         # filter regions based on region mode
@@ -208,7 +219,7 @@ class Overlap:
             return snipped_df.filter(
                 " and ".join(
                     [
-                        f"regions_{index}.region_chrom is not null"
+                        f"regions_{index}.region_chrom{'_' + str(index) if index > 0 else ''} is not null"
                         for index in range(0, len(regions))
                     ]
                 )
@@ -217,7 +228,7 @@ class Overlap:
         return snipped_df.filter(
             " or ".join(
                 [
-                    f"regions_{index}.region_chrom is not null"
+                    f"regions_{index}.region_chrom{'_' + str(index) if index > 0 else ''} is not null"
                     for index in range(0, len(regions))
                 ]
             )
@@ -236,7 +247,7 @@ class Overlap:
         )
 
     def _contstruct_filter(
-        self, position_fields: Dict[int, List[str]], region_name: str
+        self, position_fields: Dict[int, List[str]], region_name: str, index: int = 0
     ) -> str:
         """Constructs the filter string.
 
@@ -251,6 +262,10 @@ class Overlap:
         """
         query_strings = []
         join_string = " or " if self._anchor.fragment_mode == "ANY" else " and "
+        if index > 0:
+            column_index = f"_{index}"
+        else:
+            column_index = ""
         # subset on anchor regions
         if self._anchor.positions is not None:
             subset_positions = [
@@ -260,11 +275,11 @@ class Overlap:
             subset_positions = list(position_fields.values())
         for fields in subset_positions:
             chrom, start, end = fields
-            output_string = f"""(data.{chrom} = {region_name}.region_chrom and
+            output_string = f"""(data.{chrom} = {region_name}.region_chrom{column_index} and
                                     (
-                                        data.{start} between {region_name}.region_start and {region_name}.region_end or 
-                                        data.{end} between {region_name}.region_start and {region_name}.region_end or
-                                        {region_name}.region_start between data.{start} and data.{end}
+                                        data.{start} between {region_name}.region_start{column_index} and {region_name}.region_end{column_index} or 
+                                        data.{end} between {region_name}.region_start{column_index} and {region_name}.region_end{column_index} or
+                                        {region_name}.region_start{column_index} between data.{start} and data.{end}
                                     )
                                 )"""
             query_strings.append(output_string)
@@ -606,6 +621,12 @@ class DistanceTransformation:
         ):
             raise ValueError(
                 "Binsize specified in data schema, but distance mode is not set to LEFT."
+            )
+        # check wheter there has only been a single region overlapped
+        region_number = data_schema.get_region_number()
+        if isinstance(region_number, list):
+            raise ValueError(
+                "Distance transformation requires only a single set of regions overlapped."
             )
 
     def _create_transform_columns(

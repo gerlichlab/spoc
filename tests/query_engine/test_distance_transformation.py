@@ -14,6 +14,7 @@ from spoc.query_engine import Query
     [
         "contacts_without_regions",
         "pixels_without_regions",
+        "contacts_with_multiple_regions_overlapped",
     ],
 )
 def test_incompatible_input_rejected(genomic_data_fixture, request):
