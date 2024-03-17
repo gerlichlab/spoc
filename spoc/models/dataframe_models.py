@@ -350,11 +350,10 @@ class PixelSchema:
             return {
                 i: ["chrom", f"start_{i}"] for i in range(1, self._number_fragments + 1)
             }
-        else:
-            return {
-                i: [f"chrom_{i}", f"start_{i}"]
-                for i in range(1, self._number_fragments + 1)
-            }
+        return {
+            i: [f"chrom_{i}", f"start_{i}"]
+            for i in range(1, self._number_fragments + 1)
+        }
 
     def get_binsize(self) -> Optional[int]:
         """Returns the binsize of the genomic data"""

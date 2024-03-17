@@ -89,6 +89,7 @@ class Overlap:
         regions: Union[pd.DataFrame, List[pd.DataFrame]],
         anchor_mode: Union[Anchor, Tuple[str, List[int]]],
         half_window_size: Optional[int] = None,
+        add_overlap_columns: bool = True,
     ) -> None:
         """
         Initialize the Overlap object.
@@ -103,6 +104,7 @@ class Overlap:
         Returns:
             None
         """
+        self._add_overlap_columns = add_overlap_columns
         # preprocess regions
         if isinstance(regions, list):
             self._regions, half_window_sizes = zip(
@@ -347,6 +349,9 @@ class Overlap:
             snipped_df = self._constrcut_query_single_region(
                 regions, genomic_df, position_fields
             )
+        # remove overlap columns and drop ducpliates if requested
+        if not self._add_overlap_columns:
+            snipped_df = snipped_df.project("data.*").distinct()
         return QueryPlan(
             snipped_df,
             self._get_transformed_schema(snipped_df, input_schema, position_fields),

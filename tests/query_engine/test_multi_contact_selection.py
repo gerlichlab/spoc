@@ -83,16 +83,73 @@ def test_overlap_without_position_subset(
     assert result.compute().shape[0] == number_contacts
 
 
-def test_overlap_with_position_subset():
+@pytest.mark.parametrize(
+    "fragment_mode,region_mode,number_contacts",
+    [
+        ("ALL", "ALL", 0),
+        ("ANY", "ALL", 0),
+        ("ANY", "ANY", 3),
+        ("ALL", "ANY", 3),
+    ],
+)
+def test_overlap_with_position_subset(
+    fragment_mode,
+    region_mode,
+    number_contacts,
+    single_region,
+    single_region_2,
+    example_2d_contacts_pandas,
+):
     """Test that overlap with position subset"""
+    # setup
+    query_plan = [
+        Overlap(
+            regions=[single_region, single_region_2],
+            anchor_mode=Anchor(
+                fragment_mode=fragment_mode, region_mode=region_mode, positions=[1]
+            ),
+            half_window_size=100,
+        )
+    ]
+    query = Query(query_steps=query_plan)
+
+    # run
+    result = query.build(example_2d_contacts_pandas)
+
+    # assert
+    assert result.compute().shape[0] == number_contacts
 
 
-def test_overlap_without_adding_columns_does_not_duplicate_contacts():
-    """Test that overlap without adding columns"""
+@pytest.mark.parametrize(
+    "add_overlap_columns,number_contacts",
+    [
+        (True, 5),
+        (False, 3),
+    ],
+)
+def test_duplicates_after_overlap_handled_correctly(
+    add_overlap_columns,
+    number_contacts,
+    multi_region_2,
+    single_region,
+    example_2d_contacts_pandas,
+):
+    """Test that duplicates after overlap are handled correctly"""
+    # setup
+    query_plan = [
+        Overlap(
+            regions=[multi_region_2, single_region],
+            anchor_mode=Anchor(fragment_mode="ANY", region_mode="ANY"),
+            half_window_size=100,
+            add_overlap_columns=add_overlap_columns,
+        )
+    ]
+    query = Query(query_steps=query_plan)
 
+    # run
+    result = query.build(example_2d_contacts_pandas)
 
-# validation tests
-
-
-def test_specific_fragment_not_in_contacts():
-    """Test that specific fragment not in contacts throws errors"""
+    # assert
+    assert result.compute().shape[0] == number_contacts
+    if not add_overlap_columns:
+        assert len(result.compute().filter(regex="region").columns) == 0
