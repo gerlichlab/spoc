@@ -69,7 +69,9 @@ def test_any_anchor_region_returns_correct_pixels(
     """Test that any anchor region returns correct pixels"""
     # setup
     pixels = request.getfixturevalue(pixels_fixture)
-    query_plan = [Overlap(regions=single_region, anchor_mode=Anchor(mode="ANY"))]
+    query_plan = [
+        Overlap(regions=single_region, anchor_mode=Anchor(fragment_mode="ANY"))
+    ]
     # execution
     query = Query(query_steps=query_plan)
     result = query.build(pixels)
@@ -95,7 +97,9 @@ def test_all_anchor_regions_returns_correct_pixels(
     """Test that all anchor regions returns correct pixels"""
     # setup
     pixels = request.getfixturevalue(pixels_fixture)
-    query_plan = [Overlap(regions=single_region, anchor_mode=Anchor(mode="ALL"))]
+    query_plan = [
+        Overlap(regions=single_region, anchor_mode=Anchor(fragment_mode="ALL"))
+    ]
     # execution
     query = Query(query_steps=query_plan)
     result = query.build(pixels)
@@ -128,7 +132,8 @@ def test_specific_anchor_regions_returns_correct_pixels(
     pixels = request.getfixturevalue(pixel_fixture)
     query_plan = [
         Overlap(
-            regions=single_region_2, anchor_mode=Anchor(mode="ALL", anchors=anchors)
+            regions=single_region_2,
+            anchor_mode=Anchor(fragment_mode="ALL", positions=anchors),
         )
     ]
     # execution
@@ -153,7 +158,9 @@ def test_any_anchor_region_returns_correct_pixels_multi_region(
     """Test that any anchor region returns correct pixels"""
     # setup
     pixels = request.getfixturevalue(pixels_fixture)
-    query_plan = [Overlap(regions=multi_region, anchor_mode=Anchor(mode="ANY"))]
+    query_plan = [
+        Overlap(regions=multi_region, anchor_mode=Anchor(fragment_mode="ANY"))
+    ]
     # execution
     query = Query(query_steps=query_plan)
     result = query.build(pixels)
@@ -176,7 +183,9 @@ def test_all_anchor_regions_returns_correct_pixels_multi_region(
     """Test that all anchor regions returns correct pixels"""
     # setup
     pixels = request.getfixturevalue(pixels_fixture)
-    query_plan = [Overlap(regions=multi_region, anchor_mode=Anchor(mode="ALL"))]
+    query_plan = [
+        Overlap(regions=multi_region, anchor_mode=Anchor(fragment_mode="ALL"))
+    ]
     # execution
     query = Query(query_steps=query_plan)
     result = query.build(pixels)
@@ -202,7 +211,9 @@ def test_pixels_duplicated_for_multiple_overlapping_regions(
     """
     # setup
     pixels = request.getfixturevalue(pixels_fixture)
-    query_plan = [Overlap(regions=multi_region_2, anchor_mode=Anchor(mode="ALL"))]
+    query_plan = [
+        Overlap(regions=multi_region_2, anchor_mode=Anchor(fragment_mode="ALL"))
+    ]
     # execution
     query = Query(query_steps=query_plan)
     result = query.build(pixels)
@@ -234,7 +245,10 @@ def test_specific_anchor_regions_returns_correct_pixels_multi_region(
     # setup
     pixels = request.getfixturevalue(pixels_fixture)
     query_plan = [
-        Overlap(regions=multi_region, anchor_mode=Anchor(mode="ALL", anchors=anchors))
+        Overlap(
+            regions=multi_region,
+            anchor_mode=Anchor(fragment_mode="ALL", positions=anchors),
+        )
     ]
     # execution
     query = Query(query_steps=query_plan)
@@ -262,7 +276,10 @@ def test_specific_anchor_region_not_in_pixels_raises_error(
     # setup
     pixels = request.getfixturevalue(pixels_fixture)
     query_plan = [
-        Overlap(regions=single_region, anchor_mode=Anchor(mode="ALL", anchors=[3]))
+        Overlap(
+            regions=single_region,
+            anchor_mode=Anchor(fragment_mode="ALL", positions=[3]),
+        )
     ]
     with pytest.raises(ValueError):
         query = Query(query_steps=query_plan)

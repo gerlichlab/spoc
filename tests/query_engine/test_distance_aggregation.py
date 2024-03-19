@@ -232,7 +232,7 @@ def test_aggregations_on_dense_input(
     region = request.getfixturevalue(region_fixture)
     mapped_pixels = Query(
         query_steps=[
-            Overlap(region, anchor_mode=Anchor(mode="ANY")),
+            Overlap(region, anchor_mode=Anchor(fragment_mode="ANY")),
             DistanceTransformation(distance_mode=DistanceMode.LEFT),
         ],
     ).build(pixels)
@@ -295,7 +295,7 @@ def test_aggregations_on_dense_input_with_reduced_dimensionality(
     region = request.getfixturevalue(region_fixture)
     mapped_pixels = Query(
         query_steps=[
-            Overlap(region, anchor_mode=Anchor(mode="ANY")),
+            Overlap(region, anchor_mode=Anchor(fragment_mode="ANY")),
             DistanceTransformation(distance_mode=DistanceMode.LEFT),
         ],
     ).build(pixels)
@@ -367,7 +367,8 @@ def test_aggregations_on_sparse_input(
     query_plan = Query(
         query_steps=[
             Overlap(
-                request.getfixturevalue(region_fixture), anchor_mode=Anchor(mode="ANY")
+                request.getfixturevalue(region_fixture),
+                anchor_mode=Anchor(fragment_mode="ANY"),
             ),
             DistanceTransformation(distance_mode=DistanceMode.LEFT),
         ],
@@ -456,7 +457,8 @@ def test_aggregations_on_sparse_input_with_reduced_dimensionality(
     query_plan = Query(
         query_steps=[
             Overlap(
-                request.getfixturevalue(region_fixture), anchor_mode=Anchor(mode="ANY")
+                request.getfixturevalue(region_fixture),
+                anchor_mode=Anchor(fragment_mode="ANY"),
             ),
             DistanceTransformation(distance_mode=DistanceMode.LEFT),
         ],
